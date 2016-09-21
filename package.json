@@ -36,6 +36,6 @@
     "prepublish": "gulp build",
     "test": "gulp test"
   },
-  "typings": "dist/js/wire-webapp-cryptobox.d.ts",
+  "typings": "dist/typings/wire-webapp-cryptobox.d.ts",
   "version": "1.0.0"
 }
