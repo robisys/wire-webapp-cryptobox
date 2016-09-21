@@ -21,8 +21,14 @@ module.exports = function(config) {
   config.set({
     autoWatch: false,
     basePath: '',
-    browsers: ['Chrome'],
+    browsers: [process.env.TRAVIS ? 'Chrome_travis_ci' : 'Chrome'],
     colors: true,
+    customLaunchers: {
+      Chrome_travis_ci: {
+        base: 'Chrome',
+        flags: ['--no-sandbox']
+      }
+    },
     concurrency: Infinity,
     exclude: [],
     frameworks: ['jasmine'],
@@ -33,5 +39,11 @@ module.exports = function(config) {
     },
     reporters: ['progress'],
     singleRun: true
-  })
+  });
+
+  if (process.env.TRAVIS) {
+    config.set({
+      port: 9877
+    });
+  }
 };
