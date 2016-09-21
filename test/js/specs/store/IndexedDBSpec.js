@@ -17,7 +17,7 @@
  *
  */
 
-describe('cryptobox.store.IndexedDB', function() {
+xdescribe('cryptobox.store.IndexedDB', function() {
 
   var cryptobox = undefined;
   var Dexie = undefined;
