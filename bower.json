@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "bazinga64": "3.0.3",
+    "dexie": "1.4.2",
+    "system.js": "0.19.38",
+    "wire-webapp-proteus": "https://github.com/wireapp/proteus.js.git#v2.1.0"
+  },
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "license": "GPL-3.0",
+  "main": [
+    "dist/system/wire-webapp-cryptobox.js"
+  ],
+  "name": "wire-webapp-cryptobox"
+}

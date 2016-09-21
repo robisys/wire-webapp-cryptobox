@@ -1,0 +1,19 @@
+{
+  "dynamic": {
+    "bazinga64@copy": [
+      "bazinga64/dist/browser/bazinga64.js"
+    ],
+    "dexie@copy": [
+      "dexie/dist/dexie.js"
+    ],
+    "wire-webapp-proteus@copy": [
+      "wire-webapp-proteus/dist/amd/proteus.js",
+      "wire-webapp-proteus/dist/amd/proteus.js.map"
+    ]
+  },
+  "static": {
+    "system.js@copy": [
+      "system.js/dist/system.js"
+    ]
+  }
+}

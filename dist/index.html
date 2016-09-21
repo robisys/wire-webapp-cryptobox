@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<!-- Wire, Copyright (C) 2016 Wire Swiss GmbH -->
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Demo</title>
+    <link rel="shortcut icon" href="data:image/x-icon;" type="image/x-icon" />
+    <script src="lib/static/system.js/system.js"></script>
+    <script src="util/system.config.js"></script>
+    <script src="util/system.yuml.js"></script>
+  </head>
+  <body>
+    <script>
+      System.import('wire-webapp-cryptobox')
+        .then(function(cryptobox) {
+          var store = new cryptobox.store.Cache();
+          var box = new cryptobox.Cryptobox(store);
+          return box.init();
+        })
+        .then(function(instance) {
+          var fingerprint = instance.identity.public_key.fingerprint();
+          var message = 'Local Identity: ' + fingerprint;
+          console.log(message);
+          document.write(message);
+        });
+    </script>
+  </body>
+</html>
