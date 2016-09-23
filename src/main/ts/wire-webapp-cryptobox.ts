@@ -601,12 +601,12 @@ export class Cryptobox {
     });
   }
 
-  public session_save(session: CryptoboxSession): Promise<CryptoboxSession> {
+  public session_save(session: CryptoboxSession): Promise<String> {
     return new Promise((resolve) => {
       this.store.save_session(session.id, session.session).then(() => {
         return Promise.all(session.pk_store.removed_prekeys.map((pk_id: number) => this.store.delete_prekey(pk_id)));
       }).then(() => {
-        resolve();
+        resolve(session.id);
       });
     });
   }

@@ -113,7 +113,7 @@ export declare class Cryptobox {
     session_from_prekey(client_id: string, pre_key_bundle: ArrayBuffer): Promise<CryptoboxSession>;
     session_from_message(session_id: string, envelope: ArrayBuffer): Promise<Array<any>>;
     session_load(session_id: string): Promise<CryptoboxSession>;
-    session_save(session: CryptoboxSession): Promise<CryptoboxSession>;
+    session_save(session: CryptoboxSession): Promise<String>;
     session_delete(session_id: string): Promise<string>;
     new_prekey(prekey_id: number): Promise<ArrayBuffer>;
 }

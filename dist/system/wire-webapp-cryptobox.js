@@ -541,7 +541,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                         _this.store.save_session(session.id, session.session).then(function () {
                             return Promise.all(session.pk_store.removed_prekeys.map(function (pk_id) { return _this.store.delete_prekey(pk_id); }));
                         }).then(function () {
-                            resolve();
+                            resolve(session.id);
                         });
                     });
                 };
