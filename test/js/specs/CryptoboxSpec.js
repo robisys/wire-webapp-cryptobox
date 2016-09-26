@@ -22,6 +22,8 @@ describe('cryptobox.Cryptobox', function() {
   var bazinga64 = undefined;
   var cryptobox = undefined;
   var Proteus = undefined;
+
+  var boxInstance = undefined;
   var store = undefined;
 
   beforeAll(function(done) {
@@ -67,6 +69,45 @@ describe('cryptobox.Cryptobox', function() {
         done();
       });
     });
+  });
+
+  describe('session_load', function() {
+
+    var sessionId = 'unique_identifier';
+
+    beforeEach(function(done) {
+      var box = new cryptobox.Cryptobox(store);
+      box.init().then(function(instance) {
+        boxInstance = instance;
+
+        var bob = {
+          identity: Proteus.keys.IdentityKeyPair.new(),
+          prekey: Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID)
+        };
+        bob.bundle = Proteus.keys.PreKeyBundle.new(bob.identity.public_key, bob.prekey);
+
+        return Proteus.session.Session.init_from_prekey(instance.identity, bob.bundle);
+      }).then(function(session) {
+        var cryptoBoxSession = new cryptobox.CryptoboxSession(sessionId, boxInstance.pk_store, session);
+        return boxInstance.session_save(cryptoBoxSession);
+      }).then(function() {
+        done();
+      });
+    });
+
+    it('it loads a session from the storage only once (then loads it from memory)', function(done) {
+      spyOn(boxInstance.store, 'load_session').and.callThrough();
+      boxInstance.session_load(sessionId).then(function(session) {
+        expect(session.id).toBe(sessionId);
+        expect(boxInstance.store.load_session.calls.count()).toBe(1);
+        return boxInstance.session_load(sessionId);
+      }).then(function(session) {
+        expect(session.id).toBe(sessionId);
+        expect(boxInstance.store.load_session.calls.count()).toBe(1);
+        done();
+      }).catch(done.fail);
+    });
+
   });
 
 });

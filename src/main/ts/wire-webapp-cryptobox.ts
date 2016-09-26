@@ -86,8 +86,8 @@ export module store {
 
   export class Cache implements CryptoboxStore {
     private identity: Proteus.keys.IdentityKeyPair;
-    private preKeyStore: Object = {};
-    private sessionStore: Object = {};
+    private prekeys: Object = {};
+    private sessions: Object = {};
 
     constructor() {
     }
@@ -95,22 +95,22 @@ export module store {
     public delete_all(): Promise<boolean> {
       return new Promise((resolve) => {
         this.identity = undefined;
-        this.preKeyStore = {};
-        this.sessionStore = {};
+        this.prekeys = {};
+        this.sessions = {};
         resolve(true);
       });
     }
 
     public delete_prekey(prekey_id: number): Promise<string> {
       return new Promise((resolve) => {
-        delete this.preKeyStore[prekey_id];
+        delete this.prekeys[prekey_id];
         resolve(prekey_id);
       });
     }
 
     public delete_session(session_id: string): Promise<string> {
       return new Promise((resolve) => {
-        delete this.sessionStore[session_id];
+        delete this.sessions[session_id];
         resolve(session_id);
       });
     }
@@ -127,7 +127,7 @@ export module store {
 
     public load_prekey(prekey_id: number): Promise<Proteus.keys.PreKey> {
       return new Promise((resolve, reject) => {
-        let serialised: ArrayBuffer = this.preKeyStore[prekey_id];
+        let serialised: ArrayBuffer = this.prekeys[prekey_id];
         if (serialised) {
           resolve(Proteus.keys.PreKey.deserialise(serialised));
         } else {
@@ -138,7 +138,7 @@ export module store {
 
     public load_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session> {
       return new Promise((resolve, reject) => {
-        let serialised: ArrayBuffer = this.sessionStore[session_id];
+        let serialised: ArrayBuffer = this.sessions[session_id];
         if (serialised) {
           resolve(Proteus.session.Session.deserialise(identity, serialised));
         } else {
@@ -155,15 +155,27 @@ export module store {
     }
 
     public save_prekey(key: Proteus.keys.PreKey): Promise<string> {
-      return new Promise((resolve) => {
-        this.preKeyStore[key.key_id] = key.serialise();
+      return new Promise((resolve, reject) => {
+
+        try {
+          this.prekeys[key.key_id] = key.serialise();
+        } catch (error) {
+          reject(`PreKey serialization problem: '${error.message}'`);
+        }
+
         resolve(key);
       });
     }
 
     public save_session(session_id: string, session: Proteus.session.Session): Promise<string> {
-      return new Promise((resolve) => {
-        this.sessionStore[session_id] = session.serialise();
+      return new Promise((resolve, reject) => {
+
+        try {
+          this.sessions[session_id] = session.serialise();
+        } catch (error) {
+          reject(`Session serialization problem: '${error.message}'`);
+        }
+
         resolve(session_id);
       });
     }
@@ -171,9 +183,10 @@ export module store {
 
   export class IndexedDB implements CryptoboxStore {
 
+    public identity: Proteus.keys.IdentityKeyPair;
+
     private db: Dexie;
     private prekeys: Object = {};
-    public identity: Proteus.keys.IdentityKeyPair = undefined;
     private TABLE = {
       LOCAL_IDENTITY: "keys",
       PRE_KEYS: "prekeys",
@@ -542,9 +555,12 @@ export class CryptoboxSession {
 }
 
 export class Cryptobox {
-  private identity: Proteus.keys.IdentityKeyPair;
   private pk_store: store.ReadOnlyStore;
   private store: store.CryptoboxStore;
+
+  public identity: Proteus.keys.IdentityKeyPair;
+  public prekeys: Object = {};
+  public sessions: Object = {};
 
   constructor(cryptoBoxStore: store.CryptoboxStore) {
     this.store = cryptoBoxStore;
@@ -553,13 +569,17 @@ export class Cryptobox {
 
   public init(): Promise<Cryptobox> {
     return new Promise((resolve) => {
-      this.store.load_identity().catch(function () {
-        return Proteus.keys.IdentityKeyPair.new();
-      }).then((identity) => {
-        this.identity = identity;
-        Object.freeze(this);
-        resolve(this);
-      });
+      this.store.load_identity()
+        .catch(function () {
+          return Proteus.keys.IdentityKeyPair.new();
+        })
+        .then((identity) => {
+          this.identity = identity;
+        })
+        .then(() => {
+          Object.freeze(this);
+          resolve(this);
+        });
     });
   }
 
@@ -586,25 +606,36 @@ export class Cryptobox {
     });
   }
 
-  // TODO: Define "null" in method signature
   public session_load(session_id: string): Promise<CryptoboxSession> {
     return new Promise((resolve) => {
-      this.store.load_session(this.identity, session_id).then((session: Proteus.session.Session) => {
-        if (session) {
-          let pk_store: store.ReadOnlyStore = new store.ReadOnlyStore(this.store);
-          let cryptoBoxSession: CryptoboxSession = new CryptoboxSession(session_id, pk_store, session);
-          resolve(cryptoBoxSession);
-        } else {
-          resolve(null);
-        }
-      });
+      if (this.sessions[session_id]) {
+        resolve(this.sessions[session_id]);
+      } else {
+        this.store.load_session(this.identity, session_id).then((session: Proteus.session.Session) => {
+          if (session) {
+            let pk_store: store.ReadOnlyStore = new store.ReadOnlyStore(this.store);
+            let cryptoBoxSession: CryptoboxSession = new CryptoboxSession(session_id, pk_store, session);
+            this.sessions[session_id] = cryptoBoxSession;
+            resolve(cryptoBoxSession);
+          } else {
+            // TODO: Define "null" in method signature
+            resolve(null);
+          }
+        });
+      }
     });
   }
 
   public session_save(session: CryptoboxSession): Promise<String> {
     return new Promise((resolve) => {
       this.store.save_session(session.id, session.session).then(() => {
-        return Promise.all(session.pk_store.removed_prekeys.map((pk_id: number) => this.store.delete_prekey(pk_id)));
+
+        let prekey_deletions = [];
+        session.pk_store.removed_prekeys.forEach((pk_id: number) => {
+          prekey_deletions.push(this.store.delete_prekey(pk_id));
+        });
+
+        return Promise.all(prekey_deletions);
       }).then(() => {
         resolve(session.id);
       });
@@ -612,6 +643,7 @@ export class Cryptobox {
   }
 
   public session_delete(session_id: string): Promise<string> {
+    delete this.sessions[session_id];
     return this.store.delete_session(session_id);
   }
 

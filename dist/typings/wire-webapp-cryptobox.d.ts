@@ -33,8 +33,8 @@ export declare module store {
     }
     class Cache implements CryptoboxStore {
         private identity;
-        private preKeyStore;
-        private sessionStore;
+        private prekeys;
+        private sessions;
         constructor();
         delete_all(): Promise<boolean>;
         delete_prekey(prekey_id: number): Promise<string>;
@@ -47,9 +47,9 @@ export declare module store {
         save_session(session_id: string, session: Proteus.session.Session): Promise<string>;
     }
     class IndexedDB implements CryptoboxStore {
+        identity: Proteus.keys.IdentityKeyPair;
         private db;
         private prekeys;
-        identity: Proteus.keys.IdentityKeyPair;
         private TABLE;
         constructor(identifier: string | Dexie);
         init(): Dexie.Promise<Dexie>;
@@ -105,9 +105,11 @@ export declare class CryptoboxSession {
     fingerprint_remote(): string;
 }
 export declare class Cryptobox {
-    private identity;
     private pk_store;
     private store;
+    identity: Proteus.keys.IdentityKeyPair;
+    prekeys: Object;
+    sessions: Object;
     constructor(cryptoBoxStore: store.CryptoboxStore);
     init(): Promise<Cryptobox>;
     session_from_prekey(client_id: string, pre_key_bundle: ArrayBuffer): Promise<CryptoboxSession>;
