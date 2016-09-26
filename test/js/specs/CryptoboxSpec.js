@@ -38,6 +38,11 @@ describe('cryptobox.Cryptobox', function() {
         bazinga64 = module;
         done();
       });
+    } else {
+      bazinga64 = require('bazinga64');
+      cryptobox = require('../../../dist/commonjs/wire-webapp-cryptobox');
+      Proteus = require('wire-webapp-proteus');
+      done();
     }
   });
 

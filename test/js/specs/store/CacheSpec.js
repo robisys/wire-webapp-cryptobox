@@ -32,6 +32,10 @@ describe('cryptobox.store.Cache', function() {
         Proteus = module;
         done();
       });
+    } else {
+      cryptobox = require('../../../../dist/commonjs/wire-webapp-cryptobox');
+      Proteus = require('wire-webapp-proteus');
+      done();
     }
   });
 

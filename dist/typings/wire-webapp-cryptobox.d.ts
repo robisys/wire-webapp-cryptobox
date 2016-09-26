@@ -104,11 +104,10 @@ export declare class CryptoboxSession {
     fingerprint_remote(): string;
 }
 export declare class Cryptobox {
+    private cachedSessions;
     private pk_store;
     private store;
     identity: Proteus.keys.IdentityKeyPair;
-    prekeys: Object;
-    sessions: Object;
     constructor(cryptoBoxStore: store.CryptoboxStore);
     init(): Promise<Cryptobox>;
     session_from_prekey(client_id: string, pre_key_bundle: ArrayBuffer): Promise<CryptoboxSession>;

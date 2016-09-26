@@ -539,6 +539,7 @@ export class CryptoboxSession {
     });
   }
 
+  // TODO: Make sure to save the session after encryption.
   public encrypt(plaintext: string): Promise<ArrayBuffer> {
     return new Promise((resolve) => {
       this.session.encrypt(plaintext).then(function (ciphertext: Proteus.message.Envelope) {
@@ -557,11 +558,11 @@ export class CryptoboxSession {
 }
 
 export class Cryptobox {
+  private cachedSessions: Object = {};
   private pk_store: store.ReadOnlyStore;
   private store: store.CryptoboxStore;
 
   public identity: Proteus.keys.IdentityKeyPair;
-  public cachedSessions: Object = {};
 
   constructor(cryptoBoxStore: store.CryptoboxStore) {
     this.store = cryptoBoxStore;

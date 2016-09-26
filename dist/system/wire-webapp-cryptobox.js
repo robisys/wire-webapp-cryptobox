@@ -492,8 +492,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
             exports_1("CryptoboxSession", CryptoboxSession);
             Cryptobox = (function () {
                 function Cryptobox(cryptoBoxStore) {
-                    this.prekeys = {};
-                    this.sessions = {};
+                    this.cachedSessions = {};
                     this.store = cryptoBoxStore;
                     this.pk_store = new store.ReadOnlyStore(this.store);
                 }
@@ -538,15 +537,15 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                 Cryptobox.prototype.session_load = function (session_id) {
                     var _this = this;
                     return new Promise(function (resolve) {
-                        if (_this.sessions[session_id]) {
-                            resolve(_this.sessions[session_id]);
+                        if (_this.cachedSessions[session_id]) {
+                            resolve(_this.cachedSessions[session_id]);
                         }
                         else {
                             _this.store.load_session(_this.identity, session_id).then(function (session) {
                                 if (session) {
                                     var pk_store = new store.ReadOnlyStore(_this.store);
                                     var cryptoBoxSession = new CryptoboxSession(session_id, pk_store, session);
-                                    _this.sessions[session_id] = cryptoBoxSession;
+                                    _this.cachedSessions[session_id] = cryptoBoxSession;
                                     resolve(cryptoBoxSession);
                                 }
                                 else {
@@ -571,7 +570,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                     });
                 };
                 Cryptobox.prototype.session_delete = function (session_id) {
-                    delete this.sessions[session_id];
+                    delete this.cachedSessions[session_id];
                     return this.store.delete_session(session_id);
                 };
                 Cryptobox.prototype.new_prekey = function (prekey_id) {

@@ -35,6 +35,11 @@ describe('cryptobox.CryptoboxSession', function() {
         bazinga64 = module;
         done();
       });
+    } else {
+      bazinga64 = require('bazinga64');
+      cryptobox = require('../../../dist/commonjs/wire-webapp-cryptobox');
+      Proteus = require('wire-webapp-proteus');
+      done();
     }
   });
 
@@ -75,8 +80,8 @@ describe('cryptobox.CryptoboxSession', function() {
           // 3. Alice upgrades the basic Proteus session into a high-level Cryptobox session
           var sessionWithBob = new cryptobox.CryptoboxSession('bobs_client_id', alice.pre_key_store, session);
           resolve(sessionWithBob);
-        }).catch(function(error){
-          console.log('setupAliceToBob failed: '+error.message, error);
+        }).catch(function(error) {
+          console.log('setupAliceToBob failed: ' + error.message, error);
           reject(error);
         });
       });

@@ -93,7 +93,7 @@ gulp.task('install_typings', function() {
 });
 
 gulp.task('test', function(done) {
-  runSequence('test_browser', done);
+  runSequence('test_node', 'test_browser', done);
 });
 
 // gulp test_browser -file "yourspec"
@@ -123,7 +123,7 @@ gulp.task('test_browser', function(done) {
 gulp.task('test_node', function() {
   gutil.log(gutil.colors.yellow('Running tests on Node.js:'));
 
-  return gulp.src('test/js/specs/**/*Spec.js')
+  return gulp.src('test/js/specs/store/CacheSpec.js')
     .pipe(jasmine({
       random: true,
       stopSpecOnExpectationFailure: true
