@@ -16,7 +16,6 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
 
-/// <reference path="../../../typings/index.d.ts" />
 import Dexie from "dexie";
 import * as Proteus from "wire-webapp-proteus";
 export declare module store {
