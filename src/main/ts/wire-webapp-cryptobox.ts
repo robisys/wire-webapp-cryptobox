@@ -559,8 +559,7 @@ export class Cryptobox {
   private store: store.CryptoboxStore;
 
   public identity: Proteus.keys.IdentityKeyPair;
-  public prekeys: Object = {};
-  public sessions: Object = {};
+  public cachedSessions: Object = {};
 
   constructor(cryptoBoxStore: store.CryptoboxStore) {
     this.store = cryptoBoxStore;
@@ -608,14 +607,14 @@ export class Cryptobox {
 
   public session_load(session_id: string): Promise<CryptoboxSession> {
     return new Promise((resolve) => {
-      if (this.sessions[session_id]) {
-        resolve(this.sessions[session_id]);
+      if (this.cachedSessions[session_id]) {
+        resolve(this.cachedSessions[session_id]);
       } else {
         this.store.load_session(this.identity, session_id).then((session: Proteus.session.Session) => {
           if (session) {
             let pk_store: store.ReadOnlyStore = new store.ReadOnlyStore(this.store);
             let cryptoBoxSession: CryptoboxSession = new CryptoboxSession(session_id, pk_store, session);
-            this.sessions[session_id] = cryptoBoxSession;
+            this.cachedSessions[session_id] = cryptoBoxSession;
             resolve(cryptoBoxSession);
           } else {
             // TODO: Define "null" in method signature
@@ -643,7 +642,7 @@ export class Cryptobox {
   }
 
   public session_delete(session_id: string): Promise<string> {
-    delete this.sessions[session_id];
+    delete this.cachedSessions[session_id];
     return this.store.delete_session(session_id);
   }
 
