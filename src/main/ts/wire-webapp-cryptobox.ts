@@ -528,6 +528,8 @@ export class CryptoboxSession {
     Object.freeze(this);
   }
 
+  // TODO: Make sure to save the session after decryption. To realize that, decryption & encryption should be
+  // accessed via "Cryptobox" and not via "CryptoboxSession".
   public decrypt(ciphertext: ArrayBuffer): Promise<Uint8Array> {
     return new Promise((resolve) => {
       let envelope: Proteus.message.Envelope = Proteus.message.Envelope.deserialise(ciphertext);
