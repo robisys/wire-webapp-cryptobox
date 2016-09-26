@@ -540,7 +540,7 @@ export class CryptoboxSession {
   }
 
   // TODO: Make sure to save the session after encryption.
-  public encrypt(plaintext: string): Promise<ArrayBuffer> {
+  public encrypt(plaintext: string|Uint8Array): Promise<ArrayBuffer> {
     return new Promise((resolve) => {
       this.session.encrypt(plaintext).then(function (ciphertext: Proteus.message.Envelope) {
         resolve(ciphertext.serialise());
@@ -656,6 +656,31 @@ export class Cryptobox {
         let serialisedPreKeyBundle: ArrayBuffer = Proteus.keys.PreKeyBundle.new(this.identity.public_key, pk).serialise();
         resolve(serialisedPreKeyBundle);
       });
+    });
+  }
+
+  public encrypt(session: CryptoboxSession|string, payload: string|Uint8Array): Promise<ArrayBuffer> {
+    return new Promise((resolve) => {
+
+      let encryptedBuffer: ArrayBuffer;
+      let loadedSession: CryptoboxSession;
+
+      Promise.resolve().then(() => {
+        if (typeof session === 'string') {
+          return this.session_load(session);
+        } else {
+          return session;
+        }
+      }).then((session: CryptoboxSession) => {
+        loadedSession = session;
+        return loadedSession.encrypt(payload);
+      }).then((encrypted: ArrayBuffer) => {
+        encryptedBuffer = encrypted;
+        return this.session_save(loadedSession);
+      }).then(function () {
+        resolve(encryptedBuffer);
+      });
+
     });
   }
 }

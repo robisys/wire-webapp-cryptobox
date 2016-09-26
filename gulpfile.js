@@ -36,7 +36,7 @@ var tsProjectNode = ts.createProject('tsconfig.json', {
 });
 
 gulp.task('build', function(done) {
-  runSequence('install', 'build_ts', 'build_ts_node', done);
+  runSequence('build_ts', 'build_ts_node', done);
 });
 
 gulp.task('build_ts', function() {
@@ -59,7 +59,7 @@ gulp.task('build_ts_node', function() {
   ]);
 });
 
-gulp.task('default', ['build'], function() {
+gulp.task('default', ['dist'], function() {
   gulp.watch('dist/**/*.*').on('change', browserSync.reload);
   gulp.watch('src/main/ts/**/*.*', ['build_ts']);
 
@@ -68,6 +68,10 @@ gulp.task('default', ['build'], function() {
     server: {baseDir: './'},
     startPath: '/dist'
   });
+});
+
+gulp.task('dist', function(done) {
+  runSequence('install', 'build', done);
 });
 
 gulp.task('install', ['install_bower_assets', 'install_typings'], function() {

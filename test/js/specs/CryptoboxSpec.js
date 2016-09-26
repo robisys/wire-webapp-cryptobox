@@ -46,7 +46,6 @@ describe('cryptobox.Cryptobox', function() {
     }
   });
 
-
   beforeEach(function() {
     store = new cryptobox.store.Cache();
   });
@@ -76,7 +75,7 @@ describe('cryptobox.Cryptobox', function() {
     });
   });
 
-  describe('session_load', function() {
+  describe('Sessions', function() {
 
     var sessionId = 'unique_identifier';
 
@@ -100,17 +99,36 @@ describe('cryptobox.Cryptobox', function() {
       });
     });
 
-    it('it loads a session from the storage only once (then loads it from memory)', function(done) {
-      spyOn(boxInstance.store, 'load_session').and.callThrough();
-      boxInstance.session_load(sessionId).then(function(session) {
-        expect(session.id).toBe(sessionId);
-        expect(boxInstance.store.load_session.calls.count()).toBe(1);
-        return boxInstance.session_load(sessionId);
-      }).then(function(session) {
-        expect(session.id).toBe(sessionId);
-        expect(boxInstance.store.load_session.calls.count()).toBe(1);
-        done();
-      }).catch(done.fail);
+    describe('session_load', function() {
+      it('it loads a session from the storage only once (then loads it from memory)', function(done) {
+        spyOn(boxInstance.store, 'load_session').and.callThrough();
+        boxInstance.session_load(sessionId).then(function(session) {
+          expect(session.id).toBe(sessionId);
+          expect(boxInstance.store.load_session.calls.count()).toBe(1);
+          return boxInstance.session_load(sessionId);
+        }).then(function(session) {
+          expect(session.id).toBe(sessionId);
+          expect(boxInstance.store.load_session.calls.count()).toBe(1);
+          done();
+        }).catch(done.fail);
+      });
+    });
+
+    describe('encrypt', function() {
+      it('saves the session after successful encryption', function(done) {
+        spyOn(boxInstance.store, 'save_session').and.callThrough();
+        boxInstance.encrypt(sessionId, 'Hello World.').then(function(encryptedBuffer) {
+          expect(encryptedBuffer).toBeDefined();
+          expect(boxInstance.store.save_session.calls.count()).toBe(1);
+          done();
+        });
+      });
+
+      xit('works with session IDs', function(done) {
+      });
+
+      xit('works with session objects', function(done) {
+      });
     });
 
   });

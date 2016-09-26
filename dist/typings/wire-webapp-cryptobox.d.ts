@@ -99,7 +99,7 @@ export declare class CryptoboxSession {
     session: Proteus.session.Session;
     constructor(id: string, pk_store: store.ReadOnlyStore, session: Proteus.session.Session);
     decrypt(ciphertext: ArrayBuffer): Promise<Uint8Array>;
-    encrypt(plaintext: string): Promise<ArrayBuffer>;
+    encrypt(plaintext: string | Uint8Array): Promise<ArrayBuffer>;
     fingerprint_local(): string;
     fingerprint_remote(): string;
 }
@@ -116,4 +116,5 @@ export declare class Cryptobox {
     session_save(session: CryptoboxSession): Promise<String>;
     session_delete(session_id: string): Promise<string>;
     new_prekey(prekey_id: number): Promise<ArrayBuffer>;
+    encrypt(session: CryptoboxSession | string, payload: string | Uint8Array): Promise<ArrayBuffer>;
 }

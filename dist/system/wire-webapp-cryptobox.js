@@ -583,6 +583,29 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                         });
                     });
                 };
+                Cryptobox.prototype.encrypt = function (session, payload) {
+                    var _this = this;
+                    return new Promise(function (resolve) {
+                        var encryptedBuffer;
+                        var loadedSession;
+                        Promise.resolve().then(function () {
+                            if (typeof session === 'string') {
+                                return _this.session_load(session);
+                            }
+                            else {
+                                return session;
+                            }
+                        }).then(function (session) {
+                            loadedSession = session;
+                            return loadedSession.encrypt(payload);
+                        }).then(function (encrypted) {
+                            encryptedBuffer = encrypted;
+                            return _this.session_save(loadedSession);
+                        }).then(function () {
+                            resolve(encryptedBuffer);
+                        });
+                    });
+                };
                 return Cryptobox;
             }());
             exports_1("Cryptobox", Cryptobox);

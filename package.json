@@ -33,9 +33,9 @@
     "url": "git://github.com/wireapp/wire-webapp-cryptobox.git"
   },
   "scripts": {
-    "prepublish": "gulp build",
+    "prepublish": "gulp dist",
     "test": "gulp test"
   },
   "typings": "dist/typings/wire-webapp-cryptobox.d.ts",
-  "version": "1.0.2"
+  "version": "1.0.3"
 }
