@@ -131,7 +131,7 @@ export module store {
         if (serialised) {
           resolve(Proteus.keys.PreKey.deserialise(serialised));
         } else {
-          reject(new Error(`Didn't find pre-key with ID '${prekey_id}'.`));
+          reject(new Error(`PreKey with ID '${prekey_id}' not found.`));
         }
       });
     }
@@ -142,7 +142,7 @@ export module store {
         if (serialised) {
           resolve(Proteus.session.Session.deserialise(identity, serialised));
         } else {
-          reject(new Error(`Didn't find pre-key with ID '${session_id}'.`));
+          reject(new Error(`Session with ID '${session_id}' not found.`));
         }
       });
     }
