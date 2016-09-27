@@ -615,7 +615,7 @@ export class Cryptobox {
   }
 
   public session_load(session_id: string): Promise<CryptoboxSession> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       if (this.cachedSessions[session_id]) {
         resolve(this.cachedSessions[session_id]);
       } else {
@@ -626,8 +626,7 @@ export class Cryptobox {
             this.cachedSessions[session_id] = cryptoBoxSession;
             resolve(cryptoBoxSession);
           } else {
-            // TODO: Define "null" in method signature
-            resolve(null);
+            reject(new Error(`No session with ID '${session}' found.`));
           }
         });
       }
