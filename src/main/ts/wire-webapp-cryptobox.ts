@@ -626,7 +626,7 @@ export class Cryptobox {
             this.cachedSessions[session_id] = cryptoBoxSession;
             resolve(cryptoBoxSession);
           } else {
-            reject(new Error(`No session with ID '${session}' found.`));
+            reject(new Error(`Session with ID '${session}' not found.`));
           }
         });
       }
