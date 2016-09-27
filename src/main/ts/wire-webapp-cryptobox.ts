@@ -194,6 +194,11 @@ export module store {
     };
 
     constructor(identifier: string | Dexie) {
+      if (typeof indexedDB === "undefined") {
+        let warning = `IndexedDB isn't supported by your platform.`;
+        throw new Error(warning);
+      }
+
       if (typeof identifier === 'string') {
         let schema: { [key: string]: string; } = {};
         schema[this.TABLE.LOCAL_IDENTITY] = '';
@@ -370,7 +375,8 @@ export module store {
 
     constructor(identifier: string = "temp") {
       if (typeof localStorage === "undefined") {
-        let warning = `Local Storage isn't supported on your system.`;
+        let warning = `Local Storage isn't supported by your platform.`;
+        throw new Error(warning);
       } else {
         this.localIdentityStore = `cryptobox-identity-${identifier}`;
         this.preKeyStore = `cryptobox-prekey-${identifier}`;

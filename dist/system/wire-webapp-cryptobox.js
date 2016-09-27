@@ -146,6 +146,10 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                             PRE_KEYS: "prekeys",
                             SESSIONS: "sessions"
                         };
+                        if (typeof indexedDB === "undefined") {
+                            var warning = "IndexedDB isn't supported by your platform.";
+                            throw new Error(warning);
+                        }
                         if (typeof identifier === 'string') {
                             var schema = {};
                             schema[this.TABLE.LOCAL_IDENTITY] = '';
@@ -313,7 +317,8 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                     function LocalStorage(identifier) {
                         if (identifier === void 0) { identifier = "temp"; }
                         if (typeof localStorage === "undefined") {
-                            var warning = "Local Storage isn't supported on your system.";
+                            var warning = "Local Storage isn't supported by your platform.";
+                            throw new Error(warning);
                         }
                         else {
                             this.localIdentityStore = "cryptobox-identity-" + identifier;
