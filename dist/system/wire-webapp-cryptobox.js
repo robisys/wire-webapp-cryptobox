@@ -1,3 +1,22 @@
+/*
+ * Wire
+ * Copyright (C) 2016 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ *
+ */
+
 System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
@@ -597,6 +616,37 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                         }).then(function () {
                             resolve(encryptedBuffer);
                         });
+                    });
+                };
+                Cryptobox.prototype.decrypt = function (session_id, ciphertext) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        var message;
+                        var session;
+                        _this.session_load(session_id)
+                            .catch(function () {
+                            return _this.session_from_message(session_id, ciphertext);
+                        })
+                            .then(function (value) {
+                            var decrypted_message;
+                            if (value[0] !== undefined) {
+                                session = value[0];
+                                decrypted_message = value[1];
+                                return decrypted_message;
+                            }
+                            else {
+                                session = value;
+                                return value.decrypt(ciphertext);
+                            }
+                        })
+                            .then(function (decrypted_message) {
+                            message = decrypted_message;
+                            return _this.session_save(session);
+                        })
+                            .then(function () {
+                            resolve(message);
+                        })
+                            .catch(reject);
                     });
                 };
                 return Cryptobox;

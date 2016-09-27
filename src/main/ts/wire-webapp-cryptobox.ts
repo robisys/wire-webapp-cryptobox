@@ -599,7 +599,7 @@ export class Cryptobox {
   }
 
   // TODO: Turn "any" into a tuple
-  public session_from_message(session_id: string, envelope: ArrayBuffer): Promise<Array<any>> {
+  public session_from_message(session_id: string, envelope: ArrayBuffer): Promise<Proteus.session.SessionFromMessageTuple> {
     return new Promise((resolve, reject) => {
       let env: Proteus.message.Envelope;
 
@@ -694,6 +694,39 @@ export class Cryptobox {
         resolve(encryptedBuffer);
       });
 
+    });
+  }
+
+  public decrypt(session_id: string, ciphertext: ArrayBuffer): Promise<Uint8Array> {
+    return new Promise((resolve, reject) => {
+      let message: Uint8Array;
+      let session: CryptoboxSession;
+
+      this.session_load(session_id)
+        .catch(() => {
+          return this.session_from_message(session_id, ciphertext);
+        })
+        // TODO: "value" can be of type CryptoboxSession|Proteus.session.SessionFromMessageTuple
+        .then(function (value: any) {
+          let decrypted_message: Uint8Array;
+
+          if (value[0] !== undefined) {
+            session = value[0];
+            decrypted_message = value[1];
+            return decrypted_message;
+          } else {
+            session = value;
+            return value.decrypt(ciphertext);
+          }
+        })
+        .then((decrypted_message) => {
+          message = decrypted_message;
+          return this.session_save(session);
+        })
+        .then(() => {
+          resolve(message);
+        })
+        .catch(reject);
     });
   }
 }

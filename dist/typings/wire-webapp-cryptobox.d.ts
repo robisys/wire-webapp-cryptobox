@@ -111,10 +111,11 @@ export declare class Cryptobox {
     constructor(cryptoBoxStore: store.CryptoboxStore);
     init(): Promise<Cryptobox>;
     session_from_prekey(client_id: string, pre_key_bundle: ArrayBuffer): Promise<CryptoboxSession>;
-    session_from_message(session_id: string, envelope: ArrayBuffer): Promise<Array<any>>;
+    session_from_message(session_id: string, envelope: ArrayBuffer): Promise<Proteus.session.SessionFromMessageTuple>;
     session_load(session_id: string): Promise<CryptoboxSession>;
     session_save(session: CryptoboxSession): Promise<String>;
     session_delete(session_id: string): Promise<string>;
     new_prekey(prekey_id: number): Promise<ArrayBuffer>;
     encrypt(session: CryptoboxSession | string, payload: string | Uint8Array): Promise<ArrayBuffer>;
+    decrypt(session_id: string, ciphertext: ArrayBuffer): Promise<Uint8Array>;
 }
