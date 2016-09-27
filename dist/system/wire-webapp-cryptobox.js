@@ -68,7 +68,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                                 resolve(Proteus.keys.PreKey.deserialise(serialised));
                             }
                             else {
-                                reject(new Error("Didn't find pre-key with ID '" + prekey_id + "'."));
+                                reject(new Error("PreKey with ID '" + prekey_id + "' not found."));
                             }
                         });
                     };
@@ -80,7 +80,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                                 resolve(Proteus.session.Session.deserialise(identity, serialised));
                             }
                             else {
-                                reject(new Error("Didn't find pre-key with ID '" + session_id + "'."));
+                                reject(new Error("Session with ID '" + session_id + "' not found."));
                             }
                         });
                     };
@@ -98,7 +98,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                                 _this.prekeys[key.key_id] = key.serialise();
                             }
                             catch (error) {
-                                reject("PreKey serialization problem: '" + error.message + "'");
+                                return reject("PreKey serialization problem: '" + error.message + "'");
                             }
                             resolve(key);
                         });
@@ -110,7 +110,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                                 _this.sessions[session_id] = session.serialise();
                             }
                             catch (error) {
-                                reject("Session serialization problem: '" + error.message + "'");
+                                return reject("Session serialization problem: '" + error.message + "'");
                             }
                             resolve(session_id);
                         });
@@ -200,9 +200,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                                 .then(function () {
                                 resolve(true);
                             })
-                                .catch(function (error) {
-                                reject(error);
-                            });
+                                .catch(reject);
                         });
                     };
                     IndexedDB.prototype.delete_prekey = function (prekey_id) {
@@ -509,15 +507,22 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                 };
                 Cryptobox.prototype.session_from_message = function (session_id, envelope) {
                     var _this = this;
-                    return new Promise(function (resolve) {
-                        var env = Proteus.message.Envelope.deserialise(envelope);
+                    return new Promise(function (resolve, reject) {
+                        var env;
+                        try {
+                            env = Proteus.message.Envelope.deserialise(envelope);
+                        }
+                        catch (error) {
+                            return reject(error);
+                        }
                         Proteus.session.Session.init_from_message(_this.identity, _this.pk_store, env)
                             .then(function (tuple) {
                             var session = tuple[0];
                             var decrypted = tuple[1];
                             var cryptoBoxSession = new CryptoboxSession(session_id, _this.pk_store, session);
                             resolve([cryptoBoxSession, decrypted]);
-                        });
+                        })
+                            .catch(reject);
                     });
                 };
                 Cryptobox.prototype.session_load = function (session_id) {
@@ -527,7 +532,8 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                             resolve(_this.cachedSessions[session_id]);
                         }
                         else {
-                            _this.store.load_session(_this.identity, session_id).then(function (session) {
+                            _this.store.load_session(_this.identity, session_id)
+                                .then(function (session) {
                                 if (session) {
                                     var pk_store = new store.ReadOnlyStore(_this.store);
                                     var cryptoBoxSession = new CryptoboxSession(session_id, pk_store, session);
@@ -535,9 +541,10 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                                     resolve(cryptoBoxSession);
                                 }
                                 else {
-                                    reject(new Error("No session with ID '" + session + "' found."));
+                                    reject(new Error("Session with ID '" + session + "' not found."));
                                 }
-                            });
+                            })
+                                .catch(reject);
                         }
                     });
                 };

@@ -160,7 +160,7 @@ export module store {
         try {
           this.prekeys[key.key_id] = key.serialise();
         } catch (error) {
-          reject(`PreKey serialization problem: '${error.message}'`);
+          return reject(`PreKey serialization problem: '${error.message}'`);
         }
 
         resolve(key);
@@ -173,7 +173,7 @@ export module store {
         try {
           this.sessions[session_id] = session.serialise();
         } catch (error) {
-          reject(`Session serialization problem: '${error.message}'`);
+          return reject(`Session serialization problem: '${error.message}'`);
         }
 
         resolve(session_id);
@@ -270,9 +270,7 @@ export module store {
           .then(function () {
             resolve(true);
           })
-          .catch(function (error) {
-            reject(error);
-          });
+          .catch(reject);
       });
     }
 
@@ -602,15 +600,23 @@ export class Cryptobox {
 
   // TODO: Turn "any" into a tuple
   public session_from_message(session_id: string, envelope: ArrayBuffer): Promise<Array<any>> {
-    return new Promise((resolve) => {
-      let env: Proteus.message.Envelope = Proteus.message.Envelope.deserialise(envelope);
+    return new Promise((resolve, reject) => {
+      let env: Proteus.message.Envelope;
+
+      try {
+        env = Proteus.message.Envelope.deserialise(envelope);
+      } catch (error) {
+        return reject(error);
+      }
+
       Proteus.session.Session.init_from_message(this.identity, this.pk_store, env)
         .then((tuple: Proteus.session.SessionFromMessageTuple) => {
           let session: Proteus.session.Session = tuple[0];
           let decrypted: Uint8Array = tuple[1];
           let cryptoBoxSession: CryptoboxSession = new CryptoboxSession(session_id, this.pk_store, session);
           resolve([cryptoBoxSession, decrypted]);
-        });
+        })
+        .catch(reject)
     });
   }
 
@@ -619,16 +625,18 @@ export class Cryptobox {
       if (this.cachedSessions[session_id]) {
         resolve(this.cachedSessions[session_id]);
       } else {
-        this.store.load_session(this.identity, session_id).then((session: Proteus.session.Session) => {
-          if (session) {
-            let pk_store: store.ReadOnlyStore = new store.ReadOnlyStore(this.store);
-            let cryptoBoxSession: CryptoboxSession = new CryptoboxSession(session_id, pk_store, session);
-            this.cachedSessions[session_id] = cryptoBoxSession;
-            resolve(cryptoBoxSession);
-          } else {
-            reject(new Error(`Session with ID '${session}' not found.`));
-          }
-        });
+        this.store.load_session(this.identity, session_id)
+          .then((session: Proteus.session.Session) => {
+            if (session) {
+              let pk_store: store.ReadOnlyStore = new store.ReadOnlyStore(this.store);
+              let cryptoBoxSession: CryptoboxSession = new CryptoboxSession(session_id, pk_store, session);
+              this.cachedSessions[session_id] = cryptoBoxSession;
+              resolve(cryptoBoxSession);
+            } else {
+              reject(new Error(`Session with ID '${session}' not found.`));
+            }
+          })
+          .catch(reject);
       }
     });
   }
