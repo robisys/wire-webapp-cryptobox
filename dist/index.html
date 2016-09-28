@@ -12,7 +12,7 @@
     <script>
       System.import('wire-webapp-cryptobox')
         .then(function(cryptobox) {
-          var store = new cryptobox.store.Cache();
+          var store = new cryptobox.store.LocalStorage();
           var box = new cryptobox.Cryptobox(store);
           return box.init();
         })

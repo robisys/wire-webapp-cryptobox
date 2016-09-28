@@ -66,7 +66,7 @@ export module store {
      * @param identity
      * @return Promise<string> Resolves with the "fingerprint" from the saved local identity.
      */
-    save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<string>;
+    save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<Proteus.keys.IdentityKeyPair>;
 
     /**
      * Saves a specified pre-key.
@@ -147,10 +147,10 @@ export module store {
       });
     }
 
-    public save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<string> {
+    public save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<Proteus.keys.IdentityKeyPair> {
       return new Promise((resolve) => {
         this.identity = identity;
-        resolve(this.identity.public_key.fingerprint());
+        resolve(this.identity);
       });
     }
 
@@ -192,6 +192,8 @@ export module store {
       PRE_KEYS: "prekeys",
       SESSIONS: "sessions"
     };
+
+    private localIdentityKey: string = 'local_identity';
 
     constructor(identifier: string | Dexie) {
       if (typeof indexedDB === "undefined") {
@@ -242,8 +244,7 @@ export module store {
       });
     }
 
-    // TODO: Add return type to method signature
-    private save(store_name: string, primary_key: string, entity: Object) {
+    private save(store_name: string, primary_key: string, entity: Object): Dexie.Promise<string> {
       return new Dexie.Promise((resolve) => {
         this.validate_store(store_name).then((store: Dexie.Table<any, any>) => {
           return store.put(entity, primary_key);
@@ -253,7 +254,7 @@ export module store {
       });
     }
 
-    private validate_store(store_name: string): Dexie.Promise<any> {
+    private validate_store(store_name: string): Dexie.Promise<Dexie.Table<any, any>> {
       return new Dexie.Promise((resolve, reject) => {
         if (this.db[store_name]) {
           resolve(this.db[store_name]);
@@ -292,7 +293,7 @@ export module store {
 
     public load_identity(): Promise<Proteus.keys.IdentityKeyPair> {
       return new Promise((resolve, reject) => {
-        this.load(this.TABLE.LOCAL_IDENTITY, 'local_identity').then((payload: SerialisedRecord) => {
+        this.load(this.TABLE.LOCAL_IDENTITY, this.localIdentityKey).then((payload: SerialisedRecord) => {
           if (payload) {
             let bytes: Uint8Array = bazinga64.Decoder.fromBase64(payload.serialised).asBytes;
             let identity: Proteus.keys.IdentityKeyPair = Proteus.keys.IdentityKeyPair.deserialise(bytes.buffer);
@@ -322,18 +323,18 @@ export module store {
       });
     }
 
-    public save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<string> {
+    public save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<Proteus.keys.IdentityKeyPair> {
       return new Promise((resolve) => {
         this.identity = identity;
 
         let serialised: string = bazinga64.Encoder.toBase64(identity.serialise()).asString;
-        let payload: SerialisedRecord = new SerialisedRecord(serialised, 'local_identity');
+        let payload: SerialisedRecord = new SerialisedRecord(serialised, this.localIdentityKey);
 
         this.save(this.TABLE.LOCAL_IDENTITY, payload.id, payload).then((primaryKey: string) => {
           let fingerprint: string = identity.public_key.fingerprint();
           let message = `Saved local identity '${fingerprint}'`
             + ` with key '${primaryKey}' into storage '${this.TABLE.LOCAL_IDENTITY}'`;
-          resolve(fingerprint);
+          resolve(identity);
         })
       });
     }
@@ -366,6 +367,7 @@ export module store {
   }
 
   export class LocalStorage implements CryptoboxStore {
+    private localIdentityKey: string = 'local_identity';
     private localIdentityStore: string;
     private preKeyStore: string;
     private sessionStore: string;
@@ -376,16 +378,16 @@ export module store {
         let warning = `Local Storage isn't supported by your platform.`;
         throw new Error(warning);
       } else {
-        this.localIdentityStore = `cryptobox-identity-${identifier}`;
-        this.preKeyStore = `cryptobox-prekey-${identifier}`;
-        this.sessionStore = `cryptobox-session-${identifier}`;
+        this.localIdentityStore = `cryptobox@${identifier}@identity`;
+        this.preKeyStore = `cryptobox@${identifier}@prekey`;
+        this.sessionStore = `cryptobox@${identifier}@session`;
         this.storage = localStorage;
       }
     }
 
     private delete(store_name: string, primary_key: string): Promise<string> {
       return new Promise((resolve) => {
-        let key: string = `${store_name}-${primary_key}`;
+        let key: string = `${store_name}@${primary_key}`;
         this.storage.removeItem(key);
         resolve(key);
       });
@@ -393,7 +395,7 @@ export module store {
 
     private load(store_name: string, primary_key: string): Promise<string> {
       return new Promise((resolve, reject) => {
-        let item: string = this.storage.getItem(`${store_name}-${primary_key}`);
+        let item: string = this.storage.getItem(`${store_name}@${primary_key}`);
         if (item) {
           resolve(item);
         } else {
@@ -404,7 +406,7 @@ export module store {
 
     private save(store_name: string, primary_key: string, entity: string): Promise<string> {
       return new Promise((resolve) => {
-        let key: string = `${store_name}-${primary_key}`;
+        let key: string = `${store_name}@${primary_key}`;
         this.storage.setItem(key, entity);
         resolve(key);
       });
@@ -412,9 +414,20 @@ export module store {
 
     public delete_all(): Promise<boolean> {
       return new Promise((resolve) => {
-        // TODO: Don't clear the whole localStorage, only the keys necessary
-        localStorage.clear();
-        resolve(true);
+
+        var removed_items = false;
+        Object.keys(localStorage).forEach((key: string) => {
+          if (
+            key.indexOf(this.localIdentityStore) > -1 ||
+            key.indexOf(this.preKeyStore) > -1 ||
+            key.indexOf(this.sessionStore) > -1
+          ) {
+            removed_items = true;
+            localStorage.removeItem(key);
+          }
+        });
+
+        resolve(removed_items);
       });
     }
 
@@ -428,7 +441,7 @@ export module store {
 
     public load_identity(): Promise<Proteus.keys.IdentityKeyPair> {
       return new Promise((resolve, reject) => {
-        this.load(this.localIdentityStore, 'local').then(function (payload: string) {
+        this.load(this.localIdentityStore, this.localIdentityKey).then(function (payload: string) {
           if (payload) {
             let bytes = bazinga64.Decoder.fromBase64(payload).asBytes;
             let ikp: Proteus.keys.IdentityKeyPair = Proteus.keys.IdentityKeyPair.deserialise(bytes.buffer);
@@ -436,7 +449,7 @@ export module store {
           } else {
             reject(new Error(`No local identity present.`));
           }
-        });
+        }).catch(reject);
       });
     }
 
@@ -458,15 +471,15 @@ export module store {
       });
     }
 
-    public save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<string> {
+    public save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<Proteus.keys.IdentityKeyPair> {
       let fingerprint: String = identity.public_key.fingerprint();
       let serialised: string = bazinga64.Encoder.toBase64(identity.serialise()).asString;
-      let payload: SerialisedRecord = new SerialisedRecord(serialised, 'local');
+      let payload: SerialisedRecord = new SerialisedRecord(serialised, this.localIdentityKey);
 
       return new Promise((resolve) => {
         this.save(this.localIdentityStore, payload.id, payload.serialised).then(function (key: string) {
           let message = `Saved local identity '${fingerprint}' with key '${key}'.`;
-          resolve(fingerprint);
+          resolve(identity);
         });
       });
     }
@@ -532,8 +545,6 @@ export class CryptoboxSession {
     Object.freeze(this);
   }
 
-  // TODO: Make sure to save the session after decryption. To realize that, decryption & encryption should be
-  // accessed via "Cryptobox" and not via "CryptoboxSession".
   public decrypt(ciphertext: ArrayBuffer): Promise<Uint8Array> {
     return new Promise((resolve) => {
       let envelope: Proteus.message.Envelope = Proteus.message.Envelope.deserialise(ciphertext);
@@ -543,7 +554,6 @@ export class CryptoboxSession {
     });
   }
 
-  // TODO: Make sure to save the session after encryption.
   public encrypt(plaintext: string|Uint8Array): Promise<ArrayBuffer> {
     return new Promise((resolve) => {
       this.session.encrypt(plaintext).then(function (ciphertext: Proteus.message.Envelope) {
@@ -574,18 +584,20 @@ export class Cryptobox {
   }
 
   public init(): Promise<Cryptobox> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       this.store.load_identity()
-        .catch(function () {
-          return Proteus.keys.IdentityKeyPair.new();
+        .catch(() => {
+          let identity: Proteus.keys.IdentityKeyPair = Proteus.keys.IdentityKeyPair.new();
+          return this.store.save_identity(identity);
         })
         .then((identity) => {
           this.identity = identity;
+          return identity;
         })
         .then(() => {
           Object.freeze(this);
           resolve(this);
-        });
+        }).catch(reject);
     });
   }
 

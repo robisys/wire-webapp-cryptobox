@@ -53,8 +53,8 @@ describe('cryptobox.store.Cache', function() {
   describe('save_identity', function() {
     it('saves the local identity', function(done) {
       var ikp = Proteus.keys.IdentityKeyPair.new();
-      store.save_identity(ikp).then(function(fingerprint) {
-        expect(fingerprint).toEqual(jasmine.any(String));
+      store.save_identity(ikp).then(function(identity) {
+        expect(identity.public_key.fingerprint()).toEqual(ikp.public_key.fingerprint());
         done();
       });
     });

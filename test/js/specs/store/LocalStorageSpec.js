@@ -45,8 +45,8 @@ describe('cryptobox.store.LocalStorage', function() {
       var ikp = Proteus.keys.IdentityKeyPair.new();
       var expectedFingerprint = ikp.public_key.fingerprint();
 
-      store.save_identity(ikp).then(function(actualFingerprint) {
-        expect(actualFingerprint).toBe(expectedFingerprint);
+      store.save_identity(ikp).then(function(identity) {
+        expect(identity.public_key.fingerprint()).toEqual(expectedFingerprint);
         done();
       });
     });
