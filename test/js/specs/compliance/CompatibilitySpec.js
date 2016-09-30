@@ -70,7 +70,7 @@ describe('Compatibility', function() {
         expect(identityFromLocalStorage.public_key.fingerprint()).toBe(fingerprint);
 
         done();
-      });
+      }).catch(done.fail);
 
     });
   });

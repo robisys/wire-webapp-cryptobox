@@ -27,7 +27,7 @@ export module store {
     delete_all(): Promise<boolean>;
 
     /**
-     * Deletes a specified pre-key.
+     * Deletes a specified PreKey.
      * @param prekey_id
      * @return Promise<string> Resolves with the "ID" from the record, which has been deleted.
      */
@@ -47,11 +47,16 @@ export module store {
     load_identity(): Promise<Proteus.keys.IdentityKeyPair>;
 
     /**
-     * Loads a specified pre-key.
+     * Loads a specified PreKey.
      * @param prekey_id
-     * @return Promise<Proteus.keys.PreKey> Resolves with the the specified "pre-key".
+     * @return Promise<Proteus.keys.PreKey> Resolves with the the specified "PreKey".
      */
     load_prekey(prekey_id: number): Promise<Proteus.keys.PreKey>;
+
+    /**
+     * Loads all available PreKeys.
+     */
+    load_prekeys(): Promise<Array<Proteus.keys.PreKey>>;
 
     /**
      * Loads a specified session.
@@ -69,11 +74,13 @@ export module store {
     save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<Proteus.keys.IdentityKeyPair>;
 
     /**
-     * Saves a specified pre-key.
+     * Saves a specified PreKey.
      * @param key
-     * @return Promise<string> Resolves with the "ID" from the saved pre-key record.
+     * @return Promise<string> Resolves with the "ID" from the saved PreKey record.
      */
-    save_prekey(key: Proteus.keys.PreKey): Promise<string>;
+    save_prekey(key: Proteus.keys.PreKey): Promise<Proteus.keys.PreKey>;
+
+    save_prekeys(preKeys: Array<Proteus.keys.PreKey>): Promise<Proteus.keys.PreKey>;
 
     /**
      * Saves a specified session.
@@ -81,7 +88,7 @@ export module store {
      * @param session
      * @return Promise<string> Resolves with the "ID" from the saved session record.
      */
-    save_session(session_id: string, session: Proteus.session.Session): Promise<string>;
+    save_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session>;
   }
 
   export class Cache implements CryptoboxStore {
@@ -136,6 +143,16 @@ export module store {
       });
     }
 
+    public load_prekeys(): Promise<Array<Proteus.keys.PreKey>> {
+      return new Promise((resolve) => {
+        let all_prekeys: Array<Proteus.keys.PreKey> = Object.keys(this.prekeys).map((key: string) => {
+          return this.prekeys[key];
+        });
+
+        resolve(all_prekeys);
+      });
+    }
+
     public load_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session> {
       return new Promise((resolve, reject) => {
         let serialised: ArrayBuffer = this.sessions[session_id];
@@ -154,20 +171,34 @@ export module store {
       });
     }
 
-    public save_prekey(key: Proteus.keys.PreKey): Promise<string> {
+    public save_prekey(preKey: Proteus.keys.PreKey): Promise<Proteus.keys.PreKey> {
       return new Promise((resolve, reject) => {
 
         try {
-          this.prekeys[key.key_id] = key.serialise();
+          this.prekeys[preKey.key_id] = preKey.serialise();
         } catch (error) {
           return reject(`PreKey serialization problem: '${error.message}'`);
         }
 
-        resolve(key);
+        resolve(preKey);
       });
     }
 
-    public save_session(session_id: string, session: Proteus.session.Session): Promise<string> {
+    save_prekeys(preKeys: Array<Proteus.keys.PreKey>): Promise<Proteus.keys.PreKey> {
+      return new Promise((resolve, reject) => {
+        let savePromises: Array<Promise<Proteus.keys.PreKey>> = [];
+
+        preKeys.forEach((preKey: Proteus.keys.PreKey) => {
+          savePromises.push(this.save_prekey(preKey));
+        });
+
+        Promise.all(savePromises).then(() => {
+          resolve(preKeys);
+        }).catch(reject);
+      });
+    }
+
+    public save_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
       return new Promise((resolve, reject) => {
 
         try {
@@ -176,7 +207,7 @@ export module store {
           return reject(`Session serialization problem: '${error.message}'`);
         }
 
-        resolve(session_id);
+        resolve(session);
       });
     }
   }
@@ -220,7 +251,7 @@ export module store {
     }
 
     public init(): Dexie.Promise<Dexie> {
-      console.info(`Connecting to '${this.db.name}'.`);
+      console.log(`Connecting to IndexedDB database '${this.db.name}'...`);
       return this.db.open();
     }
 
@@ -237,8 +268,9 @@ export module store {
     private load(store_name: string, primary_key: string): Dexie.Promise<Object> {
       return new Dexie.Promise((resolve) => {
         this.validate_store(store_name).then((store: Dexie.Table<any, any>) => {
-          return store.get(primary_key)
+          return store.get(primary_key);
         }).then((record: any) => {
+          console.log(`Loaded record '${primary_key}' from '${store_name}'.`, record);
           resolve(record);
         });
       });
@@ -249,6 +281,7 @@ export module store {
         this.validate_store(store_name).then((store: Dexie.Table<any, any>) => {
           return store.put(entity, primary_key);
         }).then((key: any) => {
+          console.log(`Saved record '${primary_key}' into store '${store_name}'.`, entity);
           resolve(key);
         });
       });
@@ -306,25 +339,36 @@ export module store {
     }
 
     public load_prekey(prekey_id: number): Promise<Proteus.keys.PreKey> {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         this.load(this.TABLE.PRE_KEYS, prekey_id.toString()).then((payload: SerialisedRecord) => {
           let bytes = bazinga64.Decoder.fromBase64(payload.serialised).asBytes;
           resolve(Proteus.keys.PreKey.deserialise(bytes.buffer));
+        }).catch(reject);
+      });
+    }
+
+    public load_prekeys(): Promise<Array<Proteus.keys.PreKey>> {
+      return new Dexie.Promise((resolve) => {
+        this.validate_store(this.TABLE.PRE_KEYS).then((store: Dexie.Table<any, any>) => {
+          return store.toArray();
+          // TODO: Make preKeys an "Array<Proteus.keys.PreKey>"
+        }).then((preKeys: any) => {
+          resolve(preKeys);
         });
       });
     }
 
     public load_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session> {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         this.load(this.TABLE.SESSIONS, session_id).then((payload: SerialisedRecord) => {
           let bytes = bazinga64.Decoder.fromBase64(payload.serialised).asBytes;
           resolve(Proteus.session.Session.deserialise(identity, bytes.buffer));
-        });
+        }).catch(reject);
       });
     }
 
     public save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<Proteus.keys.IdentityKeyPair> {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         this.identity = identity;
 
         let serialised: string = bazinga64.Encoder.toBase64(identity.serialise()).asString;
@@ -335,33 +379,60 @@ export module store {
           let message = `Saved local identity '${fingerprint}'`
             + ` with key '${primaryKey}' into storage '${this.TABLE.LOCAL_IDENTITY}'`;
           resolve(identity);
-        })
+        }).catch(reject);
       });
     }
 
-    public save_prekey(prekey: Proteus.keys.PreKey): Promise<string> {
-      return new Promise((resolve) => {
+    public save_prekey(prekey: Proteus.keys.PreKey): Promise<Proteus.keys.PreKey> {
+      return new Promise((resolve, reject) => {
         this.prekeys[prekey.key_id] = prekey;
 
         let serialised: string = bazinga64.Encoder.toBase64(prekey.serialise()).asString;
         let payload: SerialisedRecord = new SerialisedRecord(serialised, prekey.key_id.toString());
 
         this.save(this.TABLE.PRE_KEYS, payload.id, payload).then((primaryKey: string) => {
-          let message = `Saved pre-key with ID '${prekey.key_id}' into storage '${this.TABLE.PRE_KEYS}'`;
-          resolve(primaryKey);
-        });
+          let message = `Saved PreKey with ID '${prekey.key_id}' into storage '${this.TABLE.PRE_KEYS}'`;
+          resolve(prekey);
+        }).catch(reject);
       });
     }
 
-    public save_session(session_id: string, session: Proteus.session.Session): Promise<string> {
-      return new Promise((resolve) => {
+    public save_prekeys(prekeys: Array<Proteus.keys.PreKey>): Promise<Proteus.keys.PreKey> {
+      return new Promise((resolve, reject) => {
+        if (prekeys.length === 0) {
+          resolve(prekeys);
+        }
+
+        let items: Array<SerialisedRecord> = [];
+        let keys: Array<string> = [];
+
+        prekeys.forEach(function (preKey: Proteus.keys.PreKey) {
+          let serialised: string = bazinga64.Encoder.toBase64(preKey.serialise()).asString;
+          let key: string = preKey.key_id.toString();
+          let payload: SerialisedRecord = new SerialisedRecord(serialised, key);
+          items.push(payload);
+          keys.push(key);
+        });
+
+        this.validate_store(this.TABLE.PRE_KEYS).then((store: Dexie.Table<any, any>) => {
+          return store.bulkAdd(items, keys);
+        }).then(() => {
+          console.log(`Saved a batch of '${items.length}' PreKeys.`);
+          resolve(prekeys);
+        }).catch(reject);
+
+      });
+    }
+
+    public save_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
+      return new Promise((resolve, reject) => {
         let serialised: string = bazinga64.Encoder.toBase64(session.serialise()).asString;
         let payload: SerialisedRecord = new SerialisedRecord(serialised, session_id);
 
         this.save(this.TABLE.SESSIONS, payload.id, payload).then((primaryKey: string) => {
           let message = `Saved session with key '${session_id}' into storage '${this.TABLE.SESSIONS}'`;
-          resolve(primaryKey);
-        });
+          resolve(session);
+        }).catch(reject);
       });
     }
   }
@@ -454,20 +525,36 @@ export module store {
     }
 
     public load_prekey(prekey_id: number): Promise<Proteus.keys.PreKey> {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         this.load(this.preKeyStore, prekey_id.toString()).then((serialised: string) => {
           let bytes = bazinga64.Decoder.fromBase64(serialised).asBytes;
           resolve(Proteus.keys.PreKey.deserialise(bytes.buffer));
-        });
+        }).catch(reject);
       });
     }
 
+    public load_prekeys(): Promise<Array<Proteus.keys.PreKey>> {
+      let prekey_promises: Array<Promise<Proteus.keys.PreKey>> = [];
+
+      Object.keys(localStorage).forEach((key: string) => {
+        if (key.indexOf(this.preKeyStore) > -1) {
+          let separator: string = '@';
+          let prekey_id = key.substr(key.lastIndexOf(separator) + separator.length);
+          let promise: Promise<Proteus.keys.PreKey> = this.load_prekey(parseInt(prekey_id));
+          prekey_promises.push(promise);
+        }
+      });
+
+      return Promise.all(prekey_promises);
+    }
+
+
     public load_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session> {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         this.load(this.sessionStore, session_id).then((serialised: string) => {
           let bytes = bazinga64.Decoder.fromBase64(serialised).asBytes;
           resolve(Proteus.session.Session.deserialise(identity, bytes.buffer));
-        });
+        }).catch(reject);
       });
     }
 
@@ -476,24 +563,46 @@ export module store {
       let serialised: string = bazinga64.Encoder.toBase64(identity.serialise()).asString;
       let payload: SerialisedRecord = new SerialisedRecord(serialised, this.localIdentityKey);
 
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         this.save(this.localIdentityStore, payload.id, payload.serialised).then(function (key: string) {
           let message = `Saved local identity '${fingerprint}' with key '${key}'.`;
           resolve(identity);
-        });
+        }).catch(reject);
       });
     }
 
-    public save_prekey(prekey: Proteus.keys.PreKey): Promise<string> {
-      let serialised: string = bazinga64.Encoder.toBase64(prekey.serialise()).asString;
-      let payload: SerialisedRecord = new SerialisedRecord(serialised, prekey.key_id.toString());
-      return this.save(this.preKeyStore, payload.id, payload.serialised);
+    public save_prekey(preKey: Proteus.keys.PreKey): Promise<Proteus.keys.PreKey> {
+      return new Promise((resolve, reject) => {
+        let serialised: string = bazinga64.Encoder.toBase64(preKey.serialise()).asString;
+        let payload: SerialisedRecord = new SerialisedRecord(serialised, preKey.key_id.toString());
+        this.save(this.preKeyStore, payload.id, payload.serialised).then(function () {
+          resolve(preKey);
+        }).catch(reject);
+      });
     }
 
-    public save_session(session_id: string, session: Proteus.session.Session): Promise<string> {
-      let serialised: string = bazinga64.Encoder.toBase64(session.serialise()).asString;
-      let payload: SerialisedRecord = new SerialisedRecord(serialised, session_id);
-      return this.save(this.sessionStore, payload.id, payload.serialised);
+    save_prekeys(preKeys: Array<Proteus.keys.PreKey>): Promise<Proteus.keys.PreKey> {
+      return new Promise((resolve, reject) => {
+        let savePromises: Array<Promise<Proteus.keys.PreKey>> = [];
+
+        preKeys.forEach((preKey: Proteus.keys.PreKey) => {
+          savePromises.push(this.save_prekey(preKey));
+        });
+
+        Promise.all(savePromises).then(() => {
+          resolve(preKeys);
+        }).catch(reject);
+      });
+    }
+
+    public save_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
+      return new Promise((resolve, reject) => {
+        let serialised: string = bazinga64.Encoder.toBase64(session.serialise()).asString;
+        let payload: SerialisedRecord = new SerialisedRecord(serialised, session_id);
+        this.save(this.sessionStore, payload.id, payload.serialised).then(function () {
+          resolve(session);
+        }).catch(reject);
+      });
     }
   }
 
@@ -546,11 +655,11 @@ export class CryptoboxSession {
   }
 
   public decrypt(ciphertext: ArrayBuffer): Promise<Uint8Array> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       let envelope: Proteus.message.Envelope = Proteus.message.Envelope.deserialise(ciphertext);
       this.session.decrypt(this.pk_store, envelope).then(function (plaintext: Uint8Array) {
         resolve(plaintext);
-      });
+      }).catch(reject);
     });
   }
 
@@ -572,15 +681,19 @@ export class CryptoboxSession {
 }
 
 export class Cryptobox {
+  // TODO: Limit the amount of items in cache
   private cachedSessions: Object = {};
+
   private pk_store: store.ReadOnlyStore;
   private store: store.CryptoboxStore;
+  private minimumAmountOfPreKeys: number;
 
   public identity: Proteus.keys.IdentityKeyPair;
 
-  constructor(cryptoBoxStore: store.CryptoboxStore) {
-    this.store = cryptoBoxStore;
+  constructor(cryptoBoxStore: store.CryptoboxStore, minimumAmountOfPreKeys: number = 1) {
+    this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
     this.pk_store = new store.ReadOnlyStore(this.store);
+    this.store = cryptoBoxStore;
   }
 
   public init(): Promise<Cryptobox> {
@@ -588,16 +701,47 @@ export class Cryptobox {
       this.store.load_identity()
         .catch(() => {
           let identity: Proteus.keys.IdentityKeyPair = Proteus.keys.IdentityKeyPair.new();
+          console.info(`Created new identity ${identity.public_key.fingerprint()}.`);
           return this.store.save_identity(identity);
         })
         .then((identity) => {
           this.identity = identity;
-          return identity;
+          return this.store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
+        })
+        .catch(() => {
+          let lastResortPreKey: Proteus.keys.PreKey = Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID);
+          return this.store.save_prekey(lastResortPreKey);
         })
         .then(() => {
-          Object.freeze(this);
+          return this.generate_required_prekeys();
+        })
+        .then(() => {
           resolve(this);
         }).catch(reject);
+    });
+  }
+
+  private generate_required_prekeys(): Promise<Array<Proteus.keys.PreKey>> {
+    return new Promise((resolve, reject) => {
+      this.store.load_prekeys().then((currentPreKeys: Array<Proteus.keys.PreKey>) => {
+        let missingAmount: number = 0;
+        let highestId: number = 0;
+
+        if (currentPreKeys.length < this.minimumAmountOfPreKeys) {
+          missingAmount = this.minimumAmountOfPreKeys - currentPreKeys.length;
+          highestId = 0;
+
+          currentPreKeys.forEach((preKey: Proteus.keys.PreKey) => {
+            if (preKey.key_id > highestId && preKey.key_id !== Proteus.keys.PreKey.MAX_PREKEY_ID) {
+              highestId = preKey.key_id;
+            }
+          });
+
+          console.log(`There are not enough available PreKeys. Generating '${missingAmount}' new PreKeys, starting from ID '${highestId}'...`)
+        }
+
+        return this.new_prekeys(highestId, missingAmount);
+      }).then(resolve).catch(reject);
     });
   }
 
@@ -664,6 +808,8 @@ export class Cryptobox {
 
         return Promise.all(prekey_deletions);
       }).then(() => {
+        return this.generate_required_prekeys();
+      }).then(() => {
         resolve(session.id);
       });
     });
@@ -675,12 +821,23 @@ export class Cryptobox {
   }
 
   public new_prekey(prekey_id: number): Promise<ArrayBuffer> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       let pk: Proteus.keys.PreKey = Proteus.keys.PreKey.new(prekey_id);
       this.store.save_prekey(pk).then(() => {
         let serialisedPreKeyBundle: ArrayBuffer = Proteus.keys.PreKeyBundle.new(this.identity.public_key, pk).serialise();
         resolve(serialisedPreKeyBundle);
-      });
+      }).catch(reject);
+    });
+  }
+
+  public new_prekeys(start: number, size: number = 0): Promise<Array<Proteus.keys.PreKey>> {
+    return new Promise((resolve, reject) => {
+      if (size === 0) {
+        resolve([]);
+      }
+
+      let newPreKeys: Array<Proteus.keys.PreKey> = Proteus.keys.PreKey.generate_prekeys(start, size);
+      this.store.save_prekeys(newPreKeys).then(resolve).catch(reject);
     });
   }
 

@@ -48,7 +48,7 @@ describe('cryptobox.store.LocalStorage', function() {
       store.save_identity(ikp).then(function(identity) {
         expect(identity.public_key.fingerprint()).toEqual(expectedFingerprint);
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -63,7 +63,7 @@ describe('cryptobox.store.LocalStorage', function() {
         var actualFingerprint = identity.public_key.fingerprint();
         expect(actualFingerprint).toBe(expectedFingerprint);
         done();
-      });
+      }).catch(done.fail);
     });
   });
 });

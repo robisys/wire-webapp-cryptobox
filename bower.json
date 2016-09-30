@@ -2,8 +2,8 @@
   "dependencies": {
     "bazinga64": "3.0.3",
     "dexie": "1.4.2",
-    "system.js": "0.19.38",
-    "wire-webapp-proteus": "https://github.com/wireapp/proteus.js.git#v2.1.0"
+    "system.js": "0.19.39",
+    "wire-webapp-proteus": "https://github.com/wireapp/proteus.js.git#v2.1.2"
   },
   "ignore": [
     "**/.*",

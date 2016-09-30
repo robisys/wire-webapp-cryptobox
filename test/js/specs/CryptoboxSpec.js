@@ -61,17 +61,23 @@ describe('cryptobox.Cryptobox', function() {
         box.init().then(function(instance) {
           expect(instance.identity.public_key.fingerprint()).toBe(initialFingerPrint);
           done();
-        });
-      });
+        }).catch(done.fail);
+      }).catch(done.fail);
     });
 
-    it('initializes a Cryptobox with a new identity (if none is given)', function(done) {
+    it('creates a new identity (if none is given) plus the last resort PreKey and saves these', function(done) {
       var box = new cryptobox.Cryptobox(store);
       expect(box.identity).not.toBeDefined();
       box.init().then(function(instance) {
         expect(instance.identity).toBeDefined();
+        return store.load_identity();
+      }).then(function(identity) {
+        expect(identity.public_key.fingerprint()).toBeDefined();
+        return store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
+      }).then(function(preKey) {
+        expect(preKey.key_id).toBe(Proteus.keys.PreKey.MAX_PREKEY_ID);
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -96,7 +102,7 @@ describe('cryptobox.Cryptobox', function() {
         return boxInstance.session_save(cryptoBoxSession);
       }).then(function() {
         done();
-      });
+      }).catch(done.fail);
     });
 
     describe('session_load', function() {
@@ -121,7 +127,7 @@ describe('cryptobox.Cryptobox', function() {
           expect(encryptedBuffer).toBeDefined();
           expect(boxInstance.store.save_session.calls.count()).toBe(1);
           done();
-        });
+        }).catch(done.fail);
       });
 
       xit('works with session IDs', function(done) {

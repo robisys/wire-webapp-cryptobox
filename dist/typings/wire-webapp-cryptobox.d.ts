@@ -25,10 +25,12 @@ export declare module store {
         delete_session(session_id: string): Promise<string>;
         load_identity(): Promise<Proteus.keys.IdentityKeyPair>;
         load_prekey(prekey_id: number): Promise<Proteus.keys.PreKey>;
+        load_prekeys(): Promise<Array<Proteus.keys.PreKey>>;
         load_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session>;
         save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<Proteus.keys.IdentityKeyPair>;
-        save_prekey(key: Proteus.keys.PreKey): Promise<string>;
-        save_session(session_id: string, session: Proteus.session.Session): Promise<string>;
+        save_prekey(key: Proteus.keys.PreKey): Promise<Proteus.keys.PreKey>;
+        save_prekeys(preKeys: Array<Proteus.keys.PreKey>): Promise<Proteus.keys.PreKey>;
+        save_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session>;
     }
     class Cache implements CryptoboxStore {
         private identity;
@@ -40,10 +42,12 @@ export declare module store {
         delete_session(session_id: string): Promise<string>;
         load_identity(): Promise<Proteus.keys.IdentityKeyPair>;
         load_prekey(prekey_id: number): Promise<Proteus.keys.PreKey>;
+        load_prekeys(): Promise<Array<Proteus.keys.PreKey>>;
         load_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session>;
         save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<Proteus.keys.IdentityKeyPair>;
-        save_prekey(key: Proteus.keys.PreKey): Promise<string>;
-        save_session(session_id: string, session: Proteus.session.Session): Promise<string>;
+        save_prekey(preKey: Proteus.keys.PreKey): Promise<Proteus.keys.PreKey>;
+        save_prekeys(preKeys: Array<Proteus.keys.PreKey>): Promise<Proteus.keys.PreKey>;
+        save_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session>;
     }
     class IndexedDB implements CryptoboxStore {
         identity: Proteus.keys.IdentityKeyPair;
@@ -62,10 +66,12 @@ export declare module store {
         delete_session(session_id: string): Promise<string>;
         load_identity(): Promise<Proteus.keys.IdentityKeyPair>;
         load_prekey(prekey_id: number): Promise<Proteus.keys.PreKey>;
+        load_prekeys(): Promise<Array<Proteus.keys.PreKey>>;
         load_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session>;
         save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<Proteus.keys.IdentityKeyPair>;
-        save_prekey(prekey: Proteus.keys.PreKey): Promise<string>;
-        save_session(session_id: string, session: Proteus.session.Session): Promise<string>;
+        save_prekey(prekey: Proteus.keys.PreKey): Promise<Proteus.keys.PreKey>;
+        save_prekeys(prekeys: Array<Proteus.keys.PreKey>): Promise<Proteus.keys.PreKey>;
+        save_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session>;
     }
     class LocalStorage implements CryptoboxStore {
         private localIdentityKey;
@@ -82,10 +88,12 @@ export declare module store {
         delete_session(session_id: string): Promise<string>;
         load_identity(): Promise<Proteus.keys.IdentityKeyPair>;
         load_prekey(prekey_id: number): Promise<Proteus.keys.PreKey>;
+        load_prekeys(): Promise<Array<Proteus.keys.PreKey>>;
         load_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session>;
         save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<Proteus.keys.IdentityKeyPair>;
-        save_prekey(prekey: Proteus.keys.PreKey): Promise<string>;
-        save_session(session_id: string, session: Proteus.session.Session): Promise<string>;
+        save_prekey(preKey: Proteus.keys.PreKey): Promise<Proteus.keys.PreKey>;
+        save_prekeys(preKeys: Array<Proteus.keys.PreKey>): Promise<Proteus.keys.PreKey>;
+        save_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session>;
     }
     class ReadOnlyStore extends Proteus.session.PreKeyStore {
         private store;
@@ -109,15 +117,18 @@ export declare class Cryptobox {
     private cachedSessions;
     private pk_store;
     private store;
+    private minimumAmountOfPreKeys;
     identity: Proteus.keys.IdentityKeyPair;
-    constructor(cryptoBoxStore: store.CryptoboxStore);
+    constructor(cryptoBoxStore: store.CryptoboxStore, minimumAmountOfPreKeys?: number);
     init(): Promise<Cryptobox>;
+    private generate_required_prekeys();
     session_from_prekey(client_id: string, pre_key_bundle: ArrayBuffer): Promise<CryptoboxSession>;
     session_from_message(session_id: string, envelope: ArrayBuffer): Promise<Proteus.session.SessionFromMessageTuple>;
     session_load(session_id: string): Promise<CryptoboxSession>;
     session_save(session: CryptoboxSession): Promise<String>;
     session_delete(session_id: string): Promise<string>;
     new_prekey(prekey_id: number): Promise<ArrayBuffer>;
+    new_prekeys(start: number, size?: number): Promise<Array<Proteus.keys.PreKey>>;
     encrypt(session: CryptoboxSession | string, payload: string | Uint8Array): Promise<ArrayBuffer>;
     decrypt(session_id: string, ciphertext: ArrayBuffer): Promise<Uint8Array>;
 }

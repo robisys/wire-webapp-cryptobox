@@ -40,8 +40,7 @@ gulp.task('build', function(done) {
 });
 
 gulp.task('build_ts', function() {
-  var tsResult = gulp.src('src/main/ts/**/*.ts')
-    .pipe(ts(tsProject));
+  var tsResult = tsProject.src().pipe(tsProject());
 
   return merge([
     tsResult.dts.pipe(gulp.dest('dist/typings')),
@@ -50,8 +49,7 @@ gulp.task('build_ts', function() {
 });
 
 gulp.task('build_ts_node', function() {
-  var tsResult = gulp.src('src/main/ts/**/*.ts')
-    .pipe(ts(tsProjectNode));
+  var tsResult = tsProject.src().pipe(tsProjectNode());
 
   return merge([
     tsResult.dts.pipe(gulp.dest('dist/typings')),

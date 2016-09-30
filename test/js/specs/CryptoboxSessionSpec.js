@@ -80,10 +80,7 @@ describe('cryptobox.CryptoboxSession', function() {
           // 3. Alice upgrades the basic Proteus session into a high-level Cryptobox session
           var sessionWithBob = new cryptobox.CryptoboxSession('bobs_client_id', alice.pre_key_store, session);
           resolve(sessionWithBob);
-        }).catch(function(error) {
-          console.log('setupAliceToBob failed: ' + error.message, error);
-          reject(error);
-        });
+        }).catch(reject);
       });
     }
 
@@ -109,7 +106,7 @@ describe('cryptobox.CryptoboxSession', function() {
           expect(sessionWithBob.fingerprint_local()).toBe(alice.identity.public_key.fingerprint());
           expect(sessionWithBob.fingerprint_remote()).toBe(bob.identity.public_key.fingerprint());
           done();
-        });
+        }).catch(done.fail);
       });
     });
 

@@ -56,7 +56,7 @@ describe('cryptobox.store.Cache', function() {
       store.save_identity(ikp).then(function(identity) {
         expect(identity.public_key.fingerprint()).toEqual(ikp.public_key.fingerprint());
         done();
-      });
+      }).catch(done.fail);
     });
   });
 });

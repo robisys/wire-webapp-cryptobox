@@ -91,6 +91,15 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                             }
                         });
                     };
+                    Cache.prototype.load_prekeys = function () {
+                        var _this = this;
+                        return new Promise(function (resolve) {
+                            var all_prekeys = Object.keys(_this.prekeys).map(function (key) {
+                                return _this.prekeys[key];
+                            });
+                            resolve(all_prekeys);
+                        });
+                    };
                     Cache.prototype.load_session = function (identity, session_id) {
                         var _this = this;
                         return new Promise(function (resolve, reject) {
@@ -110,16 +119,28 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                             resolve(_this.identity);
                         });
                     };
-                    Cache.prototype.save_prekey = function (key) {
+                    Cache.prototype.save_prekey = function (preKey) {
                         var _this = this;
                         return new Promise(function (resolve, reject) {
                             try {
-                                _this.prekeys[key.key_id] = key.serialise();
+                                _this.prekeys[preKey.key_id] = preKey.serialise();
                             }
                             catch (error) {
                                 return reject("PreKey serialization problem: '" + error.message + "'");
                             }
-                            resolve(key);
+                            resolve(preKey);
+                        });
+                    };
+                    Cache.prototype.save_prekeys = function (preKeys) {
+                        var _this = this;
+                        return new Promise(function (resolve, reject) {
+                            var savePromises = [];
+                            preKeys.forEach(function (preKey) {
+                                savePromises.push(_this.save_prekey(preKey));
+                            });
+                            Promise.all(savePromises).then(function () {
+                                resolve(preKeys);
+                            }).catch(reject);
                         });
                     };
                     Cache.prototype.save_session = function (session_id, session) {
@@ -131,7 +152,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                             catch (error) {
                                 return reject("Session serialization problem: '" + error.message + "'");
                             }
-                            resolve(session_id);
+                            resolve(session);
                         });
                     };
                     return Cache;
@@ -168,7 +189,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                         });
                     }
                     IndexedDB.prototype.init = function () {
-                        console.info("Connecting to '" + this.db.name + "'.");
+                        console.log("Connecting to IndexedDB database '" + this.db.name + "'...");
                         return this.db.open();
                     };
                     IndexedDB.prototype.delete = function (store_name, primary_key) {
@@ -187,6 +208,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                             _this.validate_store(store_name).then(function (store) {
                                 return store.get(primary_key);
                             }).then(function (record) {
+                                console.log("Loaded record '" + primary_key + "' from '" + store_name + "'.", record);
                                 resolve(record);
                             });
                         });
@@ -197,6 +219,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                             _this.validate_store(store_name).then(function (store) {
                                 return store.put(entity, primary_key);
                             }).then(function (key) {
+                                console.log("Saved record '" + primary_key + "' into store '" + store_name + "'.", entity);
                                 resolve(key);
                             });
                         });
@@ -256,25 +279,35 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                     };
                     IndexedDB.prototype.load_prekey = function (prekey_id) {
                         var _this = this;
-                        return new Promise(function (resolve) {
+                        return new Promise(function (resolve, reject) {
                             _this.load(_this.TABLE.PRE_KEYS, prekey_id.toString()).then(function (payload) {
                                 var bytes = bazinga64.Decoder.fromBase64(payload.serialised).asBytes;
                                 resolve(Proteus.keys.PreKey.deserialise(bytes.buffer));
+                            }).catch(reject);
+                        });
+                    };
+                    IndexedDB.prototype.load_prekeys = function () {
+                        var _this = this;
+                        return new dexie_1.default.Promise(function (resolve) {
+                            _this.validate_store(_this.TABLE.PRE_KEYS).then(function (store) {
+                                return store.toArray();
+                            }).then(function (preKeys) {
+                                resolve(preKeys);
                             });
                         });
                     };
                     IndexedDB.prototype.load_session = function (identity, session_id) {
                         var _this = this;
-                        return new Promise(function (resolve) {
+                        return new Promise(function (resolve, reject) {
                             _this.load(_this.TABLE.SESSIONS, session_id).then(function (payload) {
                                 var bytes = bazinga64.Decoder.fromBase64(payload.serialised).asBytes;
                                 resolve(Proteus.session.Session.deserialise(identity, bytes.buffer));
-                            });
+                            }).catch(reject);
                         });
                     };
                     IndexedDB.prototype.save_identity = function (identity) {
                         var _this = this;
-                        return new Promise(function (resolve) {
+                        return new Promise(function (resolve, reject) {
                             _this.identity = identity;
                             var serialised = bazinga64.Encoder.toBase64(identity.serialise()).asString;
                             var payload = new SerialisedRecord(serialised, _this.localIdentityKey);
@@ -283,30 +316,53 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                                 var message = ("Saved local identity '" + fingerprint + "'")
                                     + (" with key '" + primaryKey + "' into storage '" + _this.TABLE.LOCAL_IDENTITY + "'");
                                 resolve(identity);
-                            });
+                            }).catch(reject);
                         });
                     };
                     IndexedDB.prototype.save_prekey = function (prekey) {
                         var _this = this;
-                        return new Promise(function (resolve) {
+                        return new Promise(function (resolve, reject) {
                             _this.prekeys[prekey.key_id] = prekey;
                             var serialised = bazinga64.Encoder.toBase64(prekey.serialise()).asString;
                             var payload = new SerialisedRecord(serialised, prekey.key_id.toString());
                             _this.save(_this.TABLE.PRE_KEYS, payload.id, payload).then(function (primaryKey) {
-                                var message = "Saved pre-key with ID '" + prekey.key_id + "' into storage '" + _this.TABLE.PRE_KEYS + "'";
-                                resolve(primaryKey);
+                                var message = "Saved PreKey with ID '" + prekey.key_id + "' into storage '" + _this.TABLE.PRE_KEYS + "'";
+                                resolve(prekey);
+                            }).catch(reject);
+                        });
+                    };
+                    IndexedDB.prototype.save_prekeys = function (prekeys) {
+                        var _this = this;
+                        return new Promise(function (resolve, reject) {
+                            if (prekeys.length === 0) {
+                                resolve(prekeys);
+                            }
+                            var items = [];
+                            var keys = [];
+                            prekeys.forEach(function (preKey) {
+                                var serialised = bazinga64.Encoder.toBase64(preKey.serialise()).asString;
+                                var key = preKey.key_id.toString();
+                                var payload = new SerialisedRecord(serialised, key);
+                                items.push(payload);
+                                keys.push(key);
                             });
+                            _this.validate_store(_this.TABLE.PRE_KEYS).then(function (store) {
+                                return store.bulkAdd(items, keys);
+                            }).then(function () {
+                                console.log("Saved a batch of '" + items.length + "' PreKeys.");
+                                resolve(prekeys);
+                            }).catch(reject);
                         });
                     };
                     IndexedDB.prototype.save_session = function (session_id, session) {
                         var _this = this;
-                        return new Promise(function (resolve) {
+                        return new Promise(function (resolve, reject) {
                             var serialised = bazinga64.Encoder.toBase64(session.serialise()).asString;
                             var payload = new SerialisedRecord(serialised, session_id);
                             _this.save(_this.TABLE.SESSIONS, payload.id, payload).then(function (primaryKey) {
                                 var message = "Saved session with key '" + session_id + "' into storage '" + _this.TABLE.SESSIONS + "'";
-                                resolve(primaryKey);
-                            });
+                                resolve(session);
+                            }).catch(reject);
                         });
                     };
                     return IndexedDB;
@@ -394,20 +450,33 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                     };
                     LocalStorage.prototype.load_prekey = function (prekey_id) {
                         var _this = this;
-                        return new Promise(function (resolve) {
+                        return new Promise(function (resolve, reject) {
                             _this.load(_this.preKeyStore, prekey_id.toString()).then(function (serialised) {
                                 var bytes = bazinga64.Decoder.fromBase64(serialised).asBytes;
                                 resolve(Proteus.keys.PreKey.deserialise(bytes.buffer));
-                            });
+                            }).catch(reject);
                         });
+                    };
+                    LocalStorage.prototype.load_prekeys = function () {
+                        var _this = this;
+                        var prekey_promises = [];
+                        Object.keys(localStorage).forEach(function (key) {
+                            if (key.indexOf(_this.preKeyStore) > -1) {
+                                var separator = '@';
+                                var prekey_id = key.substr(key.lastIndexOf(separator) + separator.length);
+                                var promise = _this.load_prekey(parseInt(prekey_id));
+                                prekey_promises.push(promise);
+                            }
+                        });
+                        return Promise.all(prekey_promises);
                     };
                     LocalStorage.prototype.load_session = function (identity, session_id) {
                         var _this = this;
-                        return new Promise(function (resolve) {
+                        return new Promise(function (resolve, reject) {
                             _this.load(_this.sessionStore, session_id).then(function (serialised) {
                                 var bytes = bazinga64.Decoder.fromBase64(serialised).asBytes;
                                 resolve(Proteus.session.Session.deserialise(identity, bytes.buffer));
-                            });
+                            }).catch(reject);
                         });
                     };
                     LocalStorage.prototype.save_identity = function (identity) {
@@ -415,22 +484,44 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                         var fingerprint = identity.public_key.fingerprint();
                         var serialised = bazinga64.Encoder.toBase64(identity.serialise()).asString;
                         var payload = new SerialisedRecord(serialised, this.localIdentityKey);
-                        return new Promise(function (resolve) {
+                        return new Promise(function (resolve, reject) {
                             _this.save(_this.localIdentityStore, payload.id, payload.serialised).then(function (key) {
                                 var message = "Saved local identity '" + fingerprint + "' with key '" + key + "'.";
                                 resolve(identity);
-                            });
+                            }).catch(reject);
                         });
                     };
-                    LocalStorage.prototype.save_prekey = function (prekey) {
-                        var serialised = bazinga64.Encoder.toBase64(prekey.serialise()).asString;
-                        var payload = new SerialisedRecord(serialised, prekey.key_id.toString());
-                        return this.save(this.preKeyStore, payload.id, payload.serialised);
+                    LocalStorage.prototype.save_prekey = function (preKey) {
+                        var _this = this;
+                        return new Promise(function (resolve, reject) {
+                            var serialised = bazinga64.Encoder.toBase64(preKey.serialise()).asString;
+                            var payload = new SerialisedRecord(serialised, preKey.key_id.toString());
+                            _this.save(_this.preKeyStore, payload.id, payload.serialised).then(function () {
+                                resolve(preKey);
+                            }).catch(reject);
+                        });
+                    };
+                    LocalStorage.prototype.save_prekeys = function (preKeys) {
+                        var _this = this;
+                        return new Promise(function (resolve, reject) {
+                            var savePromises = [];
+                            preKeys.forEach(function (preKey) {
+                                savePromises.push(_this.save_prekey(preKey));
+                            });
+                            Promise.all(savePromises).then(function () {
+                                resolve(preKeys);
+                            }).catch(reject);
+                        });
                     };
                     LocalStorage.prototype.save_session = function (session_id, session) {
-                        var serialised = bazinga64.Encoder.toBase64(session.serialise()).asString;
-                        var payload = new SerialisedRecord(serialised, session_id);
-                        return this.save(this.sessionStore, payload.id, payload.serialised);
+                        var _this = this;
+                        return new Promise(function (resolve, reject) {
+                            var serialised = bazinga64.Encoder.toBase64(session.serialise()).asString;
+                            var payload = new SerialisedRecord(serialised, session_id);
+                            _this.save(_this.sessionStore, payload.id, payload.serialised).then(function () {
+                                resolve(session);
+                            }).catch(reject);
+                        });
                     };
                     return LocalStorage;
                 }());
@@ -480,11 +571,11 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                 }
                 CryptoboxSession.prototype.decrypt = function (ciphertext) {
                     var _this = this;
-                    return new Promise(function (resolve) {
+                    return new Promise(function (resolve, reject) {
                         var envelope = Proteus.message.Envelope.deserialise(ciphertext);
                         _this.session.decrypt(_this.pk_store, envelope).then(function (plaintext) {
                             resolve(plaintext);
-                        });
+                        }).catch(reject);
                     });
                 };
                 CryptoboxSession.prototype.encrypt = function (plaintext) {
@@ -505,10 +596,12 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
             }());
             exports_1("CryptoboxSession", CryptoboxSession);
             Cryptobox = (function () {
-                function Cryptobox(cryptoBoxStore) {
+                function Cryptobox(cryptoBoxStore, minimumAmountOfPreKeys) {
+                    if (minimumAmountOfPreKeys === void 0) { minimumAmountOfPreKeys = 1; }
                     this.cachedSessions = {};
-                    this.store = cryptoBoxStore;
+                    this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
                     this.pk_store = new store.ReadOnlyStore(this.store);
+                    this.store = cryptoBoxStore;
                 }
                 Cryptobox.prototype.init = function () {
                     var _this = this;
@@ -516,16 +609,43 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                         _this.store.load_identity()
                             .catch(function () {
                             var identity = Proteus.keys.IdentityKeyPair.new();
+                            console.info("Created new identity " + identity.public_key.fingerprint() + ".");
                             return _this.store.save_identity(identity);
                         })
                             .then(function (identity) {
                             _this.identity = identity;
-                            return identity;
+                            return _this.store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
+                        })
+                            .catch(function () {
+                            var lastResortPreKey = Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID);
+                            return _this.store.save_prekey(lastResortPreKey);
                         })
                             .then(function () {
-                            Object.freeze(_this);
+                            return _this.generate_required_prekeys();
+                        })
+                            .then(function () {
                             resolve(_this);
                         }).catch(reject);
+                    });
+                };
+                Cryptobox.prototype.generate_required_prekeys = function () {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        _this.store.load_prekeys().then(function (currentPreKeys) {
+                            var missingAmount = 0;
+                            var highestId = 0;
+                            if (currentPreKeys.length < _this.minimumAmountOfPreKeys) {
+                                missingAmount = _this.minimumAmountOfPreKeys - currentPreKeys.length;
+                                highestId = 0;
+                                currentPreKeys.forEach(function (preKey) {
+                                    if (preKey.key_id > highestId && preKey.key_id !== Proteus.keys.PreKey.MAX_PREKEY_ID) {
+                                        highestId = preKey.key_id;
+                                    }
+                                });
+                                console.log("There are not enough available PreKeys. Generating '" + missingAmount + "' new PreKeys, starting from ID '" + highestId + "'...");
+                            }
+                            return _this.new_prekeys(highestId, missingAmount);
+                        }).then(resolve).catch(reject);
                     });
                 };
                 Cryptobox.prototype.session_from_prekey = function (client_id, pre_key_bundle) {
@@ -590,6 +710,8 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                             });
                             return Promise.all(prekey_deletions);
                         }).then(function () {
+                            return _this.generate_required_prekeys();
+                        }).then(function () {
                             resolve(session.id);
                         });
                     });
@@ -600,12 +722,23 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                 };
                 Cryptobox.prototype.new_prekey = function (prekey_id) {
                     var _this = this;
-                    return new Promise(function (resolve) {
+                    return new Promise(function (resolve, reject) {
                         var pk = Proteus.keys.PreKey.new(prekey_id);
                         _this.store.save_prekey(pk).then(function () {
                             var serialisedPreKeyBundle = Proteus.keys.PreKeyBundle.new(_this.identity.public_key, pk).serialise();
                             resolve(serialisedPreKeyBundle);
-                        });
+                        }).catch(reject);
+                    });
+                };
+                Cryptobox.prototype.new_prekeys = function (start, size) {
+                    var _this = this;
+                    if (size === void 0) { size = 0; }
+                    return new Promise(function (resolve, reject) {
+                        if (size === 0) {
+                            resolve([]);
+                        }
+                        var newPreKeys = Proteus.keys.PreKey.generate_prekeys(start, size);
+                        _this.store.save_prekeys(newPreKeys).then(resolve).catch(reject);
                     });
                 };
                 Cryptobox.prototype.encrypt = function (session, payload) {

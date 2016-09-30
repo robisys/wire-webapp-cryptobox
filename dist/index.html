@@ -10,16 +10,23 @@
   </head>
   <body>
     <script>
+      var box;
+      var cryptobox;
+      var store;
+
       System.import('wire-webapp-cryptobox')
-        .then(function(cryptobox) {
-          var store = new cryptobox.store.LocalStorage();
-          var box = new cryptobox.Cryptobox(store);
+        .then(function(module) {
+          cryptobox = module;
+          store = new cryptobox.store.IndexedDB('demo_page');
+          return store.init();
+        })
+        .then(function() {
+          box = new cryptobox.Cryptobox(store, 5);
           return box.init();
         })
         .then(function(instance) {
           var fingerprint = instance.identity.public_key.fingerprint();
           var message = 'Local Identity: ' + fingerprint;
-          console.log(message);
           document.write(message);
         });
     </script>

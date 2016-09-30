@@ -41,7 +41,7 @@ describe('cryptobox.store.IndexedDB', function() {
       if (store) {
         // TODO: Check why this get's blocked!
         // @see https://github.com/dfahlander/Dexie.js/issues/17#issuecomment-53684633
-        store.delete_all().then(done);
+        store.delete_all().then(done).catch(done.fail);
       }
     });
 
@@ -51,7 +51,7 @@ describe('cryptobox.store.IndexedDB', function() {
       store.init().then(function(db) {
         expect(db.name).toEqual(jasmine.any(String));
         done();
-      });
+      }).catch(done.fail);
     });
 
     it('works with a given Dexie instance', function(done) {
@@ -83,7 +83,7 @@ describe('cryptobox.store.IndexedDB', function() {
       store.init().then(function(db) {
         expect(db.name).toEqual(name);
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
