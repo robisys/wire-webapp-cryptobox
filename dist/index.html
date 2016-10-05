@@ -14,9 +14,18 @@
       var cryptobox;
       var store;
 
-      System.import('wire-webapp-cryptobox')
+      Promise.all([
+        System.import('postal'),
+        System.import('wire-webapp-cryptobox')
+      ])
         .then(function(module) {
-          cryptobox = module;
+          var postal = module[0];
+          var channel = postal.channel('cryptobox');
+          channel.subscribe('new-prekeys', function(data) {
+            console.log('Received \'' + data.length + '\' new PreKey(s). We need to upload them...');
+          });
+
+          cryptobox = module[1];
           store = new cryptobox.store.IndexedDB('demo_page');
           return store.init();
         })

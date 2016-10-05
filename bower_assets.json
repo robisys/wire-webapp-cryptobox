@@ -6,6 +6,12 @@
     "dexie@copy": [
       "dexie/dist/dexie.js"
     ],
+    "lodash@copy": [
+      "lodash/dist/lodash.js"
+    ],
+    "postal.js@copy": [
+      "postal.js/lib/postal.js"
+    ],
     "wire-webapp-proteus@copy": [
       "wire-webapp-proteus/dist/amd/proteus.js",
       "wire-webapp-proteus/dist/amd/proteus.js.map"

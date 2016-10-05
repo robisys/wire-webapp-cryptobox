@@ -17,7 +17,7 @@
  *
  */
 
-System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_1, context_1) {
+System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], function(exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
     var __extends = (this && this.__extends) || function (d, b) {
@@ -25,7 +25,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
-    var dexie_1, bazinga64, Proteus;
+    var dexie_1, bazinga64, Proteus, postal;
     var store, CryptoboxSession, Cryptobox;
     return {
         setters:[
@@ -37,6 +37,9 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
             },
             function (Proteus_1) {
                 Proteus = Proteus_1;
+            },
+            function (postal_1) {
+                postal = postal_1;
             }],
         execute: function() {
             (function (store_1) {
@@ -204,12 +207,17 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                     };
                     IndexedDB.prototype.load = function (store_name, primary_key) {
                         var _this = this;
-                        return new dexie_1.default.Promise(function (resolve) {
+                        return new dexie_1.default.Promise(function (resolve, reject) {
                             _this.validate_store(store_name).then(function (store) {
                                 return store.get(primary_key);
                             }).then(function (record) {
-                                console.log("Loaded record '" + primary_key + "' from '" + store_name + "'.", record);
-                                resolve(record);
+                                if (record) {
+                                    console.log("Loaded record '" + primary_key + "' from store '" + store_name + "'.", record);
+                                    resolve(record);
+                                }
+                                else {
+                                    reject("Record '" + primary_key + "' not found in store '" + store_name + "'.");
+                                }
                             });
                         });
                     };
@@ -280,20 +288,26 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                     IndexedDB.prototype.load_prekey = function (prekey_id) {
                         var _this = this;
                         return new Promise(function (resolve, reject) {
-                            _this.load(_this.TABLE.PRE_KEYS, prekey_id.toString()).then(function (payload) {
-                                var bytes = bazinga64.Decoder.fromBase64(payload.serialised).asBytes;
+                            _this.load(_this.TABLE.PRE_KEYS, prekey_id.toString()).then(function (record) {
+                                var bytes = bazinga64.Decoder.fromBase64(record.serialised).asBytes;
                                 resolve(Proteus.keys.PreKey.deserialise(bytes.buffer));
                             }).catch(reject);
                         });
                     };
                     IndexedDB.prototype.load_prekeys = function () {
                         var _this = this;
-                        return new dexie_1.default.Promise(function (resolve) {
+                        return new dexie_1.default.Promise(function (resolve, reject) {
                             _this.validate_store(_this.TABLE.PRE_KEYS).then(function (store) {
                                 return store.toArray();
-                            }).then(function (preKeys) {
+                            }).then(function (records) {
+                                var preKeys = [];
+                                records.forEach(function (record) {
+                                    var bytes = bazinga64.Decoder.fromBase64(record.serialised).asBytes;
+                                    var preKey = Proteus.keys.PreKey.deserialise(bytes.buffer);
+                                    preKeys.push(preKey);
+                                });
                                 resolve(preKeys);
-                            });
+                            }).catch(reject);
                         });
                     };
                     IndexedDB.prototype.load_session = function (identity, session_id) {
@@ -349,7 +363,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                             _this.validate_store(_this.TABLE.PRE_KEYS).then(function (store) {
                                 return store.bulkAdd(items, keys);
                             }).then(function () {
-                                console.log("Saved a batch of '" + items.length + "' PreKeys.");
+                                console.log("Saved a batch of '" + items.length + "' PreKeys. From ID '" + items[0].id + "' to ID '" + items[items.length - 1].id + "'.", items);
                                 resolve(prekeys);
                             }).catch(reject);
                         });
@@ -598,7 +612,12 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
             Cryptobox = (function () {
                 function Cryptobox(cryptoBoxStore, minimumAmountOfPreKeys) {
                     if (minimumAmountOfPreKeys === void 0) { minimumAmountOfPreKeys = 1; }
+                    this.EVENT = {
+                        NEW_PREKEYS: 'new-prekeys'
+                    };
                     this.cachedSessions = {};
+                    this.channel = postal.channel("cryptobox");
+                    console.log("Constructed Cryptobox. Minimum limit of PreKeys '" + minimumAmountOfPreKeys + "' (1 Last Resort PreKey and " + (minimumAmountOfPreKeys - 1) + " others).");
                     this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
                     this.pk_store = new store.ReadOnlyStore(this.store);
                     this.store = cryptoBoxStore;
@@ -624,6 +643,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                             return _this.generate_required_prekeys();
                         })
                             .then(function () {
+                            console.log("Initialized Cryptobox with 'xx' PreKeys.");
                             resolve(_this);
                         }).catch(reject);
                     });
@@ -636,16 +656,23 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus"], function(exports_
                             var highestId = 0;
                             if (currentPreKeys.length < _this.minimumAmountOfPreKeys) {
                                 missingAmount = _this.minimumAmountOfPreKeys - currentPreKeys.length;
-                                highestId = 0;
+                                highestId = -1;
                                 currentPreKeys.forEach(function (preKey) {
                                     if (preKey.key_id > highestId && preKey.key_id !== Proteus.keys.PreKey.MAX_PREKEY_ID) {
                                         highestId = preKey.key_id;
                                     }
                                 });
+                                highestId += 1;
                                 console.log("There are not enough available PreKeys. Generating '" + missingAmount + "' new PreKeys, starting from ID '" + highestId + "'...");
                             }
                             return _this.new_prekeys(highestId, missingAmount);
-                        }).then(resolve).catch(reject);
+                        }).then(function (newPreKeys) {
+                            if (newPreKeys.length > 0) {
+                                _this.channel.publish(_this.EVENT.NEW_PREKEYS, newPreKeys);
+                                console.log("Published event '" + _this.EVENT.NEW_PREKEYS + "'.", newPreKeys);
+                            }
+                            resolve(newPreKeys);
+                        }).catch(reject);
                     });
                 };
                 Cryptobox.prototype.session_from_prekey = function (client_id, pre_key_bundle) {

@@ -20,6 +20,7 @@
 describe('cryptobox.store.Cache', function() {
 
   var cryptobox = undefined;
+  var postal = undefined;
   var Proteus = undefined;
   var store = undefined;
 
@@ -33,6 +34,7 @@ describe('cryptobox.store.Cache', function() {
         done();
       });
     } else {
+      postal = require('postal');
       cryptobox = require('../../../../dist/commonjs/wire-webapp-cryptobox');
       Proteus = require('wire-webapp-proteus');
       done();

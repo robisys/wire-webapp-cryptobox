@@ -114,7 +114,11 @@ export declare class CryptoboxSession {
     fingerprint_remote(): string;
 }
 export declare class Cryptobox {
+    EVENT: {
+        NEW_PREKEYS: string;
+    };
     private cachedSessions;
+    private channel;
     private pk_store;
     private store;
     private minimumAmountOfPreKeys;

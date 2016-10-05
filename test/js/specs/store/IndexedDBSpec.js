@@ -85,6 +85,24 @@ describe('cryptobox.store.IndexedDB', function() {
         done();
       }).catch(done.fail);
     });
+
+
+    xit('creates the specified amount of PreKeys', function(done) {
+    });
+
+    xit('creates new PreKeys if only the half of the minimum PreKey threshold was initially available', function(done) {
+    });
+
+    xit('automatically creates new PreKeys if all PreKeys have been used', function(done) {
+    });
+  });
+
+  describe('generate_required_prekeys', function() {
+    xit('publishes an event with newly generated PreKeys', function(done) {
+    });
+
+    xit('doesn\'t publish an event when there are no new PreKeys', function(done) {
+    });
   });
 
 });

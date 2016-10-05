@@ -22,6 +22,8 @@ SystemJS.config({
   map: {
     'bazinga64': 'lib/dynamic/bazinga64/bazinga64.js',
     'dexie': 'lib/dynamic/dexie/dexie.js',
+    'lodash': 'lib/dynamic/lodash/lodash.js',
+    'postal': 'lib/dynamic/postal.js/postal.js',
     'wire-webapp-cryptobox': 'system/wire-webapp-cryptobox.js',
     'wire-webapp-proteus': 'lib/dynamic/wire-webapp-proteus/proteus.js'
   },
