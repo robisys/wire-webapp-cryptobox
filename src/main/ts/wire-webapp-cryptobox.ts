@@ -178,7 +178,7 @@ export module store {
         try {
           this.prekeys[preKey.key_id] = preKey.serialise();
         } catch (error) {
-          return reject(`PreKey serialization problem: '${error.message}'`);
+          return reject(new Error(`PreKey serialization problem: '${error.message}'`));
         }
 
         resolve(preKey);
@@ -205,7 +205,7 @@ export module store {
         try {
           this.sessions[session_id] = session.serialise();
         } catch (error) {
-          return reject(`Session serialization problem: '${error.message}'`);
+          return reject(new Error(`Session serialization problem: '${error.message}'`));
         }
 
         resolve(session);
@@ -266,18 +266,19 @@ export module store {
       });
     }
 
-    private load(store_name: string, primary_key: string): Dexie.Promise<Object> {
-      return new Dexie.Promise((resolve, reject) => {
-        this.validate_store(store_name).then((store: Dexie.Table<any, any>) => {
-          return store.get(primary_key);
-        }).then((record: any) => {
+    private load(store_name: string, primary_key: string): Promise<Object> {
+      return new Promise((resolve, reject) => {
+        this.validate_store(store_name)
+          .then((store: Dexie.Table<any, any>) => {
+            return store.get(primary_key);
+          }).then((record: any) => {
           if (record) {
             console.log(`Loaded record '${primary_key}' from store '${store_name}'.`, record);
             resolve(record);
           } else {
-            reject(`Record '${primary_key}' not found in store '${store_name}'.`);
+            reject(new Error(`Record '${primary_key}' not found in store '${store_name}'.`));
           }
-        });
+        }).catch(reject);
       });
     }
 
@@ -339,7 +340,7 @@ export module store {
           } else {
             reject(new Error(`No local identity present.`));
           }
-        });
+        }).catch(reject);
       });
     }
 

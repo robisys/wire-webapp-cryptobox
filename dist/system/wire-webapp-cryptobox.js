@@ -129,7 +129,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
                                 _this.prekeys[preKey.key_id] = preKey.serialise();
                             }
                             catch (error) {
-                                return reject("PreKey serialization problem: '" + error.message + "'");
+                                return reject(new Error("PreKey serialization problem: '" + error.message + "'"));
                             }
                             resolve(preKey);
                         });
@@ -153,7 +153,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
                                 _this.sessions[session_id] = session.serialise();
                             }
                             catch (error) {
-                                return reject("Session serialization problem: '" + error.message + "'");
+                                return reject(new Error("Session serialization problem: '" + error.message + "'"));
                             }
                             resolve(session);
                         });
@@ -207,8 +207,9 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
                     };
                     IndexedDB.prototype.load = function (store_name, primary_key) {
                         var _this = this;
-                        return new dexie_1.default.Promise(function (resolve, reject) {
-                            _this.validate_store(store_name).then(function (store) {
+                        return new Promise(function (resolve, reject) {
+                            _this.validate_store(store_name)
+                                .then(function (store) {
                                 return store.get(primary_key);
                             }).then(function (record) {
                                 if (record) {
@@ -216,9 +217,9 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
                                     resolve(record);
                                 }
                                 else {
-                                    reject("Record '" + primary_key + "' not found in store '" + store_name + "'.");
+                                    reject(new Error("Record '" + primary_key + "' not found in store '" + store_name + "'."));
                                 }
-                            });
+                            }).catch(reject);
                         });
                     };
                     IndexedDB.prototype.save = function (store_name, primary_key, entity) {
@@ -282,7 +283,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
                                 else {
                                     reject(new Error("No local identity present."));
                                 }
-                            });
+                            }).catch(reject);
                         });
                     };
                     IndexedDB.prototype.load_prekey = function (prekey_id) {
