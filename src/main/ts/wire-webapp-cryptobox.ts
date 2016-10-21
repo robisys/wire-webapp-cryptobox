@@ -230,7 +230,7 @@ export module store {
     private localIdentityKey: string = 'local_identity';
 
     constructor(identifier: string | Dexie) {
-      this.logger = new Logdown({prefix: 'cryptobox.store.IndexedDB'});
+      this.logger = new Logdown({prefix: 'cryptobox.store.IndexedDB', minLength: 26});
 
       if (typeof indexedDB === "undefined") {
         let warning = `IndexedDB isn't supported by your platform.`;
@@ -716,7 +716,7 @@ export class Cryptobox {
   public identity: Proteus.keys.IdentityKeyPair;
 
   constructor(cryptoBoxStore: store.CryptoboxStore, minimumAmountOfPreKeys: number = 1) {
-    this.logger = new Logdown({prefix: 'cryptobox.Cryptobox'});
+    this.logger = new Logdown({prefix: 'cryptobox.Cryptobox', minLength: 26});
     this.logger.log(`Constructed Cryptobox. Minimum limit of PreKeys '${minimumAmountOfPreKeys}' (1 Last Resort PreKey and ${minimumAmountOfPreKeys - 1} others).`);
     this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
     this.pk_store = new store.ReadOnlyStore(this.store);

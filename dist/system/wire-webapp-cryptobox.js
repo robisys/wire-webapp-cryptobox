@@ -174,7 +174,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal", "logdown
                             SESSIONS: "sessions"
                         };
                         this.localIdentityKey = 'local_identity';
-                        this.logger = new logdown_1.default({ prefix: 'cryptobox.store.IndexedDB' });
+                        this.logger = new logdown_1.default({ prefix: 'cryptobox.store.IndexedDB', minLength: 26 });
                         if (typeof indexedDB === "undefined") {
                             var warning = "IndexedDB isn't supported by your platform.";
                             throw new Error(warning);
@@ -622,7 +622,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal", "logdown
                     };
                     this.cachedSessions = {};
                     this.channel = postal.channel("cryptobox");
-                    this.logger = new logdown_1.default({ prefix: 'cryptobox.Cryptobox' });
+                    this.logger = new logdown_1.default({ prefix: 'cryptobox.Cryptobox', minLength: 26 });
                     this.logger.log("Constructed Cryptobox. Minimum limit of PreKeys '" + minimumAmountOfPreKeys + "' (1 Last Resort PreKey and " + (minimumAmountOfPreKeys - 1) + " others).");
                     this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
                     this.pk_store = new store.ReadOnlyStore(this.store);
