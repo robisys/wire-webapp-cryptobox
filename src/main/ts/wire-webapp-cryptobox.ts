@@ -22,6 +22,7 @@ import Dexie from "dexie";
 import * as bazinga64 from "bazinga64";
 import * as Proteus from "wire-webapp-proteus";
 import postal = require("postal");
+import Logdown from "logdown";
 
 export module store {
   export interface CryptoboxStore {
@@ -224,10 +225,13 @@ export module store {
       PRE_KEYS: "prekeys",
       SESSIONS: "sessions"
     };
+    private logger: Logdown;
 
     private localIdentityKey: string = 'local_identity';
 
     constructor(identifier: string | Dexie) {
+      this.logger = new Logdown({prefix: 'cryptobox.store.IndexedDB'});
+
       if (typeof indexedDB === "undefined") {
         let warning = `IndexedDB isn't supported by your platform.`;
         throw new Error(warning);
@@ -246,13 +250,13 @@ export module store {
       }
 
       this.db.on('blocked', (event) => {
-        console.warn(`Database access to '${this.db.name}' got blocked.`, event);
+        this.logger.warn(`Database access to '${this.db.name}' got blocked.`, event);
         this.db.close();
       });
     }
 
     public init(): Dexie.Promise<Dexie> {
-      console.log(`Connecting to IndexedDB database '${this.db.name}'...`);
+      this.logger.log(`Connecting to IndexedDB database '${this.db.name}'...`);
       return this.db.open();
     }
 
@@ -273,7 +277,7 @@ export module store {
             return store.get(primary_key);
           }).then((record: any) => {
           if (record) {
-            console.log(`Loaded record '${primary_key}' from store '${store_name}'.`, record);
+            this.logger.log(`Loaded record '${primary_key}' from store '${store_name}'.`, record);
             resolve(record);
           } else {
             reject(new Error(`Record '${primary_key}' not found in store '${store_name}'.`));
@@ -287,7 +291,7 @@ export module store {
         this.validate_store(store_name).then((store: Dexie.Table<any, any>) => {
           return store.put(entity, primary_key);
         }).then((key: any) => {
-          console.log(`Saved record '${primary_key}' into store '${store_name}'.`, entity);
+          this.logger.log(`Saved record '${primary_key}' into store '${store_name}'.`, entity);
           resolve(key);
         });
       });
@@ -305,7 +309,7 @@ export module store {
 
     public delete_all(): Promise<boolean> {
       return new Promise((resolve, reject) => {
-        console.info(`Deleting '${this.db.name}'.`);
+        this.logger.info(`Deleting '${this.db.name}'.`);
         this.db.delete()
           .then(function () {
             resolve(true);
@@ -433,7 +437,7 @@ export module store {
         this.validate_store(this.TABLE.PRE_KEYS).then((store: Dexie.Table<any, any>) => {
           return store.bulkAdd(items, keys);
         }).then(() => {
-          console.log(`Saved a batch of '${items.length}' PreKeys. From ID '${items[0].id}' to ID '${items[items.length - 1].id}'.`, items);
+          this.logger.log(`Saved a batch of '${items.length}' PreKeys. From ID '${items[0].id}' to ID '${items[items.length - 1].id}'.`, items);
           resolve(prekeys);
         }).catch(reject);
 
@@ -704,14 +708,16 @@ export class Cryptobox {
   private cachedSessions: Object = {};
   private channel = postal.channel("cryptobox");
 
+  private logger: Logdown;
+  private minimumAmountOfPreKeys: number;
   private pk_store: store.ReadOnlyStore;
   private store: store.CryptoboxStore;
-  private minimumAmountOfPreKeys: number;
 
   public identity: Proteus.keys.IdentityKeyPair;
 
   constructor(cryptoBoxStore: store.CryptoboxStore, minimumAmountOfPreKeys: number = 1) {
-    console.log(`Constructed Cryptobox. Minimum limit of PreKeys '${minimumAmountOfPreKeys}' (1 Last Resort PreKey and ${minimumAmountOfPreKeys - 1} others).`);
+    this.logger = new Logdown({prefix: 'cryptobox.Cryptobox'});
+    this.logger.log(`Constructed Cryptobox. Minimum limit of PreKeys '${minimumAmountOfPreKeys}' (1 Last Resort PreKey and ${minimumAmountOfPreKeys - 1} others).`);
     this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
     this.pk_store = new store.ReadOnlyStore(this.store);
     this.store = cryptoBoxStore;
@@ -722,7 +728,7 @@ export class Cryptobox {
       this.store.load_identity()
         .catch(() => {
           let identity: Proteus.keys.IdentityKeyPair = Proteus.keys.IdentityKeyPair.new();
-          console.info(`Created new identity ${identity.public_key.fingerprint()}.`);
+          this.logger.info(`Created new identity ${identity.public_key.fingerprint()}.`);
           return this.store.save_identity(identity);
         })
         .then((identity) => {
@@ -738,7 +744,7 @@ export class Cryptobox {
         })
         .then(() => {
           // TODO: Insert total amount of PreKeys (from cache) into "xx"
-          console.log(`Initialized Cryptobox with 'xx' PreKeys.`);
+          this.logger.log(`Initialized Cryptobox with 'xx' PreKeys.`);
           resolve(this);
         }).catch(reject);
     });
@@ -762,14 +768,14 @@ export class Cryptobox {
 
           highestId += 1;
 
-          console.log(`There are not enough available PreKeys. Generating '${missingAmount}' new PreKeys, starting from ID '${highestId}'...`)
+          this.logger.log(`There are not enough available PreKeys. Generating '${missingAmount}' new PreKeys, starting from ID '${highestId}'...`)
         }
 
         return this.new_prekeys(highestId, missingAmount);
       }).then((newPreKeys: Array<Proteus.keys.PreKey>) => {
         if (newPreKeys.length > 0) {
           this.channel.publish(this.EVENT.NEW_PREKEYS, newPreKeys);
-          console.log(`Published event '${this.EVENT.NEW_PREKEYS}'.`, newPreKeys);
+          this.logger.log(`Published event '${this.EVENT.NEW_PREKEYS}'.`, newPreKeys);
         }
         resolve(newPreKeys);
       }).catch(reject);

@@ -3,6 +3,7 @@
     "bazinga64": "3.0.3",
     "dexie": "1.5.0",
     "postal.js": "2.0.4",
+    "logdown":  "https://github.com/wireapp/logdown.js.git#11f391ac9c5fdf0a538947b90b709b05b9e99c63",
     "system.js": "0.19.39",
     "wire-webapp-proteus": "https://github.com/wireapp/proteus.js.git#v2.1.2"
   },

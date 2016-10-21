@@ -54,6 +54,7 @@ export declare module store {
         private db;
         private prekeys;
         private TABLE;
+        private logger;
         private localIdentityKey;
         constructor(identifier: string | Dexie);
         init(): Dexie.Promise<Dexie>;
@@ -119,9 +120,10 @@ export declare class Cryptobox {
     };
     private cachedSessions;
     private channel;
+    private logger;
+    private minimumAmountOfPreKeys;
     private pk_store;
     private store;
-    private minimumAmountOfPreKeys;
     identity: Proteus.keys.IdentityKeyPair;
     constructor(cryptoBoxStore: store.CryptoboxStore, minimumAmountOfPreKeys?: number);
     init(): Promise<Cryptobox>;

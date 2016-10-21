@@ -9,6 +9,9 @@
     "lodash@copy": [
       "lodash/dist/lodash.js"
     ],
+    "logdown@copy": [
+      "logdown/dist/index.js"
+    ],
     "postal.js@copy": [
       "postal.js/lib/postal.js"
     ],

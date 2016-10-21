@@ -17,7 +17,7 @@
  *
  */
 
-System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], function(exports_1, context_1) {
+System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal", "logdown"], function(exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
     var __extends = (this && this.__extends) || function (d, b) {
@@ -25,7 +25,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
-    var dexie_1, bazinga64, Proteus, postal;
+    var dexie_1, bazinga64, Proteus, postal, logdown_1;
     var store, CryptoboxSession, Cryptobox;
     return {
         setters:[
@@ -40,6 +40,9 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
             },
             function (postal_1) {
                 postal = postal_1;
+            },
+            function (logdown_1_1) {
+                logdown_1 = logdown_1_1;
             }],
         execute: function() {
             (function (store_1) {
@@ -171,6 +174,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
                             SESSIONS: "sessions"
                         };
                         this.localIdentityKey = 'local_identity';
+                        this.logger = new logdown_1.default({ prefix: 'cryptobox.store.IndexedDB' });
                         if (typeof indexedDB === "undefined") {
                             var warning = "IndexedDB isn't supported by your platform.";
                             throw new Error(warning);
@@ -187,12 +191,12 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
                             this.db = identifier;
                         }
                         this.db.on('blocked', function (event) {
-                            console.warn("Database access to '" + _this.db.name + "' got blocked.", event);
+                            _this.logger.warn("Database access to '" + _this.db.name + "' got blocked.", event);
                             _this.db.close();
                         });
                     }
                     IndexedDB.prototype.init = function () {
-                        console.log("Connecting to IndexedDB database '" + this.db.name + "'...");
+                        this.logger.log("Connecting to IndexedDB database '" + this.db.name + "'...");
                         return this.db.open();
                     };
                     IndexedDB.prototype.delete = function (store_name, primary_key) {
@@ -213,7 +217,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
                                 return store.get(primary_key);
                             }).then(function (record) {
                                 if (record) {
-                                    console.log("Loaded record '" + primary_key + "' from store '" + store_name + "'.", record);
+                                    _this.logger.log("Loaded record '" + primary_key + "' from store '" + store_name + "'.", record);
                                     resolve(record);
                                 }
                                 else {
@@ -228,7 +232,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
                             _this.validate_store(store_name).then(function (store) {
                                 return store.put(entity, primary_key);
                             }).then(function (key) {
-                                console.log("Saved record '" + primary_key + "' into store '" + store_name + "'.", entity);
+                                _this.logger.log("Saved record '" + primary_key + "' into store '" + store_name + "'.", entity);
                                 resolve(key);
                             });
                         });
@@ -247,7 +251,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
                     IndexedDB.prototype.delete_all = function () {
                         var _this = this;
                         return new Promise(function (resolve, reject) {
-                            console.info("Deleting '" + _this.db.name + "'.");
+                            _this.logger.info("Deleting '" + _this.db.name + "'.");
                             _this.db.delete()
                                 .then(function () {
                                 resolve(true);
@@ -364,7 +368,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
                             _this.validate_store(_this.TABLE.PRE_KEYS).then(function (store) {
                                 return store.bulkAdd(items, keys);
                             }).then(function () {
-                                console.log("Saved a batch of '" + items.length + "' PreKeys. From ID '" + items[0].id + "' to ID '" + items[items.length - 1].id + "'.", items);
+                                _this.logger.log("Saved a batch of '" + items.length + "' PreKeys. From ID '" + items[0].id + "' to ID '" + items[items.length - 1].id + "'.", items);
                                 resolve(prekeys);
                             }).catch(reject);
                         });
@@ -618,7 +622,8 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
                     };
                     this.cachedSessions = {};
                     this.channel = postal.channel("cryptobox");
-                    console.log("Constructed Cryptobox. Minimum limit of PreKeys '" + minimumAmountOfPreKeys + "' (1 Last Resort PreKey and " + (minimumAmountOfPreKeys - 1) + " others).");
+                    this.logger = new logdown_1.default({ prefix: 'cryptobox.Cryptobox' });
+                    this.logger.log("Constructed Cryptobox. Minimum limit of PreKeys '" + minimumAmountOfPreKeys + "' (1 Last Resort PreKey and " + (minimumAmountOfPreKeys - 1) + " others).");
                     this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
                     this.pk_store = new store.ReadOnlyStore(this.store);
                     this.store = cryptoBoxStore;
@@ -629,7 +634,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
                         _this.store.load_identity()
                             .catch(function () {
                             var identity = Proteus.keys.IdentityKeyPair.new();
-                            console.info("Created new identity " + identity.public_key.fingerprint() + ".");
+                            _this.logger.info("Created new identity " + identity.public_key.fingerprint() + ".");
                             return _this.store.save_identity(identity);
                         })
                             .then(function (identity) {
@@ -644,7 +649,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
                             return _this.generate_required_prekeys();
                         })
                             .then(function () {
-                            console.log("Initialized Cryptobox with 'xx' PreKeys.");
+                            _this.logger.log("Initialized Cryptobox with 'xx' PreKeys.");
                             resolve(_this);
                         }).catch(reject);
                     });
@@ -664,13 +669,13 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal"], functio
                                     }
                                 });
                                 highestId += 1;
-                                console.log("There are not enough available PreKeys. Generating '" + missingAmount + "' new PreKeys, starting from ID '" + highestId + "'...");
+                                _this.logger.log("There are not enough available PreKeys. Generating '" + missingAmount + "' new PreKeys, starting from ID '" + highestId + "'...");
                             }
                             return _this.new_prekeys(highestId, missingAmount);
                         }).then(function (newPreKeys) {
                             if (newPreKeys.length > 0) {
                                 _this.channel.publish(_this.EVENT.NEW_PREKEYS, newPreKeys);
-                                console.log("Published event '" + _this.EVENT.NEW_PREKEYS + "'.", newPreKeys);
+                                _this.logger.log("Published event '" + _this.EVENT.NEW_PREKEYS + "'.", newPreKeys);
                             }
                             resolve(newPreKeys);
                         }).catch(reject);
