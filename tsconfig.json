@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
-    "declaration": true,
+    "declaration": false,
     "module": "system",
     "moduleResolution": "node",
     "noEmitOnError": true,
     "noImplicitAny": false,
     "noImplicitReturns": true,
     "removeComments": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "target": "es5"
   },
   "exclude": [

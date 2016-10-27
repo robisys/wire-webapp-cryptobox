@@ -7,38 +7,32 @@
     <link rel="shortcut icon" href="data:image/x-icon;" type="image/x-icon" />
     <script src="lib/static/system.js/system.js"></script>
     <script src="util/system.config.js"></script>
-    <script src="util/system.yuml.js"></script>
+    <script src="system/wire-webapp-cryptobox.js"></script>
   </head>
   <body>
     <script>
-      var box;
-      var cryptobox;
-      var store;
+      var cryptobox = undefined;
 
-      Promise.all([
-        System.import('postal'),
-        System.import('wire-webapp-cryptobox')
-      ])
-        .then(function(module) {
-          var postal = module[0];
-          var channel = postal.channel('cryptobox');
-          channel.subscribe('new-prekeys', function(data) {
-            console.log('Received \'' + data.length + '\' new PreKey(s). We need to upload them...');
-          });
-
-          cryptobox = module[1];
-          store = new cryptobox.store.IndexedDB('demo_page');
-          return store.init();
-        })
-        .then(function() {
-          box = new cryptobox.Cryptobox(store, 5);
-          return box.init();
-        })
-        .then(function(instance) {
-          var fingerprint = instance.identity.public_key.fingerprint();
-          var message = 'Local Identity: ' + fingerprint;
-          document.write(message);
+      System.import('postal').then(function(postal) {
+        var channelName = 'cryptobox';
+        var channel = postal.channel('cryptobox');
+        channel.subscribe('new-prekeys', function(data) {
+          console.log('postal.js :: Received \'' + data.length + '\' new PreKey(s). We need to upload them...');
         });
+        console.log('postal.js :: Subscribed to channel "' + channelName + '".');
+
+        return System.import('wire-webapp-cryptobox');
+      }).then(function(module) {
+        cryptobox = module.default;
+
+        var storage = new cryptobox.store.IndexedDB('demo_page');
+        var box = new cryptobox.Cryptobox(storage, 10);
+        return box.init();
+      }).then(function(instance) {
+        var fingerprint = instance.identity.public_key.fingerprint();
+        var message = 'Local Identity: ' + fingerprint;
+        document.write(message);
+      });
     </script>
   </body>
 </html>

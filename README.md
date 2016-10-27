@@ -9,35 +9,3 @@ For licensing information, see the attached LICENSE file and the list of third-p
 ## Build Status
 
 [![Build Status](https://travis-ci.org/wireapp/wire-webapp-cryptobox.svg?branch=master)](https://travis-ci.org/wireapp/wire-webapp-cryptobox)
-
-## Minimal Working Example
-
-**Node.js**
-
-```javascript
-const cryptobox = require('wire-webapp-cryptobox');
-
-var store = new cryptobox.store.Cache();
-var box = new cryptobox.Cryptobox(store);
-
-box.init()
-.then(function (instance) {
-  var fingerprint = instance.identity.public_key.fingerprint();
-  console.log(`Hello, my public fingerprint is '${fingerprint}'.`);
-});
-```
-
-**Browser**
-
-```javascript
-System.import('wire-webapp-cryptobox')
-.then(function(cryptobox) {
-  var store = new cryptobox.store.Cache();
-  var box = new cryptobox.Cryptobox(store);
-  return box.init();
-})
-.then(function(instance) {
-  var fingerprint = instance.identity.public_key.fingerprint();
-  console.log(`Hello, my public fingerprint is '${fingerprint}'.`);
-});
-```

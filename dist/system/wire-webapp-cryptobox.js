@@ -1,586 +1,69 @@
-/*
- * Wire
- * Copyright (C) 2016 Wire Swiss GmbH
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see http://www.gnu.org/licenses/.
- *
- */
-
-System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal", "logdown"], function(exports_1, context_1) {
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
+System.register("store/CryptoboxStore", [], function(exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
-    var __extends = (this && this.__extends) || function (d, b) {
-        for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-    var dexie_1, bazinga64, Proteus, postal, logdown_1;
-    var store, CryptoboxSession, Cryptobox;
+    return {
+        setters:[],
+        execute: function() {
+        }
+    }
+});
+System.register("store/ReadOnlyStore", ["wire-webapp-proteus"], function(exports_2, context_2) {
+    "use strict";
+    var __moduleName = context_2 && context_2.id;
+    var Proteus;
+    var ReadOnlyStore;
     return {
         setters:[
-            function (dexie_1_1) {
-                dexie_1 = dexie_1_1;
-            },
-            function (bazinga64_1) {
-                bazinga64 = bazinga64_1;
-            },
             function (Proteus_1) {
                 Proteus = Proteus_1;
-            },
-            function (postal_1) {
-                postal = postal_1;
-            },
-            function (logdown_1_1) {
-                logdown_1 = logdown_1_1;
             }],
         execute: function() {
-            (function (store_1) {
-                var Cache = (function () {
-                    function Cache() {
-                        this.prekeys = {};
-                        this.sessions = {};
-                    }
-                    Cache.prototype.delete_all = function () {
-                        var _this = this;
-                        return new Promise(function (resolve) {
-                            _this.identity = undefined;
-                            _this.prekeys = {};
-                            _this.sessions = {};
-                            resolve(true);
-                        });
-                    };
-                    Cache.prototype.delete_prekey = function (prekey_id) {
-                        var _this = this;
-                        return new Promise(function (resolve) {
-                            delete _this.prekeys[prekey_id];
-                            resolve(prekey_id);
-                        });
-                    };
-                    Cache.prototype.delete_session = function (session_id) {
-                        var _this = this;
-                        return new Promise(function (resolve) {
-                            delete _this.sessions[session_id];
-                            resolve(session_id);
-                        });
-                    };
-                    Cache.prototype.load_identity = function () {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            if (_this.identity) {
-                                resolve(_this.identity);
-                            }
-                            else {
-                                reject(new Error("No local identity present."));
-                            }
-                        });
-                    };
-                    Cache.prototype.load_prekey = function (prekey_id) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            var serialised = _this.prekeys[prekey_id];
-                            if (serialised) {
-                                resolve(Proteus.keys.PreKey.deserialise(serialised));
-                            }
-                            else {
-                                reject(new Error("PreKey with ID '" + prekey_id + "' not found."));
-                            }
-                        });
-                    };
-                    Cache.prototype.load_prekeys = function () {
-                        var _this = this;
-                        return new Promise(function (resolve) {
-                            var all_prekeys = Object.keys(_this.prekeys).map(function (key) {
-                                return _this.prekeys[key];
-                            });
-                            resolve(all_prekeys);
-                        });
-                    };
-                    Cache.prototype.load_session = function (identity, session_id) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            var serialised = _this.sessions[session_id];
-                            if (serialised) {
-                                resolve(Proteus.session.Session.deserialise(identity, serialised));
-                            }
-                            else {
-                                reject(new Error("Session with ID '" + session_id + "' not found."));
-                            }
-                        });
-                    };
-                    Cache.prototype.save_identity = function (identity) {
-                        var _this = this;
-                        return new Promise(function (resolve) {
-                            _this.identity = identity;
-                            resolve(_this.identity);
-                        });
-                    };
-                    Cache.prototype.save_prekey = function (preKey) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            try {
-                                _this.prekeys[preKey.key_id] = preKey.serialise();
-                            }
-                            catch (error) {
-                                return reject(new Error("PreKey serialization problem: '" + error.message + "'"));
-                            }
-                            resolve(preKey);
-                        });
-                    };
-                    Cache.prototype.save_prekeys = function (preKeys) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            var savePromises = [];
-                            preKeys.forEach(function (preKey) {
-                                savePromises.push(_this.save_prekey(preKey));
-                            });
-                            Promise.all(savePromises).then(function () {
-                                resolve(preKeys);
-                            }).catch(reject);
-                        });
-                    };
-                    Cache.prototype.save_session = function (session_id, session) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            try {
-                                _this.sessions[session_id] = session.serialise();
-                            }
-                            catch (error) {
-                                return reject(new Error("Session serialization problem: '" + error.message + "'"));
-                            }
-                            resolve(session);
-                        });
-                    };
-                    return Cache;
-                }());
-                store_1.Cache = Cache;
-                var IndexedDB = (function () {
-                    function IndexedDB(identifier) {
-                        var _this = this;
-                        this.prekeys = {};
-                        this.TABLE = {
-                            LOCAL_IDENTITY: "keys",
-                            PRE_KEYS: "prekeys",
-                            SESSIONS: "sessions"
-                        };
-                        this.localIdentityKey = 'local_identity';
-                        this.logger = new logdown_1.default({ prefix: 'cryptobox.store.IndexedDB', minLength: 26 });
-                        if (typeof indexedDB === "undefined") {
-                            var warning = "IndexedDB isn't supported by your platform.";
-                            throw new Error(warning);
-                        }
-                        if (typeof identifier === 'string') {
-                            var schema = {};
-                            schema[this.TABLE.LOCAL_IDENTITY] = '';
-                            schema[this.TABLE.PRE_KEYS] = '';
-                            schema[this.TABLE.SESSIONS] = '';
-                            this.db = new dexie_1.default("cryptobox@" + identifier);
-                            this.db.version(1).stores(schema);
+            ReadOnlyStore = (function (_super) {
+                __extends(ReadOnlyStore, _super);
+                function ReadOnlyStore(store) {
+                    _super.call(this);
+                    this.store = store;
+                    this.removed_prekeys = [];
+                }
+                ReadOnlyStore.prototype.get_prekey = function (prekey_id) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        if (_this.removed_prekeys.indexOf(prekey_id) !== -1) {
+                            reject(new Error("PreKey '" + prekey_id + "' not found."));
                         }
                         else {
-                            this.db = identifier;
+                            _this.store.load_prekey(prekey_id).then(function (pk) {
+                                resolve(pk);
+                            });
                         }
-                        this.db.on('blocked', function (event) {
-                            _this.logger.warn("Database access to '" + _this.db.name + "' got blocked.", event);
-                            _this.db.close();
-                        });
-                    }
-                    IndexedDB.prototype.init = function () {
-                        this.logger.log("Connecting to IndexedDB database '" + this.db.name + "'...");
-                        return this.db.open();
-                    };
-                    IndexedDB.prototype.delete = function (store_name, primary_key) {
-                        var _this = this;
-                        return new dexie_1.default.Promise(function (resolve) {
-                            _this.validate_store(store_name).then(function (store) {
-                                return store.delete(primary_key);
-                            }).then(function () {
-                                resolve(primary_key);
-                            });
-                        });
-                    };
-                    IndexedDB.prototype.load = function (store_name, primary_key) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            _this.validate_store(store_name)
-                                .then(function (store) {
-                                return store.get(primary_key);
-                            }).then(function (record) {
-                                if (record) {
-                                    _this.logger.log("Loaded record '" + primary_key + "' from store '" + store_name + "'.", record);
-                                    resolve(record);
-                                }
-                                else {
-                                    reject(new Error("Record '" + primary_key + "' not found in store '" + store_name + "'."));
-                                }
-                            }).catch(reject);
-                        });
-                    };
-                    IndexedDB.prototype.save = function (store_name, primary_key, entity) {
-                        var _this = this;
-                        return new dexie_1.default.Promise(function (resolve) {
-                            _this.validate_store(store_name).then(function (store) {
-                                return store.put(entity, primary_key);
-                            }).then(function (key) {
-                                _this.logger.log("Saved record '" + primary_key + "' into store '" + store_name + "'.", entity);
-                                resolve(key);
-                            });
-                        });
-                    };
-                    IndexedDB.prototype.validate_store = function (store_name) {
-                        var _this = this;
-                        return new dexie_1.default.Promise(function (resolve, reject) {
-                            if (_this.db[store_name]) {
-                                resolve(_this.db[store_name]);
-                            }
-                            else {
-                                reject(new Error("Data store '" + store_name + "' not found."));
-                            }
-                        });
-                    };
-                    IndexedDB.prototype.delete_all = function () {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            _this.logger.info("Deleting '" + _this.db.name + "'.");
-                            _this.db.delete()
-                                .then(function () {
-                                resolve(true);
-                            })
-                                .catch(reject);
-                        });
-                    };
-                    IndexedDB.prototype.delete_prekey = function (prekey_id) {
-                        var _this = this;
-                        return new Promise(function (resolve) {
-                            _this.delete(_this.TABLE.PRE_KEYS, prekey_id.toString()).then(function (primary_key) {
-                                resolve(primary_key);
-                            });
-                        });
-                    };
-                    IndexedDB.prototype.delete_session = function (session_id) {
-                        var _this = this;
-                        return new Promise(function (resolve) {
-                            _this.delete(_this.TABLE.SESSIONS, session_id).then(function (primary_key) {
-                                resolve(primary_key);
-                            });
-                        });
-                    };
-                    IndexedDB.prototype.load_identity = function () {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            _this.load(_this.TABLE.LOCAL_IDENTITY, _this.localIdentityKey).then(function (payload) {
-                                if (payload) {
-                                    var bytes = bazinga64.Decoder.fromBase64(payload.serialised).asBytes;
-                                    var identity = Proteus.keys.IdentityKeyPair.deserialise(bytes.buffer);
-                                    resolve(identity);
-                                }
-                                else {
-                                    reject(new Error("No local identity present."));
-                                }
-                            }).catch(reject);
-                        });
-                    };
-                    IndexedDB.prototype.load_prekey = function (prekey_id) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            _this.load(_this.TABLE.PRE_KEYS, prekey_id.toString()).then(function (record) {
-                                var bytes = bazinga64.Decoder.fromBase64(record.serialised).asBytes;
-                                resolve(Proteus.keys.PreKey.deserialise(bytes.buffer));
-                            }).catch(reject);
-                        });
-                    };
-                    IndexedDB.prototype.load_prekeys = function () {
-                        var _this = this;
-                        return new dexie_1.default.Promise(function (resolve, reject) {
-                            _this.validate_store(_this.TABLE.PRE_KEYS).then(function (store) {
-                                return store.toArray();
-                            }).then(function (records) {
-                                var preKeys = [];
-                                records.forEach(function (record) {
-                                    var bytes = bazinga64.Decoder.fromBase64(record.serialised).asBytes;
-                                    var preKey = Proteus.keys.PreKey.deserialise(bytes.buffer);
-                                    preKeys.push(preKey);
-                                });
-                                resolve(preKeys);
-                            }).catch(reject);
-                        });
-                    };
-                    IndexedDB.prototype.load_session = function (identity, session_id) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            _this.load(_this.TABLE.SESSIONS, session_id).then(function (payload) {
-                                var bytes = bazinga64.Decoder.fromBase64(payload.serialised).asBytes;
-                                resolve(Proteus.session.Session.deserialise(identity, bytes.buffer));
-                            }).catch(reject);
-                        });
-                    };
-                    IndexedDB.prototype.save_identity = function (identity) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            _this.identity = identity;
-                            var serialised = bazinga64.Encoder.toBase64(identity.serialise()).asString;
-                            var payload = new SerialisedRecord(serialised, _this.localIdentityKey);
-                            _this.save(_this.TABLE.LOCAL_IDENTITY, payload.id, payload).then(function (primaryKey) {
-                                var fingerprint = identity.public_key.fingerprint();
-                                var message = ("Saved local identity '" + fingerprint + "'")
-                                    + (" with key '" + primaryKey + "' into storage '" + _this.TABLE.LOCAL_IDENTITY + "'");
-                                resolve(identity);
-                            }).catch(reject);
-                        });
-                    };
-                    IndexedDB.prototype.save_prekey = function (prekey) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            _this.prekeys[prekey.key_id] = prekey;
-                            var serialised = bazinga64.Encoder.toBase64(prekey.serialise()).asString;
-                            var payload = new SerialisedRecord(serialised, prekey.key_id.toString());
-                            _this.save(_this.TABLE.PRE_KEYS, payload.id, payload).then(function (primaryKey) {
-                                var message = "Saved PreKey with ID '" + prekey.key_id + "' into storage '" + _this.TABLE.PRE_KEYS + "'";
-                                resolve(prekey);
-                            }).catch(reject);
-                        });
-                    };
-                    IndexedDB.prototype.save_prekeys = function (prekeys) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            if (prekeys.length === 0) {
-                                resolve(prekeys);
-                            }
-                            var items = [];
-                            var keys = [];
-                            prekeys.forEach(function (preKey) {
-                                var serialised = bazinga64.Encoder.toBase64(preKey.serialise()).asString;
-                                var key = preKey.key_id.toString();
-                                var payload = new SerialisedRecord(serialised, key);
-                                items.push(payload);
-                                keys.push(key);
-                            });
-                            _this.validate_store(_this.TABLE.PRE_KEYS).then(function (store) {
-                                return store.bulkAdd(items, keys);
-                            }).then(function () {
-                                _this.logger.log("Saved a batch of '" + items.length + "' PreKeys. From ID '" + items[0].id + "' to ID '" + items[items.length - 1].id + "'.", items);
-                                resolve(prekeys);
-                            }).catch(reject);
-                        });
-                    };
-                    IndexedDB.prototype.save_session = function (session_id, session) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            var serialised = bazinga64.Encoder.toBase64(session.serialise()).asString;
-                            var payload = new SerialisedRecord(serialised, session_id);
-                            _this.save(_this.TABLE.SESSIONS, payload.id, payload).then(function (primaryKey) {
-                                var message = "Saved session with key '" + session_id + "' into storage '" + _this.TABLE.SESSIONS + "'";
-                                resolve(session);
-                            }).catch(reject);
-                        });
-                    };
-                    return IndexedDB;
-                }());
-                store_1.IndexedDB = IndexedDB;
-                var LocalStorage = (function () {
-                    function LocalStorage(identifier) {
-                        if (identifier === void 0) { identifier = "temp"; }
-                        this.localIdentityKey = 'local_identity';
-                        if (typeof localStorage === "undefined") {
-                            var warning = "Local Storage isn't supported by your platform.";
-                            throw new Error(warning);
-                        }
-                        else {
-                            this.localIdentityStore = "cryptobox@" + identifier + "@identity";
-                            this.preKeyStore = "cryptobox@" + identifier + "@prekey";
-                            this.sessionStore = "cryptobox@" + identifier + "@session";
-                            this.storage = localStorage;
-                        }
-                    }
-                    LocalStorage.prototype.delete = function (store_name, primary_key) {
-                        var _this = this;
-                        return new Promise(function (resolve) {
-                            var key = store_name + "@" + primary_key;
-                            _this.storage.removeItem(key);
-                            resolve(key);
-                        });
-                    };
-                    LocalStorage.prototype.load = function (store_name, primary_key) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            var item = _this.storage.getItem(store_name + "@" + primary_key);
-                            if (item) {
-                                resolve(item);
-                            }
-                            else {
-                                reject(new Error("Item '" + primary_key + "' not found in '" + store_name + "'."));
-                            }
-                        });
-                    };
-                    ;
-                    LocalStorage.prototype.save = function (store_name, primary_key, entity) {
-                        var _this = this;
-                        return new Promise(function (resolve) {
-                            var key = store_name + "@" + primary_key;
-                            _this.storage.setItem(key, entity);
-                            resolve(key);
-                        });
-                    };
-                    LocalStorage.prototype.delete_all = function () {
-                        var _this = this;
-                        return new Promise(function (resolve) {
-                            var removed_items = false;
-                            Object.keys(localStorage).forEach(function (key) {
-                                if (key.indexOf(_this.localIdentityStore) > -1 ||
-                                    key.indexOf(_this.preKeyStore) > -1 ||
-                                    key.indexOf(_this.sessionStore) > -1) {
-                                    removed_items = true;
-                                    localStorage.removeItem(key);
-                                }
-                            });
-                            resolve(removed_items);
-                        });
-                    };
-                    LocalStorage.prototype.delete_prekey = function (prekey_id) {
-                        return this.delete(this.preKeyStore, prekey_id.toString());
-                    };
-                    LocalStorage.prototype.delete_session = function (session_id) {
-                        return this.delete(this.sessionStore, session_id);
-                    };
-                    LocalStorage.prototype.load_identity = function () {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            _this.load(_this.localIdentityStore, _this.localIdentityKey).then(function (payload) {
-                                if (payload) {
-                                    var bytes = bazinga64.Decoder.fromBase64(payload).asBytes;
-                                    var ikp = Proteus.keys.IdentityKeyPair.deserialise(bytes.buffer);
-                                    resolve(ikp);
-                                }
-                                else {
-                                    reject(new Error("No local identity present."));
-                                }
-                            }).catch(reject);
-                        });
-                    };
-                    LocalStorage.prototype.load_prekey = function (prekey_id) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            _this.load(_this.preKeyStore, prekey_id.toString()).then(function (serialised) {
-                                var bytes = bazinga64.Decoder.fromBase64(serialised).asBytes;
-                                resolve(Proteus.keys.PreKey.deserialise(bytes.buffer));
-                            }).catch(reject);
-                        });
-                    };
-                    LocalStorage.prototype.load_prekeys = function () {
-                        var _this = this;
-                        var prekey_promises = [];
-                        Object.keys(localStorage).forEach(function (key) {
-                            if (key.indexOf(_this.preKeyStore) > -1) {
-                                var separator = '@';
-                                var prekey_id = key.substr(key.lastIndexOf(separator) + separator.length);
-                                var promise = _this.load_prekey(parseInt(prekey_id));
-                                prekey_promises.push(promise);
-                            }
-                        });
-                        return Promise.all(prekey_promises);
-                    };
-                    LocalStorage.prototype.load_session = function (identity, session_id) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            _this.load(_this.sessionStore, session_id).then(function (serialised) {
-                                var bytes = bazinga64.Decoder.fromBase64(serialised).asBytes;
-                                resolve(Proteus.session.Session.deserialise(identity, bytes.buffer));
-                            }).catch(reject);
-                        });
-                    };
-                    LocalStorage.prototype.save_identity = function (identity) {
-                        var _this = this;
-                        var fingerprint = identity.public_key.fingerprint();
-                        var serialised = bazinga64.Encoder.toBase64(identity.serialise()).asString;
-                        var payload = new SerialisedRecord(serialised, this.localIdentityKey);
-                        return new Promise(function (resolve, reject) {
-                            _this.save(_this.localIdentityStore, payload.id, payload.serialised).then(function (key) {
-                                var message = "Saved local identity '" + fingerprint + "' with key '" + key + "'.";
-                                resolve(identity);
-                            }).catch(reject);
-                        });
-                    };
-                    LocalStorage.prototype.save_prekey = function (preKey) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            var serialised = bazinga64.Encoder.toBase64(preKey.serialise()).asString;
-                            var payload = new SerialisedRecord(serialised, preKey.key_id.toString());
-                            _this.save(_this.preKeyStore, payload.id, payload.serialised).then(function () {
-                                resolve(preKey);
-                            }).catch(reject);
-                        });
-                    };
-                    LocalStorage.prototype.save_prekeys = function (preKeys) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            var savePromises = [];
-                            preKeys.forEach(function (preKey) {
-                                savePromises.push(_this.save_prekey(preKey));
-                            });
-                            Promise.all(savePromises).then(function () {
-                                resolve(preKeys);
-                            }).catch(reject);
-                        });
-                    };
-                    LocalStorage.prototype.save_session = function (session_id, session) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            var serialised = bazinga64.Encoder.toBase64(session.serialise()).asString;
-                            var payload = new SerialisedRecord(serialised, session_id);
-                            _this.save(_this.sessionStore, payload.id, payload.serialised).then(function () {
-                                resolve(session);
-                            }).catch(reject);
-                        });
-                    };
-                    return LocalStorage;
-                }());
-                store_1.LocalStorage = LocalStorage;
-                var ReadOnlyStore = (function (_super) {
-                    __extends(ReadOnlyStore, _super);
-                    function ReadOnlyStore(store) {
-                        _super.call(this);
-                        this.store = store;
-                        this.removed_prekeys = [];
-                    }
-                    ReadOnlyStore.prototype.get_prekey = function (prekey_id) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            if (_this.removed_prekeys.indexOf(prekey_id) !== -1) {
-                                reject(new Error("PreKey '" + prekey_id + "' not found."));
-                            }
-                            else {
-                                _this.store.load_prekey(prekey_id).then(function (pk) {
-                                    resolve(pk);
-                                });
-                            }
-                        });
-                    };
-                    ReadOnlyStore.prototype.remove = function (prekey_id) {
-                        this.removed_prekeys.push(prekey_id);
-                        return Promise.resolve(prekey_id);
-                    };
-                    return ReadOnlyStore;
-                }(Proteus.session.PreKeyStore));
-                store_1.ReadOnlyStore = ReadOnlyStore;
-                var SerialisedRecord = (function () {
-                    function SerialisedRecord(serialised, id) {
-                        this.id = id;
-                        this.serialised = serialised;
-                    }
-                    return SerialisedRecord;
-                }());
-            })(store = store || (store = {}));
-            exports_1("store", store);
+                    });
+                };
+                ReadOnlyStore.prototype.remove = function (prekey_id) {
+                    this.removed_prekeys.push(prekey_id);
+                    return Promise.resolve(prekey_id);
+                };
+                return ReadOnlyStore;
+            }(Proteus.session.PreKeyStore));
+            exports_2("ReadOnlyStore", ReadOnlyStore);
+        }
+    }
+});
+System.register("CryptoboxSession", ["wire-webapp-proteus"], function(exports_3, context_3) {
+    "use strict";
+    var __moduleName = context_3 && context_3.id;
+    var Proteus;
+    var CryptoboxSession;
+    return {
+        setters:[
+            function (Proteus_2) {
+                Proteus = Proteus_2;
+            }],
+        execute: function() {
             CryptoboxSession = (function () {
                 function CryptoboxSession(id, pk_store, session) {
                     this.id = id;
@@ -613,7 +96,33 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal", "logdown
                 };
                 return CryptoboxSession;
             }());
-            exports_1("CryptoboxSession", CryptoboxSession);
+            exports_3("CryptoboxSession", CryptoboxSession);
+        }
+    }
+});
+System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSession", "store/ReadOnlyStore", "postal"], function(exports_4, context_4) {
+    "use strict";
+    var __moduleName = context_4 && context_4.id;
+    var Proteus, logdown_1, CryptoboxSession_1, ReadOnlyStore_1, postal;
+    var Cryptobox;
+    return {
+        setters:[
+            function (Proteus_3) {
+                Proteus = Proteus_3;
+            },
+            function (logdown_1_1) {
+                logdown_1 = logdown_1_1;
+            },
+            function (CryptoboxSession_1_1) {
+                CryptoboxSession_1 = CryptoboxSession_1_1;
+            },
+            function (ReadOnlyStore_1_1) {
+                ReadOnlyStore_1 = ReadOnlyStore_1_1;
+            },
+            function (postal_1) {
+                postal = postal_1;
+            }],
+        execute: function() {
             Cryptobox = (function () {
                 function Cryptobox(cryptoBoxStore, minimumAmountOfPreKeys) {
                     if (minimumAmountOfPreKeys === void 0) { minimumAmountOfPreKeys = 1; }
@@ -622,10 +131,13 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal", "logdown
                     };
                     this.cachedSessions = {};
                     this.channel = postal.channel("cryptobox");
+                    if (!cryptoBoxStore) {
+                        throw new Error("You cannot initialize Cryptobox without a storage component.");
+                    }
                     this.logger = new logdown_1.default({ prefix: 'cryptobox.Cryptobox', minLength: 26 });
                     this.logger.log("Constructed Cryptobox. Minimum limit of PreKeys '" + minimumAmountOfPreKeys + "' (1 Last Resort PreKey and " + (minimumAmountOfPreKeys - 1) + " others).");
                     this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
-                    this.pk_store = new store.ReadOnlyStore(this.store);
+                    this.pk_store = new ReadOnlyStore_1.ReadOnlyStore(this.store);
                     this.store = cryptoBoxStore;
                 }
                 Cryptobox.prototype.init = function () {
@@ -686,7 +198,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal", "logdown
                     return new Promise(function (resolve) {
                         var bundle = Proteus.keys.PreKeyBundle.deserialise(pre_key_bundle);
                         Proteus.session.Session.init_from_prekey(_this.identity, bundle).then(function (session) {
-                            return resolve(new CryptoboxSession(client_id, _this.pk_store, session));
+                            return resolve(new CryptoboxSession_1.CryptoboxSession(client_id, _this.pk_store, session));
                         });
                     });
                 };
@@ -704,7 +216,7 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal", "logdown
                             .then(function (tuple) {
                             var session = tuple[0];
                             var decrypted = tuple[1];
-                            var cryptoBoxSession = new CryptoboxSession(session_id, _this.pk_store, session);
+                            var cryptoBoxSession = new CryptoboxSession_1.CryptoboxSession(session_id, _this.pk_store, session);
                             resolve([cryptoBoxSession, decrypted]);
                         })
                             .catch(reject);
@@ -720,8 +232,8 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal", "logdown
                             _this.store.load_session(_this.identity, session_id)
                                 .then(function (session) {
                                 if (session) {
-                                    var pk_store = new store.ReadOnlyStore(_this.store);
-                                    var cryptoBoxSession = new CryptoboxSession(session_id, pk_store, session);
+                                    var pk_store = new ReadOnlyStore_1.ReadOnlyStore(_this.store);
+                                    var cryptoBoxSession = new CryptoboxSession_1.CryptoboxSession(session_id, pk_store, session);
                                     _this.cachedSessions[session_id] = cryptoBoxSession;
                                     resolve(cryptoBoxSession);
                                 }
@@ -830,7 +342,622 @@ System.register(["dexie", "bazinga64", "wire-webapp-proteus", "postal", "logdown
                 };
                 return Cryptobox;
             }());
-            exports_1("Cryptobox", Cryptobox);
+            exports_4("Cryptobox", Cryptobox);
+        }
+    }
+});
+System.register("store/Cache", ["wire-webapp-proteus"], function(exports_5, context_5) {
+    "use strict";
+    var __moduleName = context_5 && context_5.id;
+    var Proteus;
+    var Cache;
+    return {
+        setters:[
+            function (Proteus_4) {
+                Proteus = Proteus_4;
+            }],
+        execute: function() {
+            Cache = (function () {
+                function Cache() {
+                    this.prekeys = {};
+                    this.sessions = {};
+                }
+                Cache.prototype.delete_all = function () {
+                    var _this = this;
+                    return new Promise(function (resolve) {
+                        _this.identity = undefined;
+                        _this.prekeys = {};
+                        _this.sessions = {};
+                        resolve(true);
+                    });
+                };
+                Cache.prototype.delete_prekey = function (prekey_id) {
+                    var _this = this;
+                    return new Promise(function (resolve) {
+                        delete _this.prekeys[prekey_id];
+                        resolve(prekey_id);
+                    });
+                };
+                Cache.prototype.delete_session = function (session_id) {
+                    var _this = this;
+                    return new Promise(function (resolve) {
+                        delete _this.sessions[session_id];
+                        resolve(session_id);
+                    });
+                };
+                Cache.prototype.load_identity = function () {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        if (_this.identity) {
+                            resolve(_this.identity);
+                        }
+                        else {
+                            reject(new Error("No local identity present."));
+                        }
+                    });
+                };
+                Cache.prototype.load_prekey = function (prekey_id) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        var serialised = _this.prekeys[prekey_id];
+                        if (serialised) {
+                            resolve(Proteus.keys.PreKey.deserialise(serialised));
+                        }
+                        else {
+                            reject(new Error("PreKey with ID '" + prekey_id + "' not found."));
+                        }
+                    });
+                };
+                Cache.prototype.load_prekeys = function () {
+                    var _this = this;
+                    return new Promise(function (resolve) {
+                        var all_prekeys = Object.keys(_this.prekeys).map(function (key) {
+                            return _this.prekeys[key];
+                        });
+                        resolve(all_prekeys);
+                    });
+                };
+                Cache.prototype.load_session = function (identity, session_id) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        var serialised = _this.sessions[session_id];
+                        if (serialised) {
+                            resolve(Proteus.session.Session.deserialise(identity, serialised));
+                        }
+                        else {
+                            reject(new Error("Session with ID '" + session_id + "' not found."));
+                        }
+                    });
+                };
+                Cache.prototype.save_identity = function (identity) {
+                    var _this = this;
+                    return new Promise(function (resolve) {
+                        _this.identity = identity;
+                        resolve(_this.identity);
+                    });
+                };
+                Cache.prototype.save_prekey = function (preKey) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        try {
+                            _this.prekeys[preKey.key_id] = preKey.serialise();
+                        }
+                        catch (error) {
+                            return reject(new Error("PreKey serialization problem: '" + error.message + "'"));
+                        }
+                        resolve(preKey);
+                    });
+                };
+                Cache.prototype.save_prekeys = function (preKeys) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        var savePromises = [];
+                        preKeys.forEach(function (preKey) {
+                            savePromises.push(_this.save_prekey(preKey));
+                        });
+                        Promise.all(savePromises).then(function () {
+                            resolve(preKeys);
+                        }).catch(reject);
+                    });
+                };
+                Cache.prototype.save_session = function (session_id, session) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        try {
+                            _this.sessions[session_id] = session.serialise();
+                        }
+                        catch (error) {
+                            return reject(new Error("Session serialization problem: '" + error.message + "'"));
+                        }
+                        resolve(session);
+                    });
+                };
+                return Cache;
+            }());
+            exports_5("default", Cache);
+        }
+    }
+});
+System.register("store/SerialisedRecord", [], function(exports_6, context_6) {
+    "use strict";
+    var __moduleName = context_6 && context_6.id;
+    var SerialisedRecord;
+    return {
+        setters:[],
+        execute: function() {
+            SerialisedRecord = (function () {
+                function SerialisedRecord(serialised, id) {
+                    this.id = id;
+                    this.serialised = serialised;
+                }
+                return SerialisedRecord;
+            }());
+            exports_6("SerialisedRecord", SerialisedRecord);
+        }
+    }
+});
+System.register("store/IndexedDB", ["bazinga64", "wire-webapp-proteus", "dexie", "logdown", "store/SerialisedRecord"], function(exports_7, context_7) {
+    "use strict";
+    var __moduleName = context_7 && context_7.id;
+    var bazinga64, Proteus, dexie_1, logdown_2, SerialisedRecord_1;
+    var IndexedDB;
+    return {
+        setters:[
+            function (bazinga64_1) {
+                bazinga64 = bazinga64_1;
+            },
+            function (Proteus_5) {
+                Proteus = Proteus_5;
+            },
+            function (dexie_1_1) {
+                dexie_1 = dexie_1_1;
+            },
+            function (logdown_2_1) {
+                logdown_2 = logdown_2_1;
+            },
+            function (SerialisedRecord_1_1) {
+                SerialisedRecord_1 = SerialisedRecord_1_1;
+            }],
+        execute: function() {
+            IndexedDB = (function () {
+                function IndexedDB(identifier) {
+                    var _this = this;
+                    this.prekeys = {};
+                    this.TABLE = {
+                        LOCAL_IDENTITY: "keys",
+                        PRE_KEYS: "prekeys",
+                        SESSIONS: "sessions"
+                    };
+                    this.localIdentityKey = 'local_identity';
+                    this.logger = new logdown_2.default({ prefix: 'cryptobox.store.IndexedDB', minLength: 26 });
+                    if (typeof indexedDB === "undefined") {
+                        var warning = "IndexedDB isn't supported by your platform.";
+                        throw new Error(warning);
+                    }
+                    if (typeof identifier === 'string') {
+                        var schema = {};
+                        schema[this.TABLE.LOCAL_IDENTITY] = '';
+                        schema[this.TABLE.PRE_KEYS] = '';
+                        schema[this.TABLE.SESSIONS] = '';
+                        this.db = new dexie_1.default("cryptobox@" + identifier);
+                        this.db.version(1).stores(schema);
+                    }
+                    else {
+                        this.db = identifier;
+                    }
+                    this.db.on('blocked', function (event) {
+                        _this.logger.warn("Database access to '" + _this.db.name + "' got blocked.", event);
+                        _this.db.close();
+                    });
+                }
+                IndexedDB.prototype.init = function () {
+                    this.logger.log("Connecting to IndexedDB database '" + this.db.name + "'...");
+                    return this.db.open();
+                };
+                IndexedDB.prototype.delete = function (store_name, primary_key) {
+                    var _this = this;
+                    return new dexie_1.default.Promise(function (resolve) {
+                        _this.validate_store(store_name).then(function (store) {
+                            return store.delete(primary_key);
+                        }).then(function () {
+                            resolve(primary_key);
+                        });
+                    });
+                };
+                IndexedDB.prototype.load = function (store_name, primary_key) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        _this.validate_store(store_name)
+                            .then(function (store) {
+                            return store.get(primary_key);
+                        }).then(function (record) {
+                            if (record) {
+                                _this.logger.log("Loaded record '" + primary_key + "' from store '" + store_name + "'.", record);
+                                resolve(record);
+                            }
+                            else {
+                                reject(new Error("Record '" + primary_key + "' not found in store '" + store_name + "'."));
+                            }
+                        }).catch(reject);
+                    });
+                };
+                IndexedDB.prototype.save = function (store_name, primary_key, entity) {
+                    var _this = this;
+                    return new dexie_1.default.Promise(function (resolve) {
+                        _this.validate_store(store_name).then(function (store) {
+                            return store.put(entity, primary_key);
+                        }).then(function (key) {
+                            _this.logger.log("Saved record '" + primary_key + "' into store '" + store_name + "'.", entity);
+                            resolve(key);
+                        });
+                    });
+                };
+                IndexedDB.prototype.validate_store = function (store_name) {
+                    var _this = this;
+                    return new dexie_1.default.Promise(function (resolve, reject) {
+                        if (_this.db[store_name]) {
+                            resolve(_this.db[store_name]);
+                        }
+                        else {
+                            reject(new Error("Data store '" + store_name + "' not found."));
+                        }
+                    });
+                };
+                IndexedDB.prototype.delete_all = function () {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        _this.logger.info("Deleting '" + _this.db.name + "'.");
+                        _this.db.delete()
+                            .then(function () {
+                            resolve(true);
+                        })
+                            .catch(reject);
+                    });
+                };
+                IndexedDB.prototype.delete_prekey = function (prekey_id) {
+                    var _this = this;
+                    return new Promise(function (resolve) {
+                        _this.delete(_this.TABLE.PRE_KEYS, prekey_id.toString()).then(function (primary_key) {
+                            resolve(primary_key);
+                        });
+                    });
+                };
+                IndexedDB.prototype.delete_session = function (session_id) {
+                    var _this = this;
+                    return new Promise(function (resolve) {
+                        _this.delete(_this.TABLE.SESSIONS, session_id).then(function (primary_key) {
+                            resolve(primary_key);
+                        });
+                    });
+                };
+                IndexedDB.prototype.load_identity = function () {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        _this.load(_this.TABLE.LOCAL_IDENTITY, _this.localIdentityKey).then(function (payload) {
+                            if (payload) {
+                                var bytes = bazinga64.Decoder.fromBase64(payload.serialised).asBytes;
+                                var identity = Proteus.keys.IdentityKeyPair.deserialise(bytes.buffer);
+                                resolve(identity);
+                            }
+                            else {
+                                reject(new Error("No local identity present."));
+                            }
+                        }).catch(reject);
+                    });
+                };
+                IndexedDB.prototype.load_prekey = function (prekey_id) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        _this.load(_this.TABLE.PRE_KEYS, prekey_id.toString()).then(function (record) {
+                            var bytes = bazinga64.Decoder.fromBase64(record.serialised).asBytes;
+                            resolve(Proteus.keys.PreKey.deserialise(bytes.buffer));
+                        }).catch(reject);
+                    });
+                };
+                IndexedDB.prototype.load_prekeys = function () {
+                    var _this = this;
+                    return new dexie_1.default.Promise(function (resolve, reject) {
+                        _this.validate_store(_this.TABLE.PRE_KEYS).then(function (store) {
+                            return store.toArray();
+                        }).then(function (records) {
+                            var preKeys = [];
+                            records.forEach(function (record) {
+                                var bytes = bazinga64.Decoder.fromBase64(record.serialised).asBytes;
+                                var preKey = Proteus.keys.PreKey.deserialise(bytes.buffer);
+                                preKeys.push(preKey);
+                            });
+                            resolve(preKeys);
+                        }).catch(reject);
+                    });
+                };
+                IndexedDB.prototype.load_session = function (identity, session_id) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        _this.load(_this.TABLE.SESSIONS, session_id).then(function (payload) {
+                            var bytes = bazinga64.Decoder.fromBase64(payload.serialised).asBytes;
+                            resolve(Proteus.session.Session.deserialise(identity, bytes.buffer));
+                        }).catch(reject);
+                    });
+                };
+                IndexedDB.prototype.save_identity = function (identity) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        _this.identity = identity;
+                        var serialised = bazinga64.Encoder.toBase64(identity.serialise()).asString;
+                        var payload = new SerialisedRecord_1.SerialisedRecord(serialised, _this.localIdentityKey);
+                        _this.save(_this.TABLE.LOCAL_IDENTITY, payload.id, payload).then(function (primaryKey) {
+                            var fingerprint = identity.public_key.fingerprint();
+                            var message = ("Saved local identity '" + fingerprint + "'")
+                                + (" with key '" + primaryKey + "' into storage '" + _this.TABLE.LOCAL_IDENTITY + "'");
+                            resolve(identity);
+                        }).catch(reject);
+                    });
+                };
+                IndexedDB.prototype.save_prekey = function (prekey) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        _this.prekeys[prekey.key_id] = prekey;
+                        var serialised = bazinga64.Encoder.toBase64(prekey.serialise()).asString;
+                        var payload = new SerialisedRecord_1.SerialisedRecord(serialised, prekey.key_id.toString());
+                        _this.save(_this.TABLE.PRE_KEYS, payload.id, payload).then(function (primaryKey) {
+                            var message = "Saved PreKey with ID '" + prekey.key_id + "' into storage '" + _this.TABLE.PRE_KEYS + "'";
+                            resolve(prekey);
+                        }).catch(reject);
+                    });
+                };
+                IndexedDB.prototype.save_prekeys = function (prekeys) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        if (prekeys.length === 0) {
+                            resolve(prekeys);
+                        }
+                        var items = [];
+                        var keys = [];
+                        prekeys.forEach(function (preKey) {
+                            var serialised = bazinga64.Encoder.toBase64(preKey.serialise()).asString;
+                            var key = preKey.key_id.toString();
+                            var payload = new SerialisedRecord_1.SerialisedRecord(serialised, key);
+                            items.push(payload);
+                            keys.push(key);
+                        });
+                        _this.validate_store(_this.TABLE.PRE_KEYS).then(function (store) {
+                            return store.bulkAdd(items, keys);
+                        }).then(function () {
+                            _this.logger.log("Saved a batch of '" + items.length + "' PreKeys. From ID '" + items[0].id + "' to ID '" + items[items.length - 1].id + "'.", items);
+                            resolve(prekeys);
+                        }).catch(reject);
+                    });
+                };
+                IndexedDB.prototype.save_session = function (session_id, session) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        var serialised = bazinga64.Encoder.toBase64(session.serialise()).asString;
+                        var payload = new SerialisedRecord_1.SerialisedRecord(serialised, session_id);
+                        _this.save(_this.TABLE.SESSIONS, payload.id, payload).then(function (primaryKey) {
+                            var message = "Saved session with key '" + session_id + "' into storage '" + _this.TABLE.SESSIONS + "'";
+                            resolve(session);
+                        }).catch(reject);
+                    });
+                };
+                return IndexedDB;
+            }());
+            exports_7("default", IndexedDB);
+        }
+    }
+});
+System.register("store/LocalStorage", ["bazinga64", "wire-webapp-proteus", "store/SerialisedRecord"], function(exports_8, context_8) {
+    "use strict";
+    var __moduleName = context_8 && context_8.id;
+    var bazinga64, Proteus, SerialisedRecord_2;
+    var LocalStorage;
+    return {
+        setters:[
+            function (bazinga64_2) {
+                bazinga64 = bazinga64_2;
+            },
+            function (Proteus_6) {
+                Proteus = Proteus_6;
+            },
+            function (SerialisedRecord_2_1) {
+                SerialisedRecord_2 = SerialisedRecord_2_1;
+            }],
+        execute: function() {
+            LocalStorage = (function () {
+                function LocalStorage(identifier) {
+                    if (identifier === void 0) { identifier = "temp"; }
+                    this.localIdentityKey = 'local_identity';
+                    if (typeof localStorage === "undefined") {
+                        var warning = "Local Storage isn't supported by your platform.";
+                        throw new Error(warning);
+                    }
+                    else {
+                        this.localIdentityStore = "cryptobox@" + identifier + "@identity";
+                        this.preKeyStore = "cryptobox@" + identifier + "@prekey";
+                        this.sessionStore = "cryptobox@" + identifier + "@session";
+                        this.storage = localStorage;
+                    }
+                }
+                LocalStorage.prototype.delete = function (store_name, primary_key) {
+                    var _this = this;
+                    return new Promise(function (resolve) {
+                        var key = store_name + "@" + primary_key;
+                        _this.storage.removeItem(key);
+                        resolve(key);
+                    });
+                };
+                LocalStorage.prototype.load = function (store_name, primary_key) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        var item = _this.storage.getItem(store_name + "@" + primary_key);
+                        if (item) {
+                            resolve(item);
+                        }
+                        else {
+                            reject(new Error("Item '" + primary_key + "' not found in '" + store_name + "'."));
+                        }
+                    });
+                };
+                ;
+                LocalStorage.prototype.save = function (store_name, primary_key, entity) {
+                    var _this = this;
+                    return new Promise(function (resolve) {
+                        var key = store_name + "@" + primary_key;
+                        _this.storage.setItem(key, entity);
+                        resolve(key);
+                    });
+                };
+                LocalStorage.prototype.delete_all = function () {
+                    var _this = this;
+                    return new Promise(function (resolve) {
+                        var removed_items = false;
+                        Object.keys(localStorage).forEach(function (key) {
+                            if (key.indexOf(_this.localIdentityStore) > -1 ||
+                                key.indexOf(_this.preKeyStore) > -1 ||
+                                key.indexOf(_this.sessionStore) > -1) {
+                                removed_items = true;
+                                localStorage.removeItem(key);
+                            }
+                        });
+                        resolve(removed_items);
+                    });
+                };
+                LocalStorage.prototype.delete_prekey = function (prekey_id) {
+                    return this.delete(this.preKeyStore, prekey_id.toString());
+                };
+                LocalStorage.prototype.delete_session = function (session_id) {
+                    return this.delete(this.sessionStore, session_id);
+                };
+                LocalStorage.prototype.load_identity = function () {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        _this.load(_this.localIdentityStore, _this.localIdentityKey).then(function (payload) {
+                            if (payload) {
+                                var bytes = bazinga64.Decoder.fromBase64(payload).asBytes;
+                                var ikp = Proteus.keys.IdentityKeyPair.deserialise(bytes.buffer);
+                                resolve(ikp);
+                            }
+                            else {
+                                reject(new Error("No local identity present."));
+                            }
+                        }).catch(reject);
+                    });
+                };
+                LocalStorage.prototype.load_prekey = function (prekey_id) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        _this.load(_this.preKeyStore, prekey_id.toString()).then(function (serialised) {
+                            var bytes = bazinga64.Decoder.fromBase64(serialised).asBytes;
+                            resolve(Proteus.keys.PreKey.deserialise(bytes.buffer));
+                        }).catch(reject);
+                    });
+                };
+                LocalStorage.prototype.load_prekeys = function () {
+                    var _this = this;
+                    var prekey_promises = [];
+                    Object.keys(localStorage).forEach(function (key) {
+                        if (key.indexOf(_this.preKeyStore) > -1) {
+                            var separator = '@';
+                            var prekey_id = key.substr(key.lastIndexOf(separator) + separator.length);
+                            var promise = _this.load_prekey(parseInt(prekey_id));
+                            prekey_promises.push(promise);
+                        }
+                    });
+                    return Promise.all(prekey_promises);
+                };
+                LocalStorage.prototype.load_session = function (identity, session_id) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        _this.load(_this.sessionStore, session_id).then(function (serialised) {
+                            var bytes = bazinga64.Decoder.fromBase64(serialised).asBytes;
+                            resolve(Proteus.session.Session.deserialise(identity, bytes.buffer));
+                        }).catch(reject);
+                    });
+                };
+                LocalStorage.prototype.save_identity = function (identity) {
+                    var _this = this;
+                    var fingerprint = identity.public_key.fingerprint();
+                    var serialised = bazinga64.Encoder.toBase64(identity.serialise()).asString;
+                    var payload = new SerialisedRecord_2.SerialisedRecord(serialised, this.localIdentityKey);
+                    return new Promise(function (resolve, reject) {
+                        _this.save(_this.localIdentityStore, payload.id, payload.serialised).then(function (key) {
+                            var message = "Saved local identity '" + fingerprint + "' with key '" + key + "'.";
+                            resolve(identity);
+                        }).catch(reject);
+                    });
+                };
+                LocalStorage.prototype.save_prekey = function (preKey) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        var serialised = bazinga64.Encoder.toBase64(preKey.serialise()).asString;
+                        var payload = new SerialisedRecord_2.SerialisedRecord(serialised, preKey.key_id.toString());
+                        _this.save(_this.preKeyStore, payload.id, payload.serialised).then(function () {
+                            resolve(preKey);
+                        }).catch(reject);
+                    });
+                };
+                LocalStorage.prototype.save_prekeys = function (preKeys) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        var savePromises = [];
+                        preKeys.forEach(function (preKey) {
+                            savePromises.push(_this.save_prekey(preKey));
+                        });
+                        Promise.all(savePromises).then(function () {
+                            resolve(preKeys);
+                        }).catch(reject);
+                    });
+                };
+                LocalStorage.prototype.save_session = function (session_id, session) {
+                    var _this = this;
+                    return new Promise(function (resolve, reject) {
+                        var serialised = bazinga64.Encoder.toBase64(session.serialise()).asString;
+                        var payload = new SerialisedRecord_2.SerialisedRecord(serialised, session_id);
+                        _this.save(_this.sessionStore, payload.id, payload.serialised).then(function () {
+                            resolve(session);
+                        }).catch(reject);
+                    });
+                };
+                return LocalStorage;
+            }());
+            exports_8("default", LocalStorage);
+        }
+    }
+});
+System.register("wire-webapp-cryptobox", ["store/Cache", "store/IndexedDB", "store/LocalStorage", "Cryptobox", "store/ReadOnlyStore", "CryptoboxSession"], function(exports_9, context_9) {
+    "use strict";
+    var __moduleName = context_9 && context_9.id;
+    var Cache_1, IndexedDB_1, LocalStorage_1, Cryptobox_1, ReadOnlyStore_2, CryptoboxSession_2;
+    return {
+        setters:[
+            function (Cache_1_1) {
+                Cache_1 = Cache_1_1;
+            },
+            function (IndexedDB_1_1) {
+                IndexedDB_1 = IndexedDB_1_1;
+            },
+            function (LocalStorage_1_1) {
+                LocalStorage_1 = LocalStorage_1_1;
+            },
+            function (Cryptobox_1_1) {
+                Cryptobox_1 = Cryptobox_1_1;
+            },
+            function (ReadOnlyStore_2_1) {
+                ReadOnlyStore_2 = ReadOnlyStore_2_1;
+            },
+            function (CryptoboxSession_2_1) {
+                CryptoboxSession_2 = CryptoboxSession_2_1;
+            }],
+        execute: function() {
+            exports_9("default",{
+                Cryptobox: Cryptobox_1.Cryptobox,
+                CryptoboxSession: CryptoboxSession_2.CryptoboxSession,
+                store: {
+                    Cache: Cache_1.default,
+                    IndexedDB: IndexedDB_1.default,
+                    LocalStorage: LocalStorage_1.default,
+                    ReadOnlyStore: ReadOnlyStore_2.ReadOnlyStore
+                }
+            });
         }
     }
 });

@@ -41,5 +41,5 @@
     "test": "gulp test"
   },
   "typings": "dist/typings/wire-webapp-cryptobox.d.ts",
-  "version": "1.1.2"
+  "version": "1.1.3"
 }

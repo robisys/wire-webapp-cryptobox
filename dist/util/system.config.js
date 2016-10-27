@@ -25,7 +25,6 @@ SystemJS.config({
     'lodash': 'lib/dynamic/lodash/lodash.js',
     'logdown': 'lib/dynamic/logdown/index.js',
     'postal': 'lib/dynamic/postal.js/postal.js',
-    'wire-webapp-cryptobox': 'system/wire-webapp-cryptobox.js',
     'wire-webapp-proteus': 'lib/dynamic/wire-webapp-proteus/proteus.js'
   },
   packages: {

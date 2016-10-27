@@ -20,22 +20,20 @@
 describe('cryptobox.store.Cache', function() {
 
   var cryptobox = undefined;
-  var postal = undefined;
   var Proteus = undefined;
   var store = undefined;
 
   beforeAll(function(done) {
     if (typeof window === 'object') {
       SystemJS.import('wire-webapp-cryptobox').then(function(module) {
-        cryptobox = module;
+        cryptobox = module.default;
         return SystemJS.import('wire-webapp-proteus');
       }).then(function(module) {
         Proteus = module;
         done();
       });
     } else {
-      postal = require('postal');
-      cryptobox = require('../../../../dist/commonjs/wire-webapp-cryptobox');
+      cryptobox = require('../../../../dist/commonjs/wire-webapp-cryptobox').default;
       Proteus = require('wire-webapp-proteus');
       done();
     }

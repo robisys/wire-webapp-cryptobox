@@ -25,7 +25,7 @@ describe('Compatibility', function() {
   beforeAll(function(done) {
     if (typeof window === 'object') {
       SystemJS.import('wire-webapp-cryptobox').then(function(module) {
-        cryptobox = module;
+        cryptobox = module.default;
         return SystemJS.import('wire-webapp-proteus');
       }).then(function(module) {
         Proteus = module;
