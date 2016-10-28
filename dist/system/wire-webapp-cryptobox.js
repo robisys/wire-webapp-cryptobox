@@ -127,15 +127,16 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSessio
                 function Cryptobox(cryptoBoxStore, minimumAmountOfPreKeys) {
                     if (minimumAmountOfPreKeys === void 0) { minimumAmountOfPreKeys = 1; }
                     this.EVENT = {
-                        NEW_PREKEYS: 'new-prekeys'
+                        NEW_PREKEYS: "new-prekeys"
                     };
+                    this.cachedPreKeys = {};
                     this.cachedSessions = {};
                     this.channel = postal.channel("cryptobox");
                     if (!cryptoBoxStore) {
                         throw new Error("You cannot initialize Cryptobox without a storage component.");
                     }
-                    this.logger = new logdown_1.default({ prefix: 'cryptobox.Cryptobox', minLength: 26 });
-                    this.logger.log("Constructed Cryptobox. Minimum limit of PreKeys '" + minimumAmountOfPreKeys + "' (1 Last Resort PreKey and " + (minimumAmountOfPreKeys - 1) + " others).");
+                    this.logger = new logdown_1.default({ prefix: 'cryptobox.Cryptobox', alignOuput: true });
+                    this.logger.log("Constructed Cryptobox.");
                     this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
                     this.pk_store = new ReadOnlyStore_1.ReadOnlyStore(this.store);
                     this.store = cryptoBoxStore;
@@ -143,33 +144,41 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSessio
                 Cryptobox.prototype.init = function () {
                     var _this = this;
                     return new Promise(function (resolve, reject) {
+                        _this.logger.log("Loading local identity...");
                         _this.store.load_identity()
                             .catch(function () {
                             var identity = Proteus.keys.IdentityKeyPair.new();
-                            _this.logger.info("Created new identity " + identity.public_key.fingerprint() + ".");
+                            _this.logger.warn("No existing identity found. Created new identity with fingerprint \"" + identity.public_key.fingerprint() + "\".", identity);
                             return _this.store.save_identity(identity);
                         })
                             .then(function (identity) {
                             _this.identity = identity;
+                            _this.logger.log("Initialized Cryptobox with an identity which has the following fingerprint \"" + _this.identity.public_key.fingerprint() + "\".", _this.identity);
+                            _this.logger.log("Loading last resort PreKey...");
                             return _this.store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
                         })
                             .catch(function () {
-                            var lastResortPreKey = Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID);
+                            var id = Proteus.keys.PreKey.MAX_PREKEY_ID;
+                            var lastResortPreKey = Proteus.keys.PreKey.new(id);
+                            _this.logger.warn("No last resort PreKey found. Created last resort PreKey with ID \"" + id + "\".");
                             return _this.store.save_prekey(lastResortPreKey);
                         })
-                            .then(function () {
-                            return _this.generate_required_prekeys();
+                            .then(function (lastResortPreKey) {
+                            _this.logger.log("Loaded last resort PreKey (ID " + lastResortPreKey.key_id + ").");
+                            _this.logger.log("Loading standard PreKeys... " + (_this.minimumAmountOfPreKeys - 1) + " left...");
+                            return _this.get_initial_prekeys();
                         })
-                            .then(function () {
-                            _this.logger.log("Initialized Cryptobox with 'xx' PreKeys.");
+                            .then(function (newPreKeys) {
+                            _this.logger.log("Initialized Cryptobox with \"" + newPreKeys.length + "\" PreKeys (" + newPreKeys.length + " of them are new).");
                             resolve(_this);
                         }).catch(reject);
                     });
                 };
-                Cryptobox.prototype.generate_required_prekeys = function () {
+                Cryptobox.prototype.get_initial_prekeys = function () {
                     var _this = this;
                     return new Promise(function (resolve, reject) {
-                        _this.store.load_prekeys().then(function (currentPreKeys) {
+                        _this.store.load_prekeys()
+                            .then(function (currentPreKeys) {
                             var missingAmount = 0;
                             var highestId = 0;
                             if (currentPreKeys.length < _this.minimumAmountOfPreKeys) {
@@ -181,16 +190,18 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSessio
                                     }
                                 });
                                 highestId += 1;
-                                _this.logger.log("There are not enough available PreKeys. Generating '" + missingAmount + "' new PreKeys, starting from ID '" + highestId + "'...");
+                                _this.logger.warn("There are not enough PreKeys in the storage. Generating \"" + missingAmount + "\" new PreKeys, starting from ID \"" + highestId + "\"...");
                             }
                             return _this.new_prekeys(highestId, missingAmount);
-                        }).then(function (newPreKeys) {
+                        })
+                            .then(function (newPreKeys) {
                             if (newPreKeys.length > 0) {
                                 _this.channel.publish(_this.EVENT.NEW_PREKEYS, newPreKeys);
                                 _this.logger.log("Published event '" + _this.EVENT.NEW_PREKEYS + "'.", newPreKeys);
                             }
                             resolve(newPreKeys);
-                        }).catch(reject);
+                        })
+                            .catch(reject);
                     });
                 };
                 Cryptobox.prototype.session_from_prekey = function (client_id, pre_key_bundle) {
@@ -255,7 +266,7 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSessio
                             });
                             return Promise.all(prekey_deletions);
                         }).then(function () {
-                            return _this.generate_required_prekeys();
+                            return _this.get_initial_prekeys();
                         }).then(function () {
                             resolve(session.id);
                         });
@@ -529,7 +540,7 @@ System.register("store/IndexedDB", ["bazinga64", "wire-webapp-proteus", "dexie",
                         SESSIONS: "sessions"
                     };
                     this.localIdentityKey = 'local_identity';
-                    this.logger = new logdown_2.default({ prefix: 'cryptobox.store.IndexedDB', minLength: 26 });
+                    this.logger = new logdown_2.default({ prefix: 'cryptobox.store.IndexedDB', alignOuput: true });
                     if (typeof indexedDB === "undefined") {
                         var warning = "IndexedDB isn't supported by your platform.";
                         throw new Error(warning);

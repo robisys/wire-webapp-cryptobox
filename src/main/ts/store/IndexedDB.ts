@@ -21,7 +21,7 @@ export default class IndexedDB implements CryptoboxStore {
   private localIdentityKey: string = 'local_identity';
 
   constructor(identifier: string | Dexie) {
-    this.logger = new Logdown({prefix: 'cryptobox.store.IndexedDB', minLength: 26});
+    this.logger = new Logdown({prefix: 'cryptobox.store.IndexedDB', alignOuput: true});
 
     if (typeof indexedDB === "undefined") {
       let warning = `IndexedDB isn't supported by your platform.`;
