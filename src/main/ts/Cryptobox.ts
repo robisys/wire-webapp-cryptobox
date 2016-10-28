@@ -35,17 +35,14 @@ export class Cryptobox {
     this.store = cryptoBoxStore;
   }
 
-  public cache_prekey(preKey: Proteus.keys.PreKey): void {
+  public save_prekey_in_cache(preKey: Proteus.keys.PreKey): Proteus.keys.PreKey {
     this.cachedPreKeys.put(preKey.key_id, preKey);
     this.logger.log(`Cached PreKey with ID "${preKey.key_id}".`);
-    return this.cachedPreKeys.get(preKey.key_id);
+    return preKey;
   }
 
-  public cache_prekeys(preKeys: Array<Proteus.keys.PreKey>): void {
-    this.logger.log(`Caching ${preKeys.length} PreKeys...`);
-    for (var preKey of preKeys) {
-      this.cache_prekey(preKey);
-    }
+  public load_prekey_from_cache(preKeyId: number): Proteus.keys.PreKey {
+    return this.cachedPreKeys.get(preKeyId);
   }
 
   public init(): Promise<Cryptobox> {

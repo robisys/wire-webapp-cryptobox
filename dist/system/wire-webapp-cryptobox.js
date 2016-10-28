@@ -144,17 +144,13 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSessio
                     this.pk_store = new ReadOnlyStore_1.ReadOnlyStore(this.store);
                     this.store = cryptoBoxStore;
                 }
-                Cryptobox.prototype.cache_prekey = function (preKey) {
+                Cryptobox.prototype.save_prekey_in_cache = function (preKey) {
                     this.cachedPreKeys.put(preKey.key_id, preKey);
                     this.logger.log("Cached PreKey with ID \"" + preKey.key_id + "\".");
-                    return this.cachedPreKeys.get(preKey.key_id);
+                    return preKey;
                 };
-                Cryptobox.prototype.cache_prekeys = function (preKeys) {
-                    this.logger.log("Caching " + preKeys.length + " PreKeys...");
-                    for (var _i = 0, preKeys_1 = preKeys; _i < preKeys_1.length; _i++) {
-                        var preKey = preKeys_1[_i];
-                        this.cache_prekey(preKey);
-                    }
+                Cryptobox.prototype.load_prekey_from_cache = function (preKeyId) {
+                    return this.cachedPreKeys.get(preKeyId);
                 };
                 Cryptobox.prototype.init = function () {
                     var _this = this;
