@@ -100,10 +100,10 @@ System.register("CryptoboxSession", ["wire-webapp-proteus"], function(exports_3,
         }
     }
 });
-System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSession", "store/ReadOnlyStore", "postal"], function(exports_4, context_4) {
+System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSession", "store/ReadOnlyStore", "lru-ts", "postal"], function(exports_4, context_4) {
     "use strict";
     var __moduleName = context_4 && context_4.id;
-    var Proteus, logdown_1, CryptoboxSession_1, ReadOnlyStore_1, postal;
+    var Proteus, logdown_1, CryptoboxSession_1, ReadOnlyStore_1, lru_ts_1, postal;
     var Cryptobox;
     return {
         setters:[
@@ -119,6 +119,9 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSessio
             function (ReadOnlyStore_1_1) {
                 ReadOnlyStore_1 = ReadOnlyStore_1_1;
             },
+            function (lru_ts_1_1) {
+                lru_ts_1 = lru_ts_1_1;
+            },
             function (postal_1) {
                 postal = postal_1;
             }],
@@ -129,7 +132,7 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSessio
                     this.EVENT = {
                         NEW_PREKEYS: "new-prekeys"
                     };
-                    this.cachedPreKeys = {};
+                    this.cachedPreKeys = new lru_ts_1.default(1000);
                     this.cachedSessions = {};
                     this.channel = postal.channel("cryptobox");
                     if (!cryptoBoxStore) {
@@ -141,6 +144,18 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSessio
                     this.pk_store = new ReadOnlyStore_1.ReadOnlyStore(this.store);
                     this.store = cryptoBoxStore;
                 }
+                Cryptobox.prototype.cache_prekey = function (preKey) {
+                    this.cachedPreKeys.put(preKey.key_id, preKey);
+                    this.logger.log("Cached PreKey with ID \"" + preKey.key_id + "\".");
+                    return this.cachedPreKeys.get(preKey.key_id);
+                };
+                Cryptobox.prototype.cache_prekeys = function (preKeys) {
+                    this.logger.log("Caching " + preKeys.length + " PreKeys...");
+                    for (var _i = 0, preKeys_1 = preKeys; _i < preKeys_1.length; _i++) {
+                        var preKey = preKeys_1[_i];
+                        this.cache_prekey(preKey);
+                    }
+                };
                 Cryptobox.prototype.init = function () {
                     var _this = this;
                     return new Promise(function (resolve, reject) {

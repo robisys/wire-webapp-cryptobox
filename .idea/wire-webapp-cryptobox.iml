@@ -10,9 +10,9 @@
       <excludeFolder url="file://$MODULE_DIR$/bower_components" />
       <excludeFolder url="file://$MODULE_DIR$/build" />
       <excludeFolder url="file://$MODULE_DIR$/dist/commonjs" />
-	  <excludeFolder url="file://$MODULE_DIR$/dist/lib" />
-	  <excludeFolder url="file://$MODULE_DIR$/dist/system" />
-	  <excludeFolder url="file://$MODULE_DIR$/dist/typings" />
+      <excludeFolder url="file://$MODULE_DIR$/dist/lib" />
+      <excludeFolder url="file://$MODULE_DIR$/dist/system" />
+      <excludeFolder url="file://$MODULE_DIR$/dist/typings" />
       <excludeFolder url="file://$MODULE_DIR$/docs" />
       <excludeFolder url="file://$MODULE_DIR$/nbproject" />
       <excludeFolder url="file://$MODULE_DIR$/node_modules" />
@@ -21,5 +21,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="wire-webapp-cryptobox node_modules" level="project" />
+    <orderEntry type="library" name="tsconfig$roots" level="project" />
   </component>
 </module>

@@ -3,6 +3,7 @@ import Logdown from "logdown";
 import {CryptoboxSession} from "./CryptoboxSession";
 import {CryptoboxStore} from "./store/CryptoboxStore";
 import {ReadOnlyStore} from "./store/ReadOnlyStore";
+import LRUCache from "lru-ts";
 import postal = require("postal");
 
 export class Cryptobox {
@@ -11,7 +12,7 @@ export class Cryptobox {
     NEW_PREKEYS: "new-prekeys"
   };
 
-  private cachedPreKeys: Object = {};
+  private cachedPreKeys: LRUCache = new LRUCache(1000);
   private cachedSessions: Object = {};
   private channel = postal.channel("cryptobox");
 
@@ -32,6 +33,19 @@ export class Cryptobox {
     this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
     this.pk_store = new ReadOnlyStore(this.store);
     this.store = cryptoBoxStore;
+  }
+
+  public cache_prekey(preKey: Proteus.keys.PreKey): void {
+    this.cachedPreKeys.put(preKey.key_id, preKey);
+    this.logger.log(`Cached PreKey with ID "${preKey.key_id}".`);
+    return this.cachedPreKeys.get(preKey.key_id);
+  }
+
+  public cache_prekeys(preKeys: Array<Proteus.keys.PreKey>): void {
+    this.logger.log(`Caching ${preKeys.length} PreKeys...`);
+    for (var preKey of preKeys) {
+      this.cache_prekey(preKey);
+    }
   }
 
   public init(): Promise<Cryptobox> {

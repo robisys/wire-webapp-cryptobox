@@ -12,6 +12,9 @@
     "logdown@copy": [
       "logdown/dist/index.js"
     ],
+    "lru-ts@copy": [
+      "lru-ts/dist/global/lru-ts.js"
+    ],
     "postal.js@copy": [
       "postal.js/lib/postal.js"
     ],

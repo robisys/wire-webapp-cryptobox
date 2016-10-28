@@ -24,6 +24,7 @@ SystemJS.config({
     'dexie': 'lib/dynamic/dexie/dexie.js',
     'lodash': 'lib/dynamic/lodash/lodash.js',
     'logdown': 'lib/dynamic/logdown/index.js',
+    'lru-ts': 'lib/dynamic/lru-ts/lru-ts.js',
     'postal': 'lib/dynamic/postal.js/postal.js',
     'wire-webapp-proteus': 'lib/dynamic/wire-webapp-proteus/proteus.js'
   },
