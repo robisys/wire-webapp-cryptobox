@@ -20,6 +20,7 @@
 var assets = require('gulp-bower-assets');
 var babel = require('gulp-babel');
 var bower = require('gulp-bower');
+var clean = require('gulp-clean');
 var browserSync = require('browser-sync').create();
 var gulp = require('gulp');
 var gulpTypings = require('gulp-typings');
@@ -38,15 +39,26 @@ var tsProjectNode = ts.createProject('tsconfig.json', {
   module: "commonjs"
 });
 
+gulp.task('clean', ['clean_browser', 'clean_node'], function () {
+});
+
+gulp.task('clean_browser', function () {
+  return gulp.src('dist/system').pipe(clean());
+});
+
+gulp.task('clean_node', function () {
+  return gulp.src('dist/commonjs').pipe(clean());
+});
+
 gulp.task('build', function(done) {
   runSequence('build_ts_browser', 'build_ts_node', done);
 });
 
-gulp.task('build_ts_browser', function() {
+gulp.task('build_ts_browser', ['clean_browser'], function() {
   return tsProject.src().pipe(tsProject()).pipe(gulp.dest('dist/system'));
 });
 
-gulp.task('build_ts_node', function() {
+gulp.task('build_ts_node', ['clean_node'], function() {
   var tsResult = tsProject.src().pipe(tsProjectNode());
 
   return merge([
@@ -67,7 +79,7 @@ gulp.task('default', ['dist'], function() {
 });
 
 gulp.task('dist', function(done) {
-  runSequence('install', 'build', done);
+  runSequence('clean', 'install', 'build', done);
 });
 
 gulp.task('install', ['install_bower_assets', 'install_typings'], function() {
