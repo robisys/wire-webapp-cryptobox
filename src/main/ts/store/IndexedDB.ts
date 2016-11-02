@@ -208,7 +208,7 @@ export default class IndexedDB implements CryptoboxStore {
     });
   }
 
-  public save_prekeys(prekeys: Array<Proteus.keys.PreKey>): Promise<Proteus.keys.PreKey> {
+  public save_prekeys(prekeys: Array<Proteus.keys.PreKey>): Promise<Array<Proteus.keys.PreKey>> {
     return new Promise((resolve, reject) => {
       if (prekeys.length === 0) {
         resolve(prekeys);

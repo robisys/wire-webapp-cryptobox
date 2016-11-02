@@ -57,7 +57,7 @@ export interface CryptoboxStore {
    */
   save_prekey(key: Proteus.keys.PreKey): Promise<Proteus.keys.PreKey>;
 
-  save_prekeys(preKeys: Array<Proteus.keys.PreKey>): Promise<Proteus.keys.PreKey>;
+  save_prekeys(preKeys: Array<Proteus.keys.PreKey>): Promise<Array<Proteus.keys.PreKey>>;
 
   /**
    * Saves a specified session.

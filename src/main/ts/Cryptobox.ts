@@ -151,8 +151,7 @@ export class Cryptobox {
     });
   }
 
-  // TODO: Turn "any" into a tuple
-  public session_from_message(session_id: string, envelope: ArrayBuffer): Promise<Proteus.session.SessionFromMessageTuple> {
+  public session_from_message(session_id: string, envelope: ArrayBuffer): Promise<(CryptoboxSession | Uint8Array)[]> {
     return Promise.resolve().then(() => {
       let env: Proteus.message.Envelope;
       env = Proteus.message.Envelope.deserialise(envelope);
@@ -226,7 +225,7 @@ export class Cryptobox {
   public new_prekeys(start: number, size: number = 0): Promise<Array<Proteus.keys.PreKey>> {
     return Promise.resolve().then(() => {
       if (size === 0) {
-        return [];
+        return new Array<Proteus.keys.PreKey>();
       }
       let newPreKeys: Array<Proteus.keys.PreKey> = Proteus.keys.PreKey.generate_prekeys(start, size);
       return this.store.save_prekeys(newPreKeys);
@@ -262,7 +261,7 @@ export class Cryptobox {
       .catch(() => {
         return this.session_from_message(session_id, ciphertext);
       })
-      // TODO: "value" can be of type CryptoboxSession|Proteus.session.SessionFromMessageTuple
+      // TODO: "value" can be of type CryptoboxSession | Array[CryptoboxSession, Uint8Array]
       .then(function (value: any) {
         let decrypted_message: Uint8Array;
 
