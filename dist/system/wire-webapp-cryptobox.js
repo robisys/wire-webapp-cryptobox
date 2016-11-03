@@ -183,12 +183,7 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "wire-webapp-lru
                             return Promise.resolve().then(function () {
                                 return _this.load_prekey_from_cache(Proteus.keys.PreKey.MAX_PREKEY_ID);
                             }).then(function (prekey) {
-                                if (prekey === undefined) {
-                                    return _this.store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
-                                }
-                                else {
-                                    return prekey;
-                                }
+                                return prekey || _this.store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
                             }).then(function (prekey) {
                                 return _this.save_prekey_in_cache(prekey);
                             });
@@ -276,8 +271,7 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "wire-webapp-lru
                                 .then(function (session) {
                                 if (session) {
                                     var pk_store = new ReadOnlyStore_1.ReadOnlyStore(_this.store);
-                                    var cryptoBoxSession = new CryptoboxSession_1.CryptoboxSession(session_id, pk_store, session);
-                                    return cryptoBoxSession;
+                                    return new CryptoboxSession_1.CryptoboxSession(session_id, pk_store, session);
                                 }
                                 else {
                                     throw new Error("Session with ID '" + session + "' not found.");
@@ -292,10 +286,7 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "wire-webapp-lru
                 Cryptobox.prototype.session_save = function (session) {
                     var _this = this;
                     return this.store.save_session(session.id, session.session).then(function () {
-                        var prekey_deletions = [];
-                        session.pk_store.removed_prekeys.forEach(function (pk_id) {
-                            prekey_deletions.push(_this.store.delete_prekey(pk_id));
-                        });
+                        var prekey_deletions = session.pk_store.removed_prekeys.map(_this.store.delete_prekey);
                         return Promise.all(prekey_deletions);
                     }).then(function () {
                         return _this.get_initial_prekeys();
@@ -338,9 +329,7 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "wire-webapp-lru
                         if (typeof session === 'string') {
                             return _this.session_load(session);
                         }
-                        else {
-                            return session;
-                        }
+                        return session;
                     }).then(function (session) {
                         loadedSession = session;
                         return loadedSession.encrypt(payload);
@@ -361,9 +350,8 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "wire-webapp-lru
                     })
                         .then(function (value) {
                         var decrypted_message;
-                        if (value[0] !== undefined) {
-                            session = value[0];
-                            decrypted_message = value[1];
+                        if (value !== undefined) {
+                            session = value[0], decrypted_message = value[1];
                             return decrypted_message;
                         }
                         else {

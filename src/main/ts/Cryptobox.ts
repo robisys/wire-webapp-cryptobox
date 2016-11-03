@@ -35,24 +35,24 @@ export class Cryptobox {
     this.store = cryptoBoxStore;
   }
 
-  public save_prekey_in_cache(preKey: Proteus.keys.PreKey): Proteus.keys.PreKey {
+  private save_prekey_in_cache(preKey: Proteus.keys.PreKey): Proteus.keys.PreKey {
     this.logger.log(`Saving PreKey with ID "${preKey.key_id}" in cache.`);
     this.cachedPreKeys.set(preKey.key_id, preKey);
     return preKey;
   }
 
-  public load_prekey_from_cache(preKeyId: number): Proteus.keys.PreKey {
+  private load_prekey_from_cache(preKeyId: number): Proteus.keys.PreKey {
     this.logger.log(`Loading PreKey with ID "${preKeyId}" from cache.`);
     return this.cachedPreKeys.get(preKeyId);
   }
 
-  public save_session_in_cache(session: CryptoboxSession): CryptoboxSession {
+  private save_session_in_cache(session: CryptoboxSession): CryptoboxSession {
     this.logger.log(`Saving Session with ID "${session.id}" in cache.`);
     this.cachedSessions.set(session.id, session);
     return session;
   }
 
-  public load_session_from_cache(session_id: string): CryptoboxSession {
+  private load_session_from_cache(session_id: string): CryptoboxSession {
     this.logger.log(`Loading Session with ID "${session_id}" from cache.`);
     return this.cachedSessions.get(session_id);
   }
@@ -77,12 +77,8 @@ export class Cryptobox {
           this.logger.log(`Loading last resort PreKey...`);
           return Promise.resolve().then(() => {
             return this.load_prekey_from_cache(Proteus.keys.PreKey.MAX_PREKEY_ID);
-          }).then((prekey) => {
-            if (prekey === undefined) {
-              return this.store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID)
-            } else {
-              return prekey;
-            }
+          }).then((prekey: Proteus.keys.PreKey) => {
+            return prekey || this.store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
           }).then((prekey) => {
             return this.save_prekey_in_cache(prekey);
           });
@@ -176,15 +172,14 @@ export class Cryptobox {
           .then((session: Proteus.session.Session) => {
             if (session) {
               let pk_store: ReadOnlyStore = new ReadOnlyStore(this.store);
-              let cryptoBoxSession: CryptoboxSession = new CryptoboxSession(session_id, pk_store, session);
-              return cryptoBoxSession;
+              return new CryptoboxSession(session_id, pk_store, session);
             } else {
               throw new Error(`Session with ID '${session}' not found.`);
             }
           })
           .then(function (session) {
             return this.save_session_in_cache(session);
-          })
+          });
       }
     });
   }
@@ -192,10 +187,7 @@ export class Cryptobox {
   public session_save(session: CryptoboxSession): Promise<String> {
     return this.store.save_session(session.id, session.session).then(() => {
 
-      let prekey_deletions = [];
-      session.pk_store.removed_prekeys.forEach((pk_id: number) => {
-        prekey_deletions.push(this.store.delete_prekey(pk_id));
-      });
+      let prekey_deletions = session.pk_store.removed_prekeys.map(this.store.delete_prekey);
 
       return Promise.all(prekey_deletions);
     }).then(() => {
@@ -239,9 +231,8 @@ export class Cryptobox {
     return Promise.resolve().then(() => {
       if (typeof session === 'string') {
         return this.session_load(session);
-      } else {
-        return session;
       }
+      return session;
     }).then((session: CryptoboxSession) => {
       loadedSession = session;
       return loadedSession.encrypt(payload);
@@ -265,9 +256,8 @@ export class Cryptobox {
       .then(function (value: any) {
         let decrypted_message: Uint8Array;
 
-        if (value[0] !== undefined) {
-          session = value[0];
-          decrypted_message = value[1];
+        if (value !== undefined) {
+          [session, decrypted_message] = value;
           return decrypted_message;
         } else {
           session = value;
