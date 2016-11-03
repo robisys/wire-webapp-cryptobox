@@ -31,7 +31,6 @@ SystemJS.config({
   packages: {
     'dexie': {format: 'amd'},
     'logdown': {format: 'cjs'},
-    'wire-webapp-lru-cache': {format: 'cjs', exports: 'LRUCache'},
     'wire-webapp-proteus': {format: 'amd'}
   }
 });
