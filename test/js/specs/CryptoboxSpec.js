@@ -106,15 +106,15 @@ describe('cryptobox.Cryptobox', function() {
     });
 
     describe('session_load', function() {
-      it('it loads a session from the storage only once (then loads it from memory)', function(done) {
+      it('it loads a session from the cache', function(done) {
         spyOn(boxInstance.store, 'load_session').and.callThrough();
         boxInstance.session_load(sessionId).then(function(session) {
           expect(session.id).toBe(sessionId);
-          expect(boxInstance.store.load_session.calls.count()).toBe(1);
+          expect(boxInstance.store.load_session.calls.count()).toBe(0);
           return boxInstance.session_load(sessionId);
         }).then(function(session) {
           expect(session.id).toBe(sessionId);
-          expect(boxInstance.store.load_session.calls.count()).toBe(1);
+          expect(boxInstance.store.load_session.calls.count()).toBe(0);
           done();
         }).catch(done.fail);
       });

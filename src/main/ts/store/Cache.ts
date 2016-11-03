@@ -94,7 +94,7 @@ export default class Cache implements CryptoboxStore {
     });
   }
 
-  save_prekeys(preKeys: Array<Proteus.keys.PreKey>): Promise<Proteus.keys.PreKey> {
+  save_prekeys(preKeys: Array<Proteus.keys.PreKey>): Promise<Array<Proteus.keys.PreKey>> {
     return new Promise((resolve, reject) => {
       let savePromises: Array<Promise<Proteus.keys.PreKey>> = [];
 

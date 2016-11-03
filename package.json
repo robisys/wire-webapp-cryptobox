@@ -3,8 +3,9 @@
     "@types/postal": "1.0.28",
     "bazinga64": "3.0.3",
     "dexie": "1.5.0",
-    "logdown": "https://github.com/caiogondim/logdown.js.git#dc8b04ceb033d5ef58522caa552ac8ef9b3b5e74",
+    "logdown": "1.4.0",
     "postal": "2.0.4",
+    "wire-webapp-lru-cache": "1.0.1",
     "wire-webapp-proteus": "2.1.2"
   },
   "description": "High-level API with persistent storage for Proteus.",

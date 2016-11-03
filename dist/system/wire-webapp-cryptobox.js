@@ -100,10 +100,10 @@ System.register("CryptoboxSession", ["wire-webapp-proteus"], function(exports_3,
         }
     }
 });
-System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSession", "store/ReadOnlyStore", "postal"], function(exports_4, context_4) {
+System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "wire-webapp-lru-cache", "CryptoboxSession", "store/ReadOnlyStore", "postal"], function(exports_4, context_4) {
     "use strict";
     var __moduleName = context_4 && context_4.id;
-    var Proteus, logdown_1, CryptoboxSession_1, ReadOnlyStore_1, postal;
+    var Proteus, logdown_1, wire_webapp_lru_cache_1, CryptoboxSession_1, ReadOnlyStore_1, postal;
     var Cryptobox;
     return {
         setters:[
@@ -112,6 +112,9 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSessio
             },
             function (logdown_1_1) {
                 logdown_1 = logdown_1_1;
+            },
+            function (wire_webapp_lru_cache_1_1) {
+                wire_webapp_lru_cache_1 = wire_webapp_lru_cache_1_1;
             },
             function (CryptoboxSession_1_1) {
                 CryptoboxSession_1 = CryptoboxSession_1_1;
@@ -129,23 +132,45 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSessio
                     this.EVENT = {
                         NEW_PREKEYS: "new-prekeys"
                     };
-                    this.cachedPreKeys = {};
-                    this.cachedSessions = {};
                     this.channel = postal.channel("cryptobox");
                     if (!cryptoBoxStore) {
                         throw new Error("You cannot initialize Cryptobox without a storage component.");
                     }
+                    this.cachedPreKeys = new wire_webapp_lru_cache_1.default(1000);
+                    this.cachedSessions = new wire_webapp_lru_cache_1.default(1000);
                     this.logger = new logdown_1.default({ prefix: 'cryptobox.Cryptobox', alignOuput: true });
                     this.logger.log("Constructed Cryptobox.");
                     this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
                     this.pk_store = new ReadOnlyStore_1.ReadOnlyStore(this.store);
                     this.store = cryptoBoxStore;
                 }
+                Cryptobox.prototype.save_prekey_in_cache = function (preKey) {
+                    this.logger.log("Saving PreKey with ID \"" + preKey.key_id + "\" in cache.");
+                    this.cachedPreKeys.set(preKey.key_id, preKey);
+                    return preKey;
+                };
+                Cryptobox.prototype.load_prekey_from_cache = function (preKeyId) {
+                    this.logger.log("Loading PreKey with ID \"" + preKeyId + "\" from cache.");
+                    return this.cachedPreKeys.get(preKeyId);
+                };
+                Cryptobox.prototype.save_session_in_cache = function (session) {
+                    this.logger.log("Saving Session with ID \"" + session.id + "\" in cache.");
+                    this.cachedSessions.set(session.id, session);
+                    return session;
+                };
+                Cryptobox.prototype.load_session_from_cache = function (session_id) {
+                    this.logger.log("Loading Session with ID \"" + session_id + "\" from cache.");
+                    return this.cachedSessions.get(session_id);
+                };
+                Cryptobox.prototype.remove_session_from_cache = function (session_id) {
+                    this.logger.log("Removing Session with ID \"" + session_id + "\" from cache.");
+                    this.cachedSessions.set(session_id, undefined);
+                };
                 Cryptobox.prototype.init = function () {
                     var _this = this;
-                    return new Promise(function (resolve, reject) {
+                    return Promise.resolve().then(function () {
                         _this.logger.log("Loading local identity...");
-                        _this.store.load_identity()
+                        return _this.store.load_identity()
                             .catch(function () {
                             var identity = Proteus.keys.IdentityKeyPair.new();
                             _this.logger.warn("No existing identity found. Created new identity with fingerprint \"" + identity.public_key.fingerprint() + "\".", identity);
@@ -155,13 +180,21 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSessio
                             _this.identity = identity;
                             _this.logger.log("Initialized Cryptobox with an identity which has the following fingerprint \"" + _this.identity.public_key.fingerprint() + "\".", _this.identity);
                             _this.logger.log("Loading last resort PreKey...");
-                            return _this.store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
+                            return Promise.resolve().then(function () {
+                                return _this.load_prekey_from_cache(Proteus.keys.PreKey.MAX_PREKEY_ID);
+                            }).then(function (prekey) {
+                                return prekey || _this.store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
+                            }).then(function (prekey) {
+                                return _this.save_prekey_in_cache(prekey);
+                            });
                         })
                             .catch(function () {
                             var id = Proteus.keys.PreKey.MAX_PREKEY_ID;
                             var lastResortPreKey = Proteus.keys.PreKey.new(id);
                             _this.logger.warn("No last resort PreKey found. Created last resort PreKey with ID \"" + id + "\".");
-                            return _this.store.save_prekey(lastResortPreKey);
+                            return _this.store.save_prekey(lastResortPreKey).then(function (prekey) {
+                                return _this.save_prekey_in_cache(prekey);
+                            });
                         })
                             .then(function (lastResortPreKey) {
                             _this.logger.log("Loaded last resort PreKey (ID " + lastResortPreKey.key_id + ").");
@@ -170,14 +203,14 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSessio
                         })
                             .then(function (newPreKeys) {
                             _this.logger.log("Initialized Cryptobox with \"" + newPreKeys.length + "\" PreKeys (" + newPreKeys.length + " of them are new).");
-                            resolve(_this);
-                        }).catch(reject);
+                            return _this;
+                        });
                     });
                 };
                 Cryptobox.prototype.get_initial_prekeys = function () {
                     var _this = this;
-                    return new Promise(function (resolve, reject) {
-                        _this.store.load_prekeys()
+                    return Promise.resolve().then(function () {
+                        return _this.store.load_prekeys()
                             .then(function (currentPreKeys) {
                             var missingAmount = 0;
                             var highestId = 0;
@@ -199,156 +232,137 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "CryptoboxSessio
                                 _this.channel.publish(_this.EVENT.NEW_PREKEYS, newPreKeys);
                                 _this.logger.log("Published event '" + _this.EVENT.NEW_PREKEYS + "'.", newPreKeys);
                             }
-                            resolve(newPreKeys);
-                        })
-                            .catch(reject);
+                            return newPreKeys;
+                        });
                     });
                 };
                 Cryptobox.prototype.session_from_prekey = function (client_id, pre_key_bundle) {
                     var _this = this;
-                    return new Promise(function (resolve) {
+                    return Promise.resolve().then(function () {
                         var bundle = Proteus.keys.PreKeyBundle.deserialise(pre_key_bundle);
-                        Proteus.session.Session.init_from_prekey(_this.identity, bundle).then(function (session) {
-                            return resolve(new CryptoboxSession_1.CryptoboxSession(client_id, _this.pk_store, session));
+                        return Proteus.session.Session.init_from_prekey(_this.identity, bundle).then(function (session) {
+                            return new CryptoboxSession_1.CryptoboxSession(client_id, _this.pk_store, session);
                         });
                     });
                 };
                 Cryptobox.prototype.session_from_message = function (session_id, envelope) {
                     var _this = this;
-                    return new Promise(function (resolve, reject) {
+                    return Promise.resolve().then(function () {
                         var env;
-                        try {
-                            env = Proteus.message.Envelope.deserialise(envelope);
-                        }
-                        catch (error) {
-                            return reject(error);
-                        }
-                        Proteus.session.Session.init_from_message(_this.identity, _this.pk_store, env)
+                        env = Proteus.message.Envelope.deserialise(envelope);
+                        return Proteus.session.Session.init_from_message(_this.identity, _this.pk_store, env)
                             .then(function (tuple) {
                             var session = tuple[0];
                             var decrypted = tuple[1];
                             var cryptoBoxSession = new CryptoboxSession_1.CryptoboxSession(session_id, _this.pk_store, session);
-                            resolve([cryptoBoxSession, decrypted]);
-                        })
-                            .catch(reject);
+                            return [cryptoBoxSession, decrypted];
+                        });
                     });
                 };
                 Cryptobox.prototype.session_load = function (session_id) {
                     var _this = this;
-                    return new Promise(function (resolve, reject) {
-                        if (_this.cachedSessions[session_id]) {
-                            resolve(_this.cachedSessions[session_id]);
+                    return Promise.resolve().then(function () {
+                        var cachedSession = _this.load_session_from_cache(session_id);
+                        if (cachedSession) {
+                            return cachedSession;
                         }
-                        else {
-                            _this.store.load_session(_this.identity, session_id)
-                                .then(function (session) {
-                                if (session) {
-                                    var pk_store = new ReadOnlyStore_1.ReadOnlyStore(_this.store);
-                                    var cryptoBoxSession = new CryptoboxSession_1.CryptoboxSession(session_id, pk_store, session);
-                                    _this.cachedSessions[session_id] = cryptoBoxSession;
-                                    resolve(cryptoBoxSession);
-                                }
-                                else {
-                                    reject(new Error("Session with ID '" + session + "' not found."));
-                                }
-                            })
-                                .catch(reject);
-                        }
+                        return _this.store.load_session(_this.identity, session_id)
+                            .then(function (session) {
+                            if (session) {
+                                var pk_store = new ReadOnlyStore_1.ReadOnlyStore(_this.store);
+                                return new CryptoboxSession_1.CryptoboxSession(session_id, pk_store, session);
+                            }
+                            else {
+                                throw new Error("Session with ID '" + session + "' not found.");
+                            }
+                        })
+                            .then(function (session) {
+                            return this.save_session_in_cache(session);
+                        });
                     });
                 };
                 Cryptobox.prototype.session_save = function (session) {
                     var _this = this;
-                    return new Promise(function (resolve) {
-                        _this.store.save_session(session.id, session.session).then(function () {
-                            var prekey_deletions = [];
-                            session.pk_store.removed_prekeys.forEach(function (pk_id) {
-                                prekey_deletions.push(_this.store.delete_prekey(pk_id));
-                            });
-                            return Promise.all(prekey_deletions);
-                        }).then(function () {
-                            return _this.get_initial_prekeys();
-                        }).then(function () {
-                            resolve(session.id);
-                        });
+                    return this.store.save_session(session.id, session.session).then(function () {
+                        var prekey_deletions = session.pk_store.removed_prekeys.map(_this.store.delete_prekey);
+                        return Promise.all(prekey_deletions);
+                    }).then(function () {
+                        return _this.get_initial_prekeys();
+                    }).then(function () {
+                        return _this.save_session_in_cache(session);
+                    }).then(function () {
+                        return session.id;
                     });
                 };
                 Cryptobox.prototype.session_delete = function (session_id) {
-                    delete this.cachedSessions[session_id];
+                    this.remove_session_from_cache(session_id);
                     return this.store.delete_session(session_id);
                 };
                 Cryptobox.prototype.new_prekey = function (prekey_id) {
                     var _this = this;
-                    return new Promise(function (resolve, reject) {
+                    return Promise.resolve().then(function () {
                         var pk = Proteus.keys.PreKey.new(prekey_id);
-                        _this.store.save_prekey(pk).then(function () {
+                        return _this.store.save_prekey(pk).then(function () {
                             var serialisedPreKeyBundle = Proteus.keys.PreKeyBundle.new(_this.identity.public_key, pk).serialise();
-                            resolve(serialisedPreKeyBundle);
-                        }).catch(reject);
+                            return serialisedPreKeyBundle;
+                        });
                     });
                 };
                 Cryptobox.prototype.new_prekeys = function (start, size) {
                     var _this = this;
                     if (size === void 0) { size = 0; }
-                    return new Promise(function (resolve, reject) {
+                    return Promise.resolve().then(function () {
                         if (size === 0) {
-                            resolve([]);
+                            return new Array();
                         }
                         var newPreKeys = Proteus.keys.PreKey.generate_prekeys(start, size);
-                        _this.store.save_prekeys(newPreKeys).then(resolve).catch(reject);
+                        return _this.store.save_prekeys(newPreKeys);
                     });
                 };
                 Cryptobox.prototype.encrypt = function (session, payload) {
                     var _this = this;
-                    return new Promise(function (resolve) {
-                        var encryptedBuffer;
-                        var loadedSession;
-                        Promise.resolve().then(function () {
-                            if (typeof session === 'string') {
-                                return _this.session_load(session);
-                            }
-                            else {
-                                return session;
-                            }
-                        }).then(function (session) {
-                            loadedSession = session;
-                            return loadedSession.encrypt(payload);
-                        }).then(function (encrypted) {
-                            encryptedBuffer = encrypted;
-                            return _this.session_save(loadedSession);
-                        }).then(function () {
-                            resolve(encryptedBuffer);
-                        });
+                    var encryptedBuffer;
+                    var loadedSession;
+                    return Promise.resolve().then(function () {
+                        if (typeof session === 'string') {
+                            return _this.session_load(session);
+                        }
+                        return session;
+                    }).then(function (session) {
+                        loadedSession = session;
+                        return loadedSession.encrypt(payload);
+                    }).then(function (encrypted) {
+                        encryptedBuffer = encrypted;
+                        return _this.session_save(loadedSession);
+                    }).then(function () {
+                        return encryptedBuffer;
                     });
                 };
                 Cryptobox.prototype.decrypt = function (session_id, ciphertext) {
                     var _this = this;
-                    return new Promise(function (resolve, reject) {
-                        var message;
-                        var session;
-                        _this.session_load(session_id)
-                            .catch(function () {
-                            return _this.session_from_message(session_id, ciphertext);
-                        })
-                            .then(function (value) {
-                            var decrypted_message;
-                            if (value[0] !== undefined) {
-                                session = value[0];
-                                decrypted_message = value[1];
-                                return decrypted_message;
-                            }
-                            else {
-                                session = value;
-                                return value.decrypt(ciphertext);
-                            }
-                        })
-                            .then(function (decrypted_message) {
-                            message = decrypted_message;
-                            return _this.session_save(session);
-                        })
-                            .then(function () {
-                            resolve(message);
-                        })
-                            .catch(reject);
+                    var message;
+                    var session;
+                    return this.session_load(session_id)
+                        .catch(function () {
+                        return _this.session_from_message(session_id, ciphertext);
+                    })
+                        .then(function (value) {
+                        var decrypted_message;
+                        if (value !== undefined) {
+                            session = value[0], decrypted_message = value[1];
+                            return decrypted_message;
+                        }
+                        else {
+                            session = value;
+                            return value.decrypt(ciphertext);
+                        }
+                    })
+                        .then(function (decrypted_message) {
+                        message = decrypted_message;
+                        return _this.session_save(session);
+                    })
+                        .then(function () {
+                        return message;
                     });
                 };
                 return Cryptobox;
