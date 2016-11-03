@@ -1,19 +1,18 @@
 import * as Proteus from "wire-webapp-proteus";
 import Logdown from "logdown";
+import LRUCache = require("wire-webapp-lru-cache");
 import {CryptoboxSession} from "./CryptoboxSession";
 import {CryptoboxStore} from "./store/CryptoboxStore";
 import {ReadOnlyStore} from "./store/ReadOnlyStore";
-import LRUCache from "lru-ts";
 import postal = require("postal");
 
 export class Cryptobox {
-  // TODO: Limit the amount of items in cache
   public EVENT = {
     NEW_PREKEYS: "new-prekeys"
   };
 
-  private cachedPreKeys: LRUCache = new LRUCache(1000);
-  private cachedSessions: LRUCache = new LRUCache(1000);
+  private cachedPreKeys: LRUCache;
+  private cachedSessions: LRUCache;
   private channel = postal.channel("cryptobox");
 
   private logger: Logdown;
@@ -27,7 +26,8 @@ export class Cryptobox {
     if (!cryptoBoxStore) {
       throw new Error(`You cannot initialize Cryptobox without a storage component.`);
     }
-
+    this.cachedPreKeys = new LRUCache(1000);
+    this.cachedSessions = new LRUCache(1000);
     this.logger = new Logdown({prefix: 'cryptobox.Cryptobox', alignOuput: true});
     this.logger.log(`Constructed Cryptobox.`);
     this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
@@ -37,7 +37,7 @@ export class Cryptobox {
 
   public save_prekey_in_cache(preKey: Proteus.keys.PreKey): Proteus.keys.PreKey {
     this.logger.log(`Saving PreKey with ID "${preKey.key_id}" in cache.`);
-    this.cachedPreKeys.put(preKey.key_id, preKey);
+    this.cachedPreKeys.set(preKey.key_id, preKey);
     return preKey;
   }
 
@@ -48,7 +48,7 @@ export class Cryptobox {
 
   public save_session_in_cache(session: CryptoboxSession): CryptoboxSession {
     this.logger.log(`Saving Session with ID "${session.id}" in cache.`);
-    this.cachedSessions.put(session.id, session);
+    this.cachedSessions.set(session.id, session);
     return session;
   }
 
@@ -59,7 +59,7 @@ export class Cryptobox {
 
   public remove_session_from_cache(session_id: string): void {
     this.logger.log(`Removing Session with ID "${session_id}" from cache.`);
-    this.cachedSessions.put(session_id, undefined);
+    this.cachedSessions.set(session_id, undefined);
   }
 
   public init(): Promise<Cryptobox> {

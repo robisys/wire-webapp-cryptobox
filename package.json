@@ -4,8 +4,8 @@
     "bazinga64": "3.0.3",
     "dexie": "1.5.0",
     "logdown": "1.4.0",
-    "lru-ts": "https://github.com/wireapp/lru-ts.git#e7ea2a7ef5c8e64ab3a41e619f0f138aa8b211d9",
     "postal": "2.0.4",
+    "wire-webapp-lru-cache": "^1.0.0",
     "wire-webapp-proteus": "2.1.2"
   },
   "description": "High-level API with persistent storage for Proteus.",

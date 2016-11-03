@@ -12,8 +12,8 @@
     "logdown@copy": [
       "logdown/dist/index.js"
     ],
-    "lru-ts@copy": [
-      "lru-ts/dist/global/lru-ts.js"
+    "wire-webapp-lru-cache@copy": [
+      "wire-webapp-lru-cache/dist/commonjs/LRUCache.js"
     ],
     "postal.js@copy": [
       "postal.js/lib/postal.js"
