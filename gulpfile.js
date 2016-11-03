@@ -78,6 +78,19 @@ gulp.task('default', ['dist'], function() {
   });
 });
 
+gulp.task('tdd', ['dist'], function() {
+  gulp.watch('dist/**/*.*').on('change', browserSync.reload);
+  gulp.watch('src/main/ts/**/*.*', function(){
+      runSequence('build_ts_browser', 'test_browser');
+  });
+
+  browserSync.init({
+    port: 3636,
+    server: {baseDir: './'},
+    startPath: '/dist'
+  });
+});
+
 gulp.task('dist', function(done) {
   runSequence('clean', 'install', 'build', done);
 });

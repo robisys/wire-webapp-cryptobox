@@ -9,6 +9,7 @@
 
 /bower_components
 /dist/commonjs
+/dist/system/
 /dist/lib
 /node_modules
 /npm-debug.log
