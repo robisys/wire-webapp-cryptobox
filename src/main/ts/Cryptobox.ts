@@ -167,20 +167,20 @@ export class Cryptobox {
       let cachedSession = this.load_session_from_cache(session_id);
       if (cachedSession) {
         return cachedSession;
-      } else {
-        return this.store.load_session(this.identity, session_id)
-          .then((session: Proteus.session.Session) => {
-            if (session) {
-              let pk_store: ReadOnlyStore = new ReadOnlyStore(this.store);
-              return new CryptoboxSession(session_id, pk_store, session);
-            } else {
-              throw new Error(`Session with ID '${session}' not found.`);
-            }
-          })
-          .then(function (session) {
-            return this.save_session_in_cache(session);
-          });
       }
+
+      return this.store.load_session(this.identity, session_id)
+        .then((session: Proteus.session.Session) => {
+          if (session) {
+            let pk_store: ReadOnlyStore = new ReadOnlyStore(this.store);
+            return new CryptoboxSession(session_id, pk_store, session);
+          } else {
+            throw new Error(`Session with ID '${session}' not found.`);
+          }
+        })
+        .then(function (session) {
+          return this.save_session_in_cache(session);
+        });
     });
   }
 

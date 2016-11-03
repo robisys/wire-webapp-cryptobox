@@ -266,21 +266,19 @@ System.register("Cryptobox", ["wire-webapp-proteus", "logdown", "wire-webapp-lru
                         if (cachedSession) {
                             return cachedSession;
                         }
-                        else {
-                            return _this.store.load_session(_this.identity, session_id)
-                                .then(function (session) {
-                                if (session) {
-                                    var pk_store = new ReadOnlyStore_1.ReadOnlyStore(_this.store);
-                                    return new CryptoboxSession_1.CryptoboxSession(session_id, pk_store, session);
-                                }
-                                else {
-                                    throw new Error("Session with ID '" + session + "' not found.");
-                                }
-                            })
-                                .then(function (session) {
-                                return this.save_session_in_cache(session);
-                            });
-                        }
+                        return _this.store.load_session(_this.identity, session_id)
+                            .then(function (session) {
+                            if (session) {
+                                var pk_store = new ReadOnlyStore_1.ReadOnlyStore(_this.store);
+                                return new CryptoboxSession_1.CryptoboxSession(session_id, pk_store, session);
+                            }
+                            else {
+                                throw new Error("Session with ID '" + session + "' not found.");
+                            }
+                        })
+                            .then(function (session) {
+                            return this.save_session_in_cache(session);
+                        });
                     });
                 };
                 Cryptobox.prototype.session_save = function (session) {
