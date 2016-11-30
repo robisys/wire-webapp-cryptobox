@@ -40,7 +40,7 @@ describe('cryptobox.Cryptobox', function() {
       });
     } else {
       bazinga64 = require('bazinga64');
-      cryptobox = require('../../../dist/commonjs/wire-webapp-cryptobox');
+      cryptobox = require('../../../dist/commonjs/wire-webapp-cryptobox').default;
       Proteus = require('wire-webapp-proteus');
       done();
     }

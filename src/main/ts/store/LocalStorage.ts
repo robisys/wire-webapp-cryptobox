@@ -36,7 +36,7 @@ export default class LocalStorage implements CryptoboxStore {
       if (item) {
         resolve(item);
       } else {
-        reject(new Error(`Item '${primary_key}' not found in '${store_name}'.`));
+        reject(new Error(`Item "${primary_key}" not found in "${store_name}".`));
       }
     });
   };
@@ -131,7 +131,7 @@ export default class LocalStorage implements CryptoboxStore {
 
     return new Promise((resolve, reject) => {
       this.save(this.localIdentityStore, payload.id, payload.serialised).then(function (key: string) {
-        let message = `Saved local identity '${fingerprint}' with key '${key}'.`;
+        let message = `Saved local identity "${fingerprint}" with key "${key}".`;
         resolve(identity);
       }).catch(reject);
     });

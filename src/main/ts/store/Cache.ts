@@ -48,7 +48,7 @@ export default class Cache implements CryptoboxStore {
       if (serialised) {
         resolve(Proteus.keys.PreKey.deserialise(serialised));
       } else {
-        reject(new Error(`PreKey with ID '${prekey_id}' not found.`));
+        reject(new Error(`PreKey with ID "${prekey_id}" not found.`));
       }
     });
   }
@@ -69,7 +69,7 @@ export default class Cache implements CryptoboxStore {
       if (serialised) {
         resolve(Proteus.session.Session.deserialise(identity, serialised));
       } else {
-        reject(new Error(`Session with ID '${session_id}' not found.`));
+        reject(new Error(`Session with ID "${session_id}" not found.`));
       }
     });
   }
@@ -87,7 +87,8 @@ export default class Cache implements CryptoboxStore {
       try {
         this.prekeys[preKey.key_id] = preKey.serialise();
       } catch (error) {
-        return reject(new Error(`PreKey serialization problem: '${error.message}'`));
+        // TODO: Keep (and log) error stack trace
+        return reject(new Error(`PreKey (no. ${preKey.key_id}) serialization problem "${error.message}" at "${error.stack}".`));
       }
 
       resolve(preKey);
@@ -114,7 +115,7 @@ export default class Cache implements CryptoboxStore {
       try {
         this.sessions[session_id] = session.serialise();
       } catch (error) {
-        return reject(new Error(`Session serialization problem: '${error.message}'`));
+        return reject(new Error(`Session serialization problem: "${error.message}"`));
       }
 
       resolve(session);

@@ -20,8 +20,8 @@
 var assets = require('gulp-bower-assets');
 var babel = require('gulp-babel');
 var bower = require('gulp-bower');
-var clean = require('gulp-clean');
 var browserSync = require('browser-sync').create();
+var clean = require('gulp-clean');
 var gulp = require('gulp');
 var gulpTypings = require('gulp-typings');
 var gutil = require('gulp-util');
@@ -29,24 +29,25 @@ var jasmine = require('gulp-jasmine');
 var karma = require('karma');
 var merge = require('merge2');
 var pkg = require('./package.json');
+var replace = require('gulp-replace');
 var runSequence = require('run-sequence');
 var sourcemaps = require('gulp-sourcemaps');
 var ts = require('gulp-typescript');
-var tsProject = ts.createProject('tsconfig.json', {
+var tsProjectBrowser = ts.createProject('tsconfig.json', {
   outFile: pkg.name + ".js"
 });
 var tsProjectNode = ts.createProject('tsconfig.json', {
   module: "commonjs"
 });
 
-gulp.task('clean', ['clean_browser', 'clean_node'], function () {
+gulp.task('clean', ['clean_browser', 'clean_node'], function() {
 });
 
-gulp.task('clean_browser', function () {
+gulp.task('clean_browser', function() {
   return gulp.src('dist/system').pipe(clean());
 });
 
-gulp.task('clean_node', function () {
+gulp.task('clean_node', function() {
   return gulp.src('dist/commonjs').pipe(clean());
 });
 
@@ -54,16 +55,19 @@ gulp.task('build', function(done) {
   runSequence('build_ts_browser', 'build_ts_node', done);
 });
 
-gulp.task('build_ts_browser', ['clean_browser'], function() {
-  return tsProject.src().pipe(tsProject()).pipe(gulp.dest('dist/system'));
+gulp.task('build_ts_browser', function() {
+  return tsProjectBrowser.src()
+    .pipe(tsProjectBrowser())
+    .pipe(replace('new Logdown', 'new Logdown.default'))
+    .pipe(gulp.dest('dist/system'));
 });
 
 gulp.task('build_ts_node', ['clean_node'], function() {
-  var tsResult = tsProject.src().pipe(tsProjectNode());
+  var tsResult = tsProjectNode.src().pipe(tsProjectNode());
 
   return merge([
     tsResult.dts.pipe(gulp.dest('dist/typings')),
-    tsResult.js.pipe(gulp.dest('dist/commonjs'))
+    tsResult.js.pipe(replace('exports.default = {', 'module.exports = {')).pipe(gulp.dest('dist/commonjs'))
   ]);
 });
 
@@ -80,8 +84,8 @@ gulp.task('default', ['dist'], function() {
 
 gulp.task('tdd', ['dist'], function() {
   gulp.watch('dist/**/*.*').on('change', browserSync.reload);
-  gulp.watch('src/main/ts/**/*.*', function(){
-      runSequence('build_ts_browser', 'test_browser');
+  gulp.watch('src/main/ts/**/*.*', function() {
+    runSequence('build_ts_browser', 'test_browser');
   });
 
   browserSync.init({
@@ -148,7 +152,17 @@ gulp.task('test_browser', function(done) {
 gulp.task('test_node', function() {
   gutil.log(gutil.colors.yellow('Running tests on Node.js:'));
 
-  return gulp.src('test/js/specs/store/CacheSpec.js')
+  var file = process.argv[4];
+
+  var tests = [
+    'test/js/specs/store/CacheSpec.js'
+  ];
+
+  if (file) {
+    tests = [`test/js/specs/${file}`]
+  }
+
+  return gulp.src(tests)
     .pipe(jasmine({
       random: true,
       stopSpecOnExpectationFailure: true

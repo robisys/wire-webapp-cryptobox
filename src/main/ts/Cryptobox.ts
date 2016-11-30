@@ -1,9 +1,9 @@
 import * as Proteus from "wire-webapp-proteus";
-import Logdown from "logdown";
-import LRUCache from "wire-webapp-lru-cache";
+import {LRUCache} from "wire-webapp-lru-cache";
 import {CryptoboxSession} from "./CryptoboxSession";
 import {CryptoboxStore} from "./store/CryptoboxStore";
 import {ReadOnlyStore} from "./store/ReadOnlyStore";
+import Logdown = require("logdown");
 import postal = require("postal");
 
 export class Cryptobox {
@@ -26,13 +26,18 @@ export class Cryptobox {
     if (!cryptoBoxStore) {
       throw new Error(`You cannot initialize Cryptobox without a storage component.`);
     }
-    this.cachedPreKeys = new LRUCache(1000);
+
+    // Note: Only the Last Resort PreKey gets cached
+    this.cachedPreKeys = new LRUCache(1);
     this.cachedSessions = new LRUCache(1000);
-    this.logger = new Logdown({prefix: 'cryptobox.Cryptobox', alignOuput: true});
-    this.logger.log(`Constructed Cryptobox.`);
+
     this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
     this.pk_store = new ReadOnlyStore(this.store);
     this.store = cryptoBoxStore;
+
+    let storageEngine: string = (<any>cryptoBoxStore).constructor.name;
+    this.logger = new Logdown({prefix: 'cryptobox.Cryptobox', alignOuput: true});
+    this.logger.log(`Constructed Cryptobox. Minimum amount of PreKeys is "${minimumAmountOfPreKeys}". Storage engine is "${storageEngine}".`);
   }
 
   private save_prekey_in_cache(preKey: Proteus.keys.PreKey): Proteus.keys.PreKey {
@@ -42,7 +47,7 @@ export class Cryptobox {
   }
 
   private load_prekey_from_cache(preKeyId: number): Proteus.keys.PreKey {
-    this.logger.log(`Loading PreKey with ID "${preKeyId}" from cache.`);
+    this.logger.log(`Loading PreKey with ID: "${preKeyId}" from cache...`);
     return this.cachedPreKeys.get(preKeyId);
   }
 
@@ -73,32 +78,28 @@ export class Cryptobox {
         })
         .then((identity) => {
           this.identity = identity;
-          this.logger.log(`Initialized Cryptobox with an identity which has the following fingerprint "${this.identity.public_key.fingerprint()}".`, this.identity);
-          this.logger.log(`Loading last resort PreKey...`);
+          this.logger.log(`Loaded local identity. Fingerprint is "${this.identity.public_key.fingerprint()}".`, this.identity);
+          this.logger.log(`Loading Last Resort PreKey with ID "${Proteus.keys.PreKey.MAX_PREKEY_ID}"...`);
           return Promise.resolve().then(() => {
             return this.load_prekey_from_cache(Proteus.keys.PreKey.MAX_PREKEY_ID);
           }).then((prekey: Proteus.keys.PreKey) => {
             return prekey || this.store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
-          }).then((prekey) => {
+          }).then((prekey: Proteus.keys.PreKey) => {
             return this.save_prekey_in_cache(prekey);
           });
         })
         .catch(() => {
-          let id: number = Proteus.keys.PreKey.MAX_PREKEY_ID;
-          let lastResortPreKey: Proteus.keys.PreKey = Proteus.keys.PreKey.new(id);
-          this.logger.warn(`No last resort PreKey found. Created last resort PreKey with ID "${id}".`);
-          return this.store.save_prekey(lastResortPreKey).then((prekey) => {
-            return this.save_prekey_in_cache(prekey);
-          });
+          let lastResort: number = Proteus.keys.PreKey.MAX_PREKEY_ID;
+          this.logger.warn(`No last resort PreKey found. Created last resort PreKey with ID "${lastResort}".`);
+          return this.new_prekey(lastResort);
         })
-        .then((lastResortPreKey: Proteus.keys.PreKey) => {
-          this.logger.log(`Loaded last resort PreKey (ID ${lastResortPreKey.key_id}).`);
-          this.logger.log(`Loading standard PreKeys... ${this.minimumAmountOfPreKeys - 1} left...`);
+        .then(() => {
+          this.logger.log(`Loaded Last Resort PreKey with ID "${Proteus.keys.PreKey.MAX_PREKEY_ID}".`);
+          this.logger.log(`Loading "${this.minimumAmountOfPreKeys - 1}" Standard PreKeys...`);
           return this.get_initial_prekeys();
         })
-        .then((newPreKeys: Array<Proteus.keys.PreKey>) => {
-          // TODO: Insert total amount of PreKeys (from cache) into "xx"
-          this.logger.log(`Initialized Cryptobox with "${newPreKeys.length}" PreKeys (${newPreKeys.length} of them are new).`);
+        .then((initialPreKeys: Array<Proteus.keys.PreKey>) => {
+          this.logger.log(`Initialized Cryptobox with an amount of "${initialPreKeys.length}" PreKeys.`);
           return this;
         });
     });
@@ -106,8 +107,12 @@ export class Cryptobox {
 
   private get_initial_prekeys(): Promise<Array<Proteus.keys.PreKey>> {
     return Promise.resolve().then(() => {
+      let preKeys: Array<Proteus.keys.PreKey> = [];
+
       return this.store.load_prekeys()
         .then((currentPreKeys: Array<Proteus.keys.PreKey>) => {
+          preKeys = currentPreKeys;
+
           let missingAmount: number = 0;
           let highestId: number = 0;
 
@@ -119,21 +124,26 @@ export class Cryptobox {
               if (preKey.key_id > highestId && preKey.key_id !== Proteus.keys.PreKey.MAX_PREKEY_ID) {
                 highestId = preKey.key_id;
               }
+
+              // TODO: Add to cache
             });
 
             highestId += 1;
 
-            this.logger.warn(`There are not enough PreKeys in the storage. Generating "${missingAmount}" new PreKeys, starting from ID "${highestId}"...`)
+            this.logger.warn(`There are not enough PreKeys in the storage. Generating "${missingAmount}" new PreKey(s), starting from ID "${highestId}"...`)
           }
 
           return this.new_prekeys(highestId, missingAmount);
         })
         .then((newPreKeys: Array<Proteus.keys.PreKey>) => {
+          preKeys = preKeys.concat(newPreKeys);
+
           if (newPreKeys.length > 0) {
             this.channel.publish(this.EVENT.NEW_PREKEYS, newPreKeys);
-            this.logger.log(`Published event '${this.EVENT.NEW_PREKEYS}'.`, newPreKeys);
+            this.logger.log(`Published event "${this.EVENT.NEW_PREKEYS}".`, newPreKeys);
           }
-          return newPreKeys;
+
+          return preKeys;
         });
     });
   }
@@ -175,7 +185,7 @@ export class Cryptobox {
             let pk_store: ReadOnlyStore = new ReadOnlyStore(this.store);
             return new CryptoboxSession(session_id, pk_store, session);
           } else {
-            throw new Error(`Session with ID '${session}' not found.`);
+            throw new Error(`Session with ID "${session}" not found.`);
           }
         })
         .then(function (session) {
@@ -204,13 +214,20 @@ export class Cryptobox {
     return this.store.delete_session(session_id);
   }
 
+  /**
+   * It creates a PreKey and returns a serialized PreKey bundle (which can be uploaded to a key authority)
+   * @param prekey_id
+   * @returns {Promise<T>|Promise}
+   */
   public new_prekey(prekey_id: number): Promise<ArrayBuffer> {
-    return Promise.resolve().then(() => {
+    return new Promise((resolve, reject) => {
       let pk: Proteus.keys.PreKey = Proteus.keys.PreKey.new(prekey_id);
-      return this.store.save_prekey(pk).then(() => {
-        let serialisedPreKeyBundle: ArrayBuffer = Proteus.keys.PreKeyBundle.new(this.identity.public_key, pk).serialise();
-        return serialisedPreKeyBundle;
-      });
+      this.store.save_prekey(pk)
+        .then(() => {
+          let serialisedPreKeyBundle: ArrayBuffer = Proteus.keys.PreKeyBundle.new(this.identity.public_key, pk).serialise();
+          resolve(serialisedPreKeyBundle);
+        })
+        .catch(reject);
     });
   }
 

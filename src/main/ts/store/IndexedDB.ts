@@ -1,7 +1,7 @@
 import * as bazinga64 from "bazinga64";
 import * as Proteus from "wire-webapp-proteus";
 import Dexie from "dexie";
-import Logdown from "logdown";
+import Logdown = require('logdown');
 import {CryptoboxStore} from "./CryptoboxStore";
 import {SerialisedRecord} from "./SerialisedRecord";
 
@@ -41,13 +41,13 @@ export default class IndexedDB implements CryptoboxStore {
     }
 
     this.db.on('blocked', (event) => {
-      this.logger.warn(`Database access to '${this.db.name}' got blocked.`, event);
+      this.logger.warn(`Database access to "${this.db.name}" got blocked.`, event);
       this.db.close();
     });
   }
 
   public init(): Dexie.Promise<Dexie> {
-    this.logger.log(`Connecting to IndexedDB database '${this.db.name}'...`);
+    this.logger.log(`Connecting to IndexedDB database "${this.db.name}"...`);
     return this.db.open();
   }
 
@@ -68,10 +68,10 @@ export default class IndexedDB implements CryptoboxStore {
           return store.get(primary_key);
         }).then((record: any) => {
         if (record) {
-          this.logger.log(`Loaded record '${primary_key}' from store '${store_name}'.`, record);
+          this.logger.log(`Loaded record "${primary_key}" from store "${store_name}".`, record);
           resolve(record);
         } else {
-          reject(new Error(`Record '${primary_key}' not found in store '${store_name}'.`));
+          reject(new Error(`Record "${primary_key}" not found in store "${store_name}".`));
         }
       }).catch(reject);
     });
@@ -82,7 +82,7 @@ export default class IndexedDB implements CryptoboxStore {
       this.validate_store(store_name).then((store: Dexie.Table<any, any>) => {
         return store.put(entity, primary_key);
       }).then((key: any) => {
-        this.logger.log(`Saved record '${primary_key}' into store '${store_name}'.`, entity);
+        this.logger.log(`Saved record "${primary_key}" into store "${store_name}".`, entity);
         resolve(key);
       });
     });
@@ -93,14 +93,14 @@ export default class IndexedDB implements CryptoboxStore {
       if (this.db[store_name]) {
         resolve(this.db[store_name]);
       } else {
-        reject(new Error(`Data store '${store_name}' not found.`));
+        reject(new Error(`Data store "${store_name}" not found.`));
       }
     });
   }
 
   public delete_all(): Promise<boolean> {
     return new Promise((resolve, reject) => {
-      this.logger.info(`Deleting '${this.db.name}'.`);
+      this.logger.info(`Deleting "${this.db.name}".`);
       this.db.delete()
         .then(function () {
           resolve(true);
@@ -187,8 +187,9 @@ export default class IndexedDB implements CryptoboxStore {
 
       this.save(this.TABLE.LOCAL_IDENTITY, payload.id, payload).then((primaryKey: string) => {
         let fingerprint: string = identity.public_key.fingerprint();
-        let message = `Saved local identity '${fingerprint}'`
-          + ` with key '${primaryKey}' into storage '${this.TABLE.LOCAL_IDENTITY}'`;
+        let message = `Saved local identity "${fingerprint}"`
+          + ` with key "${primaryKey}" into storage "${this.TABLE.LOCAL_IDENTITY}"`;
+        this.logger.log(message);
         resolve(identity);
       }).catch(reject);
     });
@@ -202,7 +203,8 @@ export default class IndexedDB implements CryptoboxStore {
       let payload: SerialisedRecord = new SerialisedRecord(serialised, prekey.key_id.toString());
 
       this.save(this.TABLE.PRE_KEYS, payload.id, payload).then((primaryKey: string) => {
-        let message = `Saved PreKey with ID '${prekey.key_id}' into storage '${this.TABLE.PRE_KEYS}'`;
+        let message = `Saved PreKey with ID "${prekey.key_id}" into storage "${this.TABLE.PRE_KEYS}"`;
+        this.logger.log(message);
         resolve(prekey);
       }).catch(reject);
     });
@@ -228,7 +230,7 @@ export default class IndexedDB implements CryptoboxStore {
       this.validate_store(this.TABLE.PRE_KEYS).then((store: Dexie.Table<any, any>) => {
         return store.bulkAdd(items, keys);
       }).then(() => {
-        this.logger.log(`Saved a batch of '${items.length}' PreKeys. From ID '${items[0].id}' to ID '${items[items.length - 1].id}'.`, items);
+        this.logger.log(`Saved a batch of "${items.length}" PreKeys. From ID "${items[0].id}" to ID "${items[items.length - 1].id}".`, items);
         resolve(prekeys);
       }).catch(reject);
 
@@ -241,7 +243,8 @@ export default class IndexedDB implements CryptoboxStore {
       let payload: SerialisedRecord = new SerialisedRecord(serialised, session_id);
 
       this.save(this.TABLE.SESSIONS, payload.id, payload).then((primaryKey: string) => {
-        let message = `Saved session with key '${session_id}' into storage '${this.TABLE.SESSIONS}'`;
+        let message = `Saved session ID "${session_id}" into storage "${this.TABLE.SESSIONS}" with key "${primaryKey}".`;
+        this.logger.log(message);
         resolve(session);
       }).catch(reject);
     });

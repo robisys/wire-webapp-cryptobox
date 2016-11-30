@@ -37,7 +37,7 @@ describe('cryptobox.CryptoboxSession', function() {
       });
     } else {
       bazinga64 = require('bazinga64');
-      cryptobox = require('../../../dist/commonjs/wire-webapp-cryptobox');
+      cryptobox = require('../../../dist/commonjs/wire-webapp-cryptobox').default;
       Proteus = require('wire-webapp-proteus');
       done();
     }
@@ -49,20 +49,26 @@ describe('cryptobox.CryptoboxSession', function() {
     var bob = undefined;
 
     function generatePreKeys(cryptobox_store) {
-      return new Promise(function(resolve) {
+      return new Promise(function(resolve, reject) {
         var promises = [];
+
         // Generate one PreKey
         var pre_keys = Proteus.keys.PreKey.generate_prekeys(0, 1);
         pre_keys.forEach(function(pre_key) {
           promises.push(cryptobox_store.save_prekey(pre_key));
         });
 
-        // Generate the PreKey of last resort
+        // Generate Last Resort PreKey
         var lastResortKey = Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID);
         promises.push(cryptobox_store.save_prekey(lastResortKey));
 
-        Promise.all(promises).then(function() {
+        Promise.all(promises)
+        .then(function() {
           resolve(pre_keys);
+        })
+        .catch(function(error) {
+          console.log('Error in Test PreKey generation.');
+          reject(error);
         });
       });
     }
@@ -80,7 +86,10 @@ describe('cryptobox.CryptoboxSession', function() {
           // 3. Alice upgrades the basic Proteus session into a high-level Cryptobox session
           var sessionWithBob = new cryptobox.CryptoboxSession('bobs_client_id', alice.pre_key_store, session);
           resolve(sessionWithBob);
-        }).catch(reject);
+        }).catch(function(error) {
+          console.log('Error in Test Alice setup!');
+          reject(error);
+        });
       });
     }
 

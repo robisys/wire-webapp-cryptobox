@@ -17,7 +17,7 @@
  *
  */
 
-describe('Compatibility', function() {
+describe('Store Compatibility', function() {
 
   var cryptobox = undefined;
   var Proteus = undefined;
@@ -31,6 +31,10 @@ describe('Compatibility', function() {
         Proteus = module;
         done();
       });
+    } else {
+      cryptobox = require('../../../../dist/commonjs/wire-webapp-cryptobox');
+      Proteus = require('wire-webapp-proteus');
+      done();
     }
   });
 
@@ -71,7 +75,6 @@ describe('Compatibility', function() {
 
         done();
       }).catch(done.fail);
-
     });
   });
 });

@@ -33,6 +33,18 @@ describe('Integration', function() {
     }
   });
 
+  describe('PreKey', function() {
+    describe('serialise', function() {
+      it('creates a serialized format', function() {
+        var lastResort = Proteus.keys.PreKey.MAX_PREKEY_ID;
+        var preKey = Proteus.keys.PreKey.new(lastResort);
+        // TODO: "RangeError: Wrong length!" on Node.js (but not when doing the same in a "node index.js" file)
+        var serializedPreKey = preKey.serialise();
+        expect(serializedPreKey).toBeDefined();
+      });
+    });
+  });
+
   describe('IdentityKeyPair', function() {
     describe('constructor', function() {
       it('creates an instance', function() {
@@ -52,9 +64,9 @@ describe('Integration', function() {
     describe('serialise', function() {
       it('creates serialised format', function() {
         var ikp = Proteus.keys.IdentityKeyPair.new();
-        // TODO: "RangeError: Wrong length!" on Node.js
         var buffer = ikp.serialise();
         var view = new Uint8Array(buffer);
+        // TODO: "RangeError: Wrong length!" on Node.js
         expect(view.length).toBe(111);
       });
     });
