@@ -42,8 +42,8 @@
   "scripts": {
     "build": "gulp build",
     "prepublish": "gulp dist",
-    "start": "gulp default",
     "self_test_node": "node dist/index.js",
+    "start": "gulp default",
     "test": "gulp test"
   },
   "typings": "dist/typings/wire-webapp-cryptobox.d.ts",

@@ -6,7 +6,6 @@ var serializedPreKey = preKey.serialise();
 
 // Cryptobox
 var cryptobox = require('./commonjs/wire-webapp-cryptobox');
-console.log('cryptobox', cryptobox);
 var store = new cryptobox.store.Cache();
 var box = new cryptobox.Cryptobox(store);
 box.init()
