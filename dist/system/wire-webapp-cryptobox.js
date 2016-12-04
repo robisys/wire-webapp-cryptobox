@@ -351,7 +351,7 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
                     })
                         .then(function (value) {
                         var decrypted_message;
-                        if (value !== undefined) {
+                        if (value[0] !== undefined) {
                             session = value[0], decrypted_message = value[1];
                             return decrypted_message;
                         }

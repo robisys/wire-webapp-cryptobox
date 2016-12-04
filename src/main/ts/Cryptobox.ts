@@ -273,7 +273,7 @@ export class Cryptobox {
       .then(function (value: any) {
         let decrypted_message: Uint8Array;
 
-        if (value !== undefined) {
+        if (value[0] !== undefined) {
           [session, decrypted_message] = value;
           return decrypted_message;
         } else {
