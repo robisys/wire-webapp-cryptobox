@@ -32,8 +32,8 @@ export class Cryptobox {
     this.cachedSessions = new LRUCache(1000);
 
     this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
-    this.pk_store = new ReadOnlyStore(this.store);
     this.store = cryptoBoxStore;
+    this.pk_store = new ReadOnlyStore(this.store);
 
     let storageEngine: string = (<any>cryptoBoxStore).constructor.name;
     this.logger = new Logdown({prefix: 'cryptobox.Cryptobox', alignOuput: true});
@@ -182,8 +182,7 @@ export class Cryptobox {
       return this.store.load_session(this.identity, session_id)
         .then((session: Proteus.session.Session) => {
           if (session) {
-            let pk_store: ReadOnlyStore = new ReadOnlyStore(this.store);
-            return new CryptoboxSession(session_id, pk_store, session);
+            return new CryptoboxSession(session_id, this.pk_store, session);
           } else {
             throw new Error(`Session with ID "${session}" not found.`);
           }
@@ -196,8 +195,9 @@ export class Cryptobox {
 
   public session_save(session: CryptoboxSession): Promise<String> {
     return this.store.save_session(session.id, session.session).then(() => {
-
-      let prekey_deletions = session.pk_store.removed_prekeys.map(this.store.delete_prekey);
+      let prekey_deletions = this.pk_store.removed_prekeys.map((preKeyId: number) => {
+        return this.store.delete_prekey(preKeyId);
+      });
 
       return Promise.all(prekey_deletions);
     }).then(() => {
