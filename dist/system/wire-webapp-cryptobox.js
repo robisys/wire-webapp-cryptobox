@@ -139,8 +139,8 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
                     this.cachedPreKeys = new wire_webapp_lru_cache_1.LRUCache(1);
                     this.cachedSessions = new wire_webapp_lru_cache_1.LRUCache(1000);
                     this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
-                    this.pk_store = new ReadOnlyStore_1.ReadOnlyStore(this.store);
                     this.store = cryptoBoxStore;
+                    this.pk_store = new ReadOnlyStore_1.ReadOnlyStore(this.store);
                     var storageEngine = cryptoBoxStore.constructor.name;
                     this.logger = new Logdown.default({ prefix: 'cryptobox.Cryptobox', alignOuput: true });
                     this.logger.log("Constructed Cryptobox. Minimum amount of PreKeys is \"" + minimumAmountOfPreKeys + "\". Storage engine is \"" + storageEngine + "\".");
@@ -270,8 +270,7 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
                         return _this.store.load_session(_this.identity, session_id)
                             .then(function (session) {
                             if (session) {
-                                var pk_store = new ReadOnlyStore_1.ReadOnlyStore(_this.store);
-                                return new CryptoboxSession_1.CryptoboxSession(session_id, pk_store, session);
+                                return new CryptoboxSession_1.CryptoboxSession(session_id, _this.pk_store, session);
                             }
                             else {
                                 throw new Error("Session with ID \"" + session + "\" not found.");
@@ -285,7 +284,9 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
                 Cryptobox.prototype.session_save = function (session) {
                     var _this = this;
                     return this.store.save_session(session.id, session.session).then(function () {
-                        var prekey_deletions = session.pk_store.removed_prekeys.map(_this.store.delete_prekey);
+                        var prekey_deletions = _this.pk_store.removed_prekeys.map(function (preKeyId) {
+                            return _this.store.delete_prekey(preKeyId);
+                        });
                         return Promise.all(prekey_deletions);
                     }).then(function () {
                         return _this.get_initial_prekeys();
