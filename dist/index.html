@@ -15,7 +15,7 @@
 
       System.import('postal').then(function(postal) {
         var channelName = 'cryptobox';
-        var channel = postal.channel('cryptobox');
+        var channel = postal.channel(channelName);
         channel.subscribe('new-prekeys', function(data) {
           console.log('postal.js :: Received \'' + data.length + '\' new PreKey(s). We need to upload them...');
         });
