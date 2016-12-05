@@ -7,13 +7,12 @@ import Logdown = require("logdown");
 import postal = require("postal");
 
 export class Cryptobox {
-  public EVENT = {
-    NEW_PREKEYS: "new-prekeys"
-  };
+  public CHANNEL_CRYPTOBOX: string;
+  public TOPIC_NEW_PREKEYS: string;
 
   private cachedPreKeys: LRUCache;
   private cachedSessions: LRUCache;
-  private channel = postal.channel("cryptobox");
+  private channel = postal.channel(this.CHANNEL_CRYPTOBOX);
 
   private logger: Logdown;
   private minimumAmountOfPreKeys: number;
@@ -139,8 +138,8 @@ export class Cryptobox {
           preKeys = preKeys.concat(newPreKeys);
 
           if (newPreKeys.length > 0) {
-            this.channel.publish(this.EVENT.NEW_PREKEYS, newPreKeys);
-            this.logger.log(`Published event "${this.EVENT.NEW_PREKEYS}".`, newPreKeys);
+            this.channel.publish(this.TOPIC_NEW_PREKEYS, newPreKeys);
+            this.logger.log(`Published event "${this.CHANNEL_CRYPTOBOX}:${this.TOPIC_NEW_PREKEYS}".`, newPreKeys);
           }
 
           return preKeys;
@@ -290,3 +289,6 @@ export class Cryptobox {
       });
   }
 }
+
+Cryptobox.prototype.CHANNEL_CRYPTOBOX = "cryptobox";
+Cryptobox.prototype.TOPIC_NEW_PREKEYS = "new-prekeys";
