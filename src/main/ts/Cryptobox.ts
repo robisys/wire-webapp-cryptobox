@@ -12,7 +12,7 @@ export class Cryptobox {
 
   private cachedPreKeys: LRUCache;
   private cachedSessions: LRUCache;
-  private channel = postal.channel(this.CHANNEL_CRYPTOBOX);
+  private channel;
 
   private logger: Logdown;
   private minimumAmountOfPreKeys: number;
@@ -26,16 +26,19 @@ export class Cryptobox {
       throw new Error(`You cannot initialize Cryptobox without a storage component.`);
     }
 
+    this.logger = new Logdown({prefix: 'cryptobox.Cryptobox', alignOuput: true});
+
     // Note: Only the Last Resort PreKey gets cached
     this.cachedPreKeys = new LRUCache(1);
     this.cachedSessions = new LRUCache(1000);
+    this.channel = postal.channel(this.CHANNEL_CRYPTOBOX);
+    this.logger.log(`Prepared event channel "${this.CHANNEL_CRYPTOBOX}".`);
 
     this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
     this.store = cryptoBoxStore;
     this.pk_store = new ReadOnlyStore(this.store);
 
     let storageEngine: string = (<any>cryptoBoxStore).constructor.name;
-    this.logger = new Logdown({prefix: 'cryptobox.Cryptobox', alignOuput: true});
     this.logger.log(`Constructed Cryptobox. Minimum amount of PreKeys is "${minimumAmountOfPreKeys}". Storage engine is "${storageEngine}".`);
   }
 
