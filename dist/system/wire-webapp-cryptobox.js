@@ -129,20 +129,18 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
             Cryptobox = (function () {
                 function Cryptobox(cryptoBoxStore, minimumAmountOfPreKeys) {
                     if (minimumAmountOfPreKeys === void 0) { minimumAmountOfPreKeys = 1; }
-                    this.EVENT = {
-                        NEW_PREKEYS: "new-prekeys"
-                    };
-                    this.channel = postal.channel("cryptobox");
                     if (!cryptoBoxStore) {
                         throw new Error("You cannot initialize Cryptobox without a storage component.");
                     }
+                    this.logger = new Logdown.default({ prefix: 'cryptobox.Cryptobox', alignOuput: true });
                     this.cachedPreKeys = new wire_webapp_lru_cache_1.LRUCache(1);
                     this.cachedSessions = new wire_webapp_lru_cache_1.LRUCache(1000);
+                    this.channel = postal.channel(this.CHANNEL_CRYPTOBOX);
+                    this.logger.log("Prepared event channel \"" + this.CHANNEL_CRYPTOBOX + "\".");
                     this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
                     this.store = cryptoBoxStore;
                     this.pk_store = new ReadOnlyStore_1.ReadOnlyStore(this.store);
                     var storageEngine = cryptoBoxStore.constructor.name;
-                    this.logger = new Logdown.default({ prefix: 'cryptobox.Cryptobox', alignOuput: true });
                     this.logger.log("Constructed Cryptobox. Minimum amount of PreKeys is \"" + minimumAmountOfPreKeys + "\". Storage engine is \"" + storageEngine + "\".");
                 }
                 Cryptobox.prototype.save_prekey_in_cache = function (preKey) {
@@ -230,8 +228,8 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
                             .then(function (newPreKeys) {
                             preKeys = preKeys.concat(newPreKeys);
                             if (newPreKeys.length > 0) {
-                                _this.channel.publish(_this.EVENT.NEW_PREKEYS, newPreKeys);
-                                _this.logger.log("Published event \"" + _this.EVENT.NEW_PREKEYS + "\".", newPreKeys);
+                                _this.channel.publish(_this.TOPIC_NEW_PREKEYS, newPreKeys);
+                                _this.logger.log("Published event \"" + _this.CHANNEL_CRYPTOBOX + ":" + _this.TOPIC_NEW_PREKEYS + "\".", newPreKeys);
                             }
                             return preKeys;
                         });
@@ -372,6 +370,8 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
                 return Cryptobox;
             }());
             exports_4("Cryptobox", Cryptobox);
+            Cryptobox.prototype.CHANNEL_CRYPTOBOX = "cryptobox";
+            Cryptobox.prototype.TOPIC_NEW_PREKEYS = "new-prekeys";
         }
     }
 });
