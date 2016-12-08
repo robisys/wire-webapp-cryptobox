@@ -133,7 +133,6 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
                         throw new Error("You cannot initialize Cryptobox without a storage component.");
                     }
                     this.logger = new Logdown.default({ prefix: 'cryptobox.Cryptobox', alignOuput: true });
-                    this.cachedPreKeys = new wire_webapp_lru_cache_1.LRUCache(1);
                     this.cachedSessions = new wire_webapp_lru_cache_1.LRUCache(1000);
                     this.channel = postal.channel(this.CHANNEL_CRYPTOBOX);
                     this.logger.log("Prepared event channel \"" + this.CHANNEL_CRYPTOBOX + "\".");
@@ -143,15 +142,6 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
                     var storageEngine = cryptoBoxStore.constructor.name;
                     this.logger.log("Constructed Cryptobox. Minimum amount of PreKeys is \"" + minimumAmountOfPreKeys + "\". Storage engine is \"" + storageEngine + "\".");
                 }
-                Cryptobox.prototype.save_prekey_in_cache = function (preKey) {
-                    this.logger.log("Saving PreKey with ID \"" + preKey.key_id + "\" in cache.");
-                    this.cachedPreKeys.set(preKey.key_id, preKey);
-                    return preKey;
-                };
-                Cryptobox.prototype.load_prekey_from_cache = function (preKeyId) {
-                    this.logger.log("Loading PreKey with ID: \"" + preKeyId + "\" from cache...");
-                    return this.cachedPreKeys.get(preKeyId);
-                };
                 Cryptobox.prototype.save_session_in_cache = function (session) {
                     this.logger.log("Saving Session with ID \"" + session.id + "\" in cache.");
                     this.cachedSessions.set(session.id, session);
@@ -179,43 +169,38 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
                             _this.identity = identity;
                             _this.logger.log("Loaded local identity. Fingerprint is \"" + _this.identity.public_key.fingerprint() + "\".", _this.identity);
                             _this.logger.log("Loading Last Resort PreKey with ID \"" + Proteus.keys.PreKey.MAX_PREKEY_ID + "\"...");
-                            return Promise.resolve().then(function () {
-                                return _this.load_prekey_from_cache(Proteus.keys.PreKey.MAX_PREKEY_ID);
-                            }).then(function (prekey) {
-                                return prekey || _this.store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
-                            }).then(function (prekey) {
-                                return _this.save_prekey_in_cache(prekey);
-                            });
+                            return _this.store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
                         })
-                            .catch(function () {
-                            var lastResort = Proteus.keys.PreKey.MAX_PREKEY_ID;
-                            _this.logger.warn("No last resort PreKey found. Created last resort PreKey with ID \"" + lastResort + "\".");
-                            return _this.new_prekey(lastResort);
+                            .catch(function (error) {
+                            var lastResortID = Proteus.keys.PreKey.MAX_PREKEY_ID;
+                            _this.logger.warn("No last resort PreKey found: " + error.message);
+                            return _this.new_last_resort_prekey(lastResortID);
                         })
-                            .then(function () {
-                            _this.logger.log("Loaded Last Resort PreKey with ID \"" + Proteus.keys.PreKey.MAX_PREKEY_ID + "\".");
+                            .then(function (lastResortPreKey) {
+                            _this.logger.log("Loaded Last Resort PreKey with ID \"" + lastResortPreKey.key_id + "\".");
                             _this.logger.log("Loading \"" + (_this.minimumAmountOfPreKeys - 1) + "\" Standard PreKeys...");
-                            return _this.get_initial_prekeys();
+                            return _this.refill_prekeys(false);
                         })
-                            .then(function (initialPreKeys) {
-                            _this.logger.log("Initialized Cryptobox with an amount of \"" + initialPreKeys.length + "\" PreKeys.");
-                            return _this;
+                            .then(function (allPreKeys) {
+                            _this.logger.log("Initialized Cryptobox with a total amount of \"" + allPreKeys.length + "\" PreKeys.");
+                            return allPreKeys;
                         });
                     });
                 };
-                Cryptobox.prototype.get_initial_prekeys = function () {
+                Cryptobox.prototype.refill_prekeys = function (publish_new_prekeys) {
                     var _this = this;
+                    if (publish_new_prekeys === void 0) { publish_new_prekeys = true; }
                     return Promise.resolve().then(function () {
-                        var preKeys = [];
+                        var allPreKeys = [];
                         return _this.store.load_prekeys()
-                            .then(function (currentPreKeys) {
-                            preKeys = currentPreKeys;
+                            .then(function (preKeysFromStorage) {
+                            allPreKeys = preKeysFromStorage;
                             var missingAmount = 0;
                             var highestId = 0;
-                            if (currentPreKeys.length < _this.minimumAmountOfPreKeys) {
-                                missingAmount = _this.minimumAmountOfPreKeys - currentPreKeys.length;
+                            if (preKeysFromStorage.length < _this.minimumAmountOfPreKeys) {
+                                missingAmount = _this.minimumAmountOfPreKeys - preKeysFromStorage.length;
                                 highestId = -1;
-                                currentPreKeys.forEach(function (preKey) {
+                                preKeysFromStorage.forEach(function (preKey) {
                                     if (preKey.key_id > highestId && preKey.key_id !== Proteus.keys.PreKey.MAX_PREKEY_ID) {
                                         highestId = preKey.key_id;
                                     }
@@ -226,12 +211,15 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
                             return _this.new_prekeys(highestId, missingAmount);
                         })
                             .then(function (newPreKeys) {
-                            preKeys = preKeys.concat(newPreKeys);
+                            allPreKeys = allPreKeys.concat(newPreKeys);
                             if (newPreKeys.length > 0) {
-                                _this.channel.publish(_this.TOPIC_NEW_PREKEYS, newPreKeys);
-                                _this.logger.log("Published event \"" + _this.CHANNEL_CRYPTOBOX + ":" + _this.TOPIC_NEW_PREKEYS + "\".", newPreKeys);
+                                _this.logger.log("Genereated PreKeys from ID \"" + newPreKeys[0].key_id + "\" to ID \"" + newPreKeys[newPreKeys.length - 1].key_id + "\".");
+                                if (publish_new_prekeys) {
+                                    _this.channel.publish(_this.TOPIC_NEW_PREKEYS, newPreKeys);
+                                    _this.logger.log("Published event \"" + _this.CHANNEL_CRYPTOBOX + ":" + _this.TOPIC_NEW_PREKEYS + "\".", newPreKeys);
+                                }
                             }
-                            return preKeys;
+                            return allPreKeys;
                         });
                     });
                 };
@@ -287,7 +275,7 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
                         });
                         return Promise.all(prekey_deletions);
                     }).then(function () {
-                        return _this.get_initial_prekeys();
+                        return _this.refill_prekeys();
                     }).then(function () {
                         return _this.save_session_in_cache(session);
                     }).then(function () {
@@ -298,24 +286,25 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
                     this.remove_session_from_cache(session_id);
                     return this.store.delete_session(session_id);
                 };
-                Cryptobox.prototype.new_prekey = function (prekey_id) {
+                Cryptobox.prototype.new_last_resort_prekey = function (prekey_id) {
                     var _this = this;
-                    return new Promise(function (resolve, reject) {
-                        var pk = Proteus.keys.PreKey.new(prekey_id);
-                        _this.store.save_prekey(pk)
-                            .then(function () {
-                            var serialisedPreKeyBundle = Proteus.keys.PreKeyBundle.new(_this.identity.public_key, pk).serialise();
-                            resolve(serialisedPreKeyBundle);
-                        })
-                            .catch(reject);
+                    return Promise.resolve()
+                        .then(function () {
+                        _this.lastResortPreKey = Proteus.keys.PreKey.last_resort();
+                        return _this.store.save_prekeys([_this.lastResortPreKey]);
+                    }).then(function (preKeys) {
+                        return preKeys[0];
                     });
+                };
+                Cryptobox.prototype.serialize_prekey = function (prekey) {
+                    return Proteus.keys.PreKeyBundle.new(this.identity.public_key, prekey).serialised_json();
                 };
                 Cryptobox.prototype.new_prekeys = function (start, size) {
                     var _this = this;
                     if (size === void 0) { size = 0; }
                     return Promise.resolve().then(function () {
                         if (size === 0) {
-                            return new Array();
+                            return [];
                         }
                         var newPreKeys = Proteus.keys.PreKey.generate_prekeys(start, size);
                         return _this.store.save_prekeys(newPreKeys);
@@ -439,12 +428,13 @@ System.register("store/Cache", ["wire-webapp-proteus"], function(exports_5, cont
                 };
                 Cache.prototype.load_prekeys = function () {
                     var _this = this;
-                    return new Promise(function (resolve) {
-                        var all_prekeys = Object.keys(_this.prekeys).map(function (key) {
-                            return _this.prekeys[key];
-                        });
-                        resolve(all_prekeys);
+                    var prekey_promises = [];
+                    Object.keys(this.prekeys).forEach(function (key) {
+                        var prekey_id = parseInt(key, 10);
+                        var promise = _this.load_prekey(prekey_id);
+                        prekey_promises.push(promise);
                     });
+                    return Promise.all(prekey_promises);
                 };
                 Cache.prototype.load_session = function (identity, session_id) {
                     var _this = this;
@@ -890,7 +880,7 @@ System.register("store/LocalStorage", ["bazinga64", "wire-webapp-proteus", "stor
                         if (key.indexOf(_this.preKeyStore) > -1) {
                             var separator = '@';
                             var prekey_id = key.substr(key.lastIndexOf(separator) + separator.length);
-                            var promise = _this.load_prekey(parseInt(prekey_id));
+                            var promise = _this.load_prekey(parseInt(prekey_id, 10));
                             prekey_promises.push(promise);
                         }
                     });
