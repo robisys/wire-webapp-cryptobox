@@ -23,7 +23,7 @@ describe('cryptobox.Cryptobox', function() {
   var cryptobox = undefined;
   var Proteus = undefined;
 
-  var boxInstance = undefined;
+  var box = undefined;
   var store = undefined;
 
   beforeAll(function(done) {
@@ -58,8 +58,8 @@ describe('cryptobox.Cryptobox', function() {
       store.save_identity(initialIdentity).then(function() {
         var box = new cryptobox.Cryptobox(store);
         expect(box.identity).not.toBeDefined();
-        box.init().then(function(instance) {
-          expect(instance.identity.public_key.fingerprint()).toBe(initialFingerPrint);
+        box.init().then(function() {
+          expect(box.identity.public_key.fingerprint()).toBe(initialFingerPrint);
           done();
         }).catch(done.fail);
       }).catch(done.fail);
@@ -68,8 +68,8 @@ describe('cryptobox.Cryptobox', function() {
     it('creates a new identity (if none is given) plus the last resort PreKey and saves these', function(done) {
       var box = new cryptobox.Cryptobox(store);
       expect(box.identity).not.toBeDefined();
-      box.init().then(function(instance) {
-        expect(instance.identity).toBeDefined();
+      box.init().then(function() {
+        expect(box.identity).toBeDefined();
         return store.load_identity();
       }).then(function(identity) {
         expect(identity.public_key.fingerprint()).toBeDefined();
@@ -83,23 +83,22 @@ describe('cryptobox.Cryptobox', function() {
 
   describe('Sessions', function() {
 
+    var box = undefined;
     var sessionId = 'unique_identifier';
 
     beforeEach(function(done) {
-      var box = new cryptobox.Cryptobox(store);
-      box.init().then(function(instance) {
-        boxInstance = instance;
-
+      box = new cryptobox.Cryptobox(store);
+      box.init().then(function() {
         var bob = {
           identity: Proteus.keys.IdentityKeyPair.new(),
           prekey: Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID)
         };
         bob.bundle = Proteus.keys.PreKeyBundle.new(bob.identity.public_key, bob.prekey);
 
-        return Proteus.session.Session.init_from_prekey(instance.identity, bob.bundle);
+        return Proteus.session.Session.init_from_prekey(box.identity, bob.bundle);
       }).then(function(session) {
-        var cryptoBoxSession = new cryptobox.CryptoboxSession(sessionId, boxInstance.pk_store, session);
-        return boxInstance.session_save(cryptoBoxSession);
+        var cryptoBoxSession = new cryptobox.CryptoboxSession(sessionId, box.pk_store, session);
+        return box.session_save(cryptoBoxSession);
       }).then(function() {
         done();
       }).catch(done.fail);
@@ -107,14 +106,14 @@ describe('cryptobox.Cryptobox', function() {
 
     describe('session_load', function() {
       it('it loads a session from the cache', function(done) {
-        spyOn(boxInstance.store, 'load_session').and.callThrough();
-        boxInstance.session_load(sessionId).then(function(session) {
+        spyOn(box.store, 'load_session').and.callThrough();
+        box.session_load(sessionId).then(function(session) {
           expect(session.id).toBe(sessionId);
-          expect(boxInstance.store.load_session.calls.count()).toBe(0);
-          return boxInstance.session_load(sessionId);
+          expect(box.store.load_session.calls.count()).toBe(0);
+          return box.session_load(sessionId);
         }).then(function(session) {
           expect(session.id).toBe(sessionId);
-          expect(boxInstance.store.load_session.calls.count()).toBe(0);
+          expect(box.store.load_session.calls.count()).toBe(0);
           done();
         }).catch(done.fail);
       });
@@ -122,10 +121,10 @@ describe('cryptobox.Cryptobox', function() {
 
     describe('encrypt', function() {
       it('saves the session after successful encryption', function(done) {
-        spyOn(boxInstance.store, 'save_session').and.callThrough();
-        boxInstance.encrypt(sessionId, 'Hello World.').then(function(encryptedBuffer) {
+        spyOn(box.store, 'save_session').and.callThrough();
+        box.encrypt(sessionId, 'Hello World.').then(function(encryptedBuffer) {
           expect(encryptedBuffer).toBeDefined();
-          expect(boxInstance.store.save_session.calls.count()).toBe(1);
+          expect(box.store.save_session.calls.count()).toBe(1);
           done();
         }).catch(done.fail);
       });

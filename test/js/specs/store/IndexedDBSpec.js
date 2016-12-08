@@ -97,7 +97,7 @@ describe('cryptobox.store.IndexedDB', function() {
     });
   });
 
-  describe('get_initial_prekeys', function() {
+  describe('refill_prekeys', function() {
     xit('publishes an event with newly generated PreKeys', function(done) {
     });
 

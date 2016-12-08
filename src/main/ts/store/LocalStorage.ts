@@ -106,7 +106,7 @@ export default class LocalStorage implements CryptoboxStore {
       if (key.indexOf(this.preKeyStore) > -1) {
         let separator: string = '@';
         let prekey_id = key.substr(key.lastIndexOf(separator) + separator.length);
-        let promise: Promise<Proteus.keys.PreKey> = this.load_prekey(parseInt(prekey_id));
+        let promise: Promise<Proteus.keys.PreKey> = this.load_prekey(parseInt(prekey_id, 10));
         prekey_promises.push(promise);
       }
     });

@@ -6,7 +6,7 @@
     "postal.js": "2.0.4",
     "system.js": "0.19.41",
     "wire-webapp-lru-cache": "1.0.2",
-    "wire-webapp-proteus": "https://github.com/wireapp/proteus.js.git#v2.1.6"
+    "wire-webapp-proteus": "https://github.com/wireapp/proteus.js.git#v2.1.9"
   },
   "ignore": [
     "**/.*",

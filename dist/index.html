@@ -12,6 +12,7 @@
   <body>
     <script>
       var cryptobox = undefined;
+      var box = undefined;
 
       System.import('postal').then(function(postal) {
         var channelName = 'cryptobox';
@@ -26,10 +27,10 @@
         cryptobox = module.default;
 
         var storage = new cryptobox.store.IndexedDB('demo_page');
-        var box = new cryptobox.Cryptobox(storage, 10);
+        box = new cryptobox.Cryptobox(storage, 10);
         return box.init();
-      }).then(function(instance) {
-        var fingerprint = instance.identity.public_key.fingerprint();
+      }).then(function() {
+        var fingerprint = box.identity.public_key.fingerprint();
         var message = 'Local Identity: ' + fingerprint;
         document.write(message);
       });

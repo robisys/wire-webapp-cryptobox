@@ -54,13 +54,15 @@ export default class Cache implements CryptoboxStore {
   }
 
   public load_prekeys(): Promise<Array<Proteus.keys.PreKey>> {
-    return new Promise((resolve) => {
-      let all_prekeys: Array<Proteus.keys.PreKey> = Object.keys(this.prekeys).map((key: string) => {
-        return this.prekeys[key];
-      });
+    let prekey_promises: Array<Promise<Proteus.keys.PreKey>> = [];
 
-      resolve(all_prekeys);
+    Object.keys(this.prekeys).forEach((key: string) => {
+      let prekey_id = parseInt(key, 10);
+      let promise: Promise<Proteus.keys.PreKey> = this.load_prekey(prekey_id);
+      prekey_promises.push(promise);
     });
+
+    return Promise.all(prekey_promises);
   }
 
   public load_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session> {

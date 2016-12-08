@@ -6,7 +6,7 @@
     "logdown": "1.4.3",
     "postal": "2.0.4",
     "wire-webapp-lru-cache": "1.0.2",
-    "wire-webapp-proteus": "2.1.6"
+    "wire-webapp-proteus": "2.1.9"
   },
   "description": "High-level API with persistent storage for Proteus.",
   "devDependencies": {
