@@ -3,32 +3,33 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-System.register("store/CryptoboxStore", [], function(exports_1, context_1) {
+System.register("store/CryptoboxStore", [], function (exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
     return {
-        setters:[],
-        execute: function() {
+        setters: [],
+        execute: function () {
         }
-    }
+    };
 });
-System.register("store/ReadOnlyStore", ["wire-webapp-proteus"], function(exports_2, context_2) {
+System.register("store/ReadOnlyStore", ["wire-webapp-proteus"], function (exports_2, context_2) {
     "use strict";
     var __moduleName = context_2 && context_2.id;
-    var Proteus;
-    var ReadOnlyStore;
+    var Proteus, ReadOnlyStore;
     return {
-        setters:[
+        setters: [
             function (Proteus_1) {
                 Proteus = Proteus_1;
-            }],
-        execute: function() {
+            }
+        ],
+        execute: function () {
             ReadOnlyStore = (function (_super) {
                 __extends(ReadOnlyStore, _super);
                 function ReadOnlyStore(store) {
-                    _super.call(this);
-                    this.store = store;
-                    this.removed_prekeys = [];
+                    var _this = _super.call(this) || this;
+                    _this.store = store;
+                    _this.removed_prekeys = [];
+                    return _this;
                 }
                 ReadOnlyStore.prototype.get_prekey = function (prekey_id) {
                     var _this = this;
@@ -51,19 +52,19 @@ System.register("store/ReadOnlyStore", ["wire-webapp-proteus"], function(exports
             }(Proteus.session.PreKeyStore));
             exports_2("ReadOnlyStore", ReadOnlyStore);
         }
-    }
+    };
 });
-System.register("CryptoboxSession", ["wire-webapp-proteus"], function(exports_3, context_3) {
+System.register("CryptoboxSession", ["wire-webapp-proteus"], function (exports_3, context_3) {
     "use strict";
     var __moduleName = context_3 && context_3.id;
-    var Proteus;
-    var CryptoboxSession;
+    var Proteus, CryptoboxSession;
     return {
-        setters:[
+        setters: [
             function (Proteus_2) {
                 Proteus = Proteus_2;
-            }],
-        execute: function() {
+            }
+        ],
+        execute: function () {
             CryptoboxSession = (function () {
                 function CryptoboxSession(id, pk_store, session) {
                     this.id = id;
@@ -98,15 +99,14 @@ System.register("CryptoboxSession", ["wire-webapp-proteus"], function(exports_3,
             }());
             exports_3("CryptoboxSession", CryptoboxSession);
         }
-    }
+    };
 });
-System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "CryptoboxSession", "store/ReadOnlyStore", "logdown", "postal"], function(exports_4, context_4) {
+System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "CryptoboxSession", "store/ReadOnlyStore", "logdown", "postal"], function (exports_4, context_4) {
     "use strict";
     var __moduleName = context_4 && context_4.id;
-    var Proteus, wire_webapp_lru_cache_1, CryptoboxSession_1, ReadOnlyStore_1, Logdown, postal;
-    var Cryptobox;
+    var Proteus, wire_webapp_lru_cache_1, CryptoboxSession_1, ReadOnlyStore_1, Logdown, postal, Cryptobox;
     return {
-        setters:[
+        setters: [
             function (Proteus_3) {
                 Proteus = Proteus_3;
             },
@@ -124,8 +124,9 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
             },
             function (postal_1) {
                 postal = postal_1;
-            }],
-        execute: function() {
+            }
+        ],
+        execute: function () {
             Cryptobox = (function () {
                 function Cryptobox(cryptoBoxStore, minimumAmountOfPreKeys) {
                     if (minimumAmountOfPreKeys === void 0) { minimumAmountOfPreKeys = 1; }
@@ -213,7 +214,7 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
                             .then(function (newPreKeys) {
                             allPreKeys = allPreKeys.concat(newPreKeys);
                             if (newPreKeys.length > 0) {
-                                _this.logger.log("Genereated PreKeys from ID \"" + newPreKeys[0].key_id + "\" to ID \"" + newPreKeys[newPreKeys.length - 1].key_id + "\".");
+                                _this.logger.log("Generated PreKeys from ID \"" + newPreKeys[0].key_id + "\" to ID \"" + newPreKeys[newPreKeys.length - 1].key_id + "\".");
                                 if (publish_new_prekeys) {
                                     _this.channel.publish(_this.TOPIC_NEW_PREKEYS, newPreKeys);
                                     _this.logger.log("Published event \"" + _this.CHANNEL_CRYPTOBOX + ":" + _this.TOPIC_NEW_PREKEYS + "\".", newPreKeys);
@@ -235,8 +236,7 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
                 Cryptobox.prototype.session_from_message = function (session_id, envelope) {
                     var _this = this;
                     return Promise.resolve().then(function () {
-                        var env;
-                        env = Proteus.message.Envelope.deserialise(envelope);
+                        var env = Proteus.message.Envelope.deserialise(envelope);
                         return Proteus.session.Session.init_from_message(_this.identity, _this.pk_store, env)
                             .then(function (tuple) {
                             var session = tuple[0];
@@ -274,7 +274,13 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
                             return _this.store.delete_prekey(preKeyId);
                         });
                         return Promise.all(prekey_deletions);
-                    }).then(function () {
+                    }).then(function (deletedPreKeyIds) {
+                        deletedPreKeyIds.forEach(function (id) {
+                            var index = _this.pk_store.removed_prekeys.indexOf(id);
+                            if (index > -1) {
+                                deletedPreKeyIds.splice(index, 1);
+                            }
+                        });
                         return _this.refill_prekeys();
                     }).then(function () {
                         return _this.save_session_in_cache(session);
@@ -302,11 +308,11 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
                 Cryptobox.prototype.new_prekeys = function (start, size) {
                     var _this = this;
                     if (size === void 0) { size = 0; }
-                    return Promise.resolve().then(function () {
-                        if (size === 0) {
-                            return [];
-                        }
-                        var newPreKeys = Proteus.keys.PreKey.generate_prekeys(start, size);
+                    return Promise.resolve()
+                        .then(function () {
+                        return Proteus.keys.PreKey.generate_prekeys(start, size);
+                    })
+                        .then(function (newPreKeys) {
                         return _this.store.save_prekeys(newPreKeys);
                     });
                 };
@@ -362,23 +368,27 @@ System.register("Cryptobox", ["wire-webapp-proteus", "wire-webapp-lru-cache", "C
             Cryptobox.prototype.CHANNEL_CRYPTOBOX = "cryptobox";
             Cryptobox.prototype.TOPIC_NEW_PREKEYS = "new-prekeys";
         }
-    }
+    };
 });
-System.register("store/Cache", ["wire-webapp-proteus"], function(exports_5, context_5) {
+System.register("store/Cache", ["wire-webapp-proteus", "logdown"], function (exports_5, context_5) {
     "use strict";
     var __moduleName = context_5 && context_5.id;
-    var Proteus;
-    var Cache;
+    var Proteus, Logdown, Cache;
     return {
-        setters:[
+        setters: [
             function (Proteus_4) {
                 Proteus = Proteus_4;
-            }],
-        execute: function() {
+            },
+            function (Logdown_2) {
+                Logdown = Logdown_2;
+            }
+        ],
+        execute: function () {
             Cache = (function () {
                 function Cache() {
                     this.prekeys = {};
                     this.sessions = {};
+                    this.logger = new Logdown.default({ prefix: 'cryptobox.store.Cache', alignOuput: true });
                 }
                 Cache.prototype.delete_all = function () {
                     var _this = this;
@@ -393,6 +403,7 @@ System.register("store/Cache", ["wire-webapp-proteus"], function(exports_5, cont
                     var _this = this;
                     return new Promise(function (resolve) {
                         delete _this.prekeys[prekey_id];
+                        _this.logger.log("Deleted PreKey ID \"" + prekey_id + "\".");
                         resolve(prekey_id);
                     });
                 };
@@ -460,6 +471,7 @@ System.register("store/Cache", ["wire-webapp-proteus"], function(exports_5, cont
                     return new Promise(function (resolve, reject) {
                         try {
                             _this.prekeys[preKey.key_id] = preKey.serialise();
+                            _this.logger.log("Saved PreKey ID \"" + preKey.key_id + "\".");
                         }
                         catch (error) {
                             return reject(new Error("PreKey (no. " + preKey.key_id + ") serialization problem \"" + error.message + "\" at \"" + error.stack + "\"."));
@@ -474,9 +486,11 @@ System.register("store/Cache", ["wire-webapp-proteus"], function(exports_5, cont
                         preKeys.forEach(function (preKey) {
                             savePromises.push(_this.save_prekey(preKey));
                         });
-                        Promise.all(savePromises).then(function () {
+                        Promise.all(savePromises)
+                            .then(function () {
                             resolve(preKeys);
-                        }).catch(reject);
+                        })
+                            .catch(reject);
                     });
                 };
                 Cache.prototype.save_session = function (session_id, session) {
@@ -495,15 +509,15 @@ System.register("store/Cache", ["wire-webapp-proteus"], function(exports_5, cont
             }());
             exports_5("default", Cache);
         }
-    }
+    };
 });
-System.register("store/SerialisedRecord", [], function(exports_6, context_6) {
+System.register("store/SerialisedRecord", [], function (exports_6, context_6) {
     "use strict";
     var __moduleName = context_6 && context_6.id;
     var SerialisedRecord;
     return {
-        setters:[],
-        execute: function() {
+        setters: [],
+        execute: function () {
             SerialisedRecord = (function () {
                 function SerialisedRecord(serialised, id) {
                     this.id = id;
@@ -513,15 +527,14 @@ System.register("store/SerialisedRecord", [], function(exports_6, context_6) {
             }());
             exports_6("SerialisedRecord", SerialisedRecord);
         }
-    }
+    };
 });
-System.register("store/IndexedDB", ["bazinga64", "wire-webapp-proteus", "dexie", 'logdown', "store/SerialisedRecord"], function(exports_7, context_7) {
+System.register("store/IndexedDB", ["bazinga64", "wire-webapp-proteus", "dexie", "logdown", "store/SerialisedRecord"], function (exports_7, context_7) {
     "use strict";
     var __moduleName = context_7 && context_7.id;
-    var bazinga64, Proteus, dexie_1, Logdown, SerialisedRecord_1;
-    var IndexedDB;
+    var bazinga64, Proteus, dexie_1, Logdown, SerialisedRecord_1, IndexedDB;
     return {
-        setters:[
+        setters: [
             function (bazinga64_1) {
                 bazinga64 = bazinga64_1;
             },
@@ -531,13 +544,14 @@ System.register("store/IndexedDB", ["bazinga64", "wire-webapp-proteus", "dexie",
             function (dexie_1_1) {
                 dexie_1 = dexie_1_1;
             },
-            function (Logdown_2) {
-                Logdown = Logdown_2;
+            function (Logdown_3) {
+                Logdown = Logdown_3;
             },
             function (SerialisedRecord_1_1) {
                 SerialisedRecord_1 = SerialisedRecord_1_1;
-            }],
-        execute: function() {
+            }
+        ],
+        execute: function () {
             IndexedDB = (function () {
                 function IndexedDB(identifier) {
                     var _this = this;
@@ -636,8 +650,9 @@ System.register("store/IndexedDB", ["bazinga64", "wire-webapp-proteus", "dexie",
                 IndexedDB.prototype.delete_prekey = function (prekey_id) {
                     var _this = this;
                     return new Promise(function (resolve) {
-                        _this.delete(_this.TABLE.PRE_KEYS, prekey_id.toString()).then(function (primary_key) {
-                            resolve(primary_key);
+                        _this.delete(_this.TABLE.PRE_KEYS, prekey_id.toString())
+                            .then(function () {
+                            resolve(prekey_id);
                         });
                     });
                 };
@@ -706,7 +721,7 @@ System.register("store/IndexedDB", ["bazinga64", "wire-webapp-proteus", "dexie",
                         var payload = new SerialisedRecord_1.SerialisedRecord(serialised, _this.localIdentityKey);
                         _this.save(_this.TABLE.LOCAL_IDENTITY, payload.id, payload).then(function (primaryKey) {
                             var fingerprint = identity.public_key.fingerprint();
-                            var message = ("Saved local identity \"" + fingerprint + "\"")
+                            var message = "Saved local identity \"" + fingerprint + "\""
                                 + (" with key \"" + primaryKey + "\" into storage \"" + _this.TABLE.LOCAL_IDENTITY + "\"");
                             _this.logger.log(message);
                             resolve(identity);
@@ -765,15 +780,14 @@ System.register("store/IndexedDB", ["bazinga64", "wire-webapp-proteus", "dexie",
             }());
             exports_7("default", IndexedDB);
         }
-    }
+    };
 });
-System.register("store/LocalStorage", ["bazinga64", "wire-webapp-proteus", "store/SerialisedRecord"], function(exports_8, context_8) {
+System.register("store/LocalStorage", ["bazinga64", "wire-webapp-proteus", "store/SerialisedRecord"], function (exports_8, context_8) {
     "use strict";
     var __moduleName = context_8 && context_8.id;
-    var bazinga64, Proteus, SerialisedRecord_2;
-    var LocalStorage;
+    var bazinga64, Proteus, SerialisedRecord_2, LocalStorage;
     return {
-        setters:[
+        setters: [
             function (bazinga64_2) {
                 bazinga64 = bazinga64_2;
             },
@@ -782,8 +796,9 @@ System.register("store/LocalStorage", ["bazinga64", "wire-webapp-proteus", "stor
             },
             function (SerialisedRecord_2_1) {
                 SerialisedRecord_2 = SerialisedRecord_2_1;
-            }],
-        execute: function() {
+            }
+        ],
+        execute: function () {
             LocalStorage = (function () {
                 function LocalStorage(identifier) {
                     if (identifier === void 0) { identifier = "temp"; }
@@ -844,7 +859,13 @@ System.register("store/LocalStorage", ["bazinga64", "wire-webapp-proteus", "stor
                     });
                 };
                 LocalStorage.prototype.delete_prekey = function (prekey_id) {
-                    return this.delete(this.preKeyStore, prekey_id.toString());
+                    var _this = this;
+                    return Promise.resolve()
+                        .then(function () {
+                        return _this.delete(_this.preKeyStore, prekey_id.toString());
+                    }).then(function () {
+                        return prekey_id;
+                    });
                 };
                 LocalStorage.prototype.delete_session = function (session_id) {
                     return this.delete(this.sessionStore, session_id);
@@ -943,14 +964,14 @@ System.register("store/LocalStorage", ["bazinga64", "wire-webapp-proteus", "stor
             }());
             exports_8("default", LocalStorage);
         }
-    }
+    };
 });
-System.register("wire-webapp-cryptobox", ["store/Cache", "store/IndexedDB", "store/LocalStorage", "Cryptobox", "store/ReadOnlyStore", "CryptoboxSession"], function(exports_9, context_9) {
+System.register("wire-webapp-cryptobox", ["store/Cache", "store/IndexedDB", "store/LocalStorage", "Cryptobox", "store/ReadOnlyStore", "CryptoboxSession"], function (exports_9, context_9) {
     "use strict";
     var __moduleName = context_9 && context_9.id;
     var Cache_1, IndexedDB_1, LocalStorage_1, Cryptobox_1, ReadOnlyStore_2, CryptoboxSession_2;
     return {
-        setters:[
+        setters: [
             function (Cache_1_1) {
                 Cache_1 = Cache_1_1;
             },
@@ -968,9 +989,10 @@ System.register("wire-webapp-cryptobox", ["store/Cache", "store/IndexedDB", "sto
             },
             function (CryptoboxSession_2_1) {
                 CryptoboxSession_2 = CryptoboxSession_2_1;
-            }],
-        execute: function() {
-            exports_9("default",{
+            }
+        ],
+        execute: function () {
+            exports_9("default", {
                 Cryptobox: Cryptobox_1.Cryptobox,
                 CryptoboxSession: CryptoboxSession_2.CryptoboxSession,
                 store: {
@@ -981,5 +1003,5 @@ System.register("wire-webapp-cryptobox", ["store/Cache", "store/IndexedDB", "sto
                 }
             });
         }
-    }
+    };
 });
