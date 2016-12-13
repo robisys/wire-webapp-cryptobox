@@ -1,12 +1,15 @@
 import * as Proteus from "wire-webapp-proteus";
+import Logdown = require('logdown');
 import {CryptoboxStore} from "./CryptoboxStore";
 
 export default class Cache implements CryptoboxStore {
   private identity: Proteus.keys.IdentityKeyPair;
+  private logger: Logdown;
   private prekeys: Object = {};
   private sessions: Object = {};
 
   constructor() {
+    this.logger = new Logdown({prefix: 'cryptobox.store.Cache', alignOuput: true});
   }
 
   public delete_all(): Promise<boolean> {
@@ -18,9 +21,10 @@ export default class Cache implements CryptoboxStore {
     });
   }
 
-  public delete_prekey(prekey_id: number): Promise<string> {
+  public delete_prekey(prekey_id: number): Promise<number> {
     return new Promise((resolve) => {
       delete this.prekeys[prekey_id];
+      this.logger.log(`Deleted PreKey ID "${prekey_id}".`);
       resolve(prekey_id);
     });
   }
@@ -88,6 +92,7 @@ export default class Cache implements CryptoboxStore {
 
       try {
         this.prekeys[preKey.key_id] = preKey.serialise();
+        this.logger.log(`Saved PreKey ID "${preKey.key_id}".`);
       } catch (error) {
         // TODO: Keep (and log) error stack trace
         return reject(new Error(`PreKey (no. ${preKey.key_id}) serialization problem "${error.message}" at "${error.stack}".`));
@@ -105,9 +110,11 @@ export default class Cache implements CryptoboxStore {
         savePromises.push(this.save_prekey(preKey));
       });
 
-      Promise.all(savePromises).then(() => {
-        resolve(preKeys);
-      }).catch(reject);
+      Promise.all(savePromises)
+        .then(() => {
+          resolve(preKeys);
+        })
+        .catch(reject);
     });
   }
 

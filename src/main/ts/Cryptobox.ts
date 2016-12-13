@@ -124,7 +124,7 @@ export class Cryptobox {
           allPreKeys = allPreKeys.concat(newPreKeys);
 
           if (newPreKeys.length > 0) {
-            this.logger.log(`Genereated PreKeys from ID "${newPreKeys[0].key_id}" to ID "${newPreKeys[newPreKeys.length - 1].key_id}".`);
+            this.logger.log(`Generated PreKeys from ID "${newPreKeys[0].key_id}" to ID "${newPreKeys[newPreKeys.length - 1].key_id}".`);
             if (publish_new_prekeys) {
               this.channel.publish(this.TOPIC_NEW_PREKEYS, newPreKeys);
               this.logger.log(`Published event "${this.CHANNEL_CRYPTOBOX}:${this.TOPIC_NEW_PREKEYS}".`, newPreKeys);
@@ -147,8 +147,7 @@ export class Cryptobox {
 
   public session_from_message(session_id: string, envelope: ArrayBuffer): Promise<(CryptoboxSession | Uint8Array)[]> {
     return Promise.resolve().then(() => {
-      let env: Proteus.message.Envelope;
-      env = Proteus.message.Envelope.deserialise(envelope);
+      let env: Proteus.message.Envelope = Proteus.message.Envelope.deserialise(envelope);
 
       return Proteus.session.Session.init_from_message(this.identity, this.pk_store, env)
         .then((tuple: Proteus.session.SessionFromMessageTuple) => {
@@ -188,7 +187,15 @@ export class Cryptobox {
       });
 
       return Promise.all(prekey_deletions);
-    }).then(() => {
+    }).then((deletedPreKeyIds) => {
+      // Delete PreKeys from "ReadOnlyStore" cache
+      deletedPreKeyIds.forEach((id: number) => {
+        let index: number = this.pk_store.removed_prekeys.indexOf(id);
+        if (index > -1) {
+          deletedPreKeyIds.splice(index, 1);
+        }
+      });
+
       // Create new PreKeys (to respect the minimum amount of required PreKeys)
       return this.refill_prekeys();
     }).then(() => {
@@ -221,14 +228,13 @@ export class Cryptobox {
    * Creates new PreKeys and saves them into the storage.
    */
   public new_prekeys(start: number, size: number = 0): Promise<Array<Proteus.keys.PreKey>> {
-    return Promise.resolve().then(() => {
-      if (size === 0) {
-        return [];
-      }
-
-      let newPreKeys: Array<Proteus.keys.PreKey> = Proteus.keys.PreKey.generate_prekeys(start, size);
-      return this.store.save_prekeys(newPreKeys);
-    });
+    return Promise.resolve()
+      .then(() => {
+        return Proteus.keys.PreKey.generate_prekeys(start, size);
+      })
+      .then((newPreKeys: Array<Proteus.keys.PreKey>) => {
+        return this.store.save_prekeys(newPreKeys);
+      });
   }
 
   public encrypt(session: CryptoboxSession|string, payload: string|Uint8Array): Promise<ArrayBuffer> {

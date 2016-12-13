@@ -7,7 +7,7 @@ export interface CryptoboxStore {
    * Deletes a specified PreKey.
    * @return Promise<string> Resolves with the "ID" from the record, which has been deleted.
    */
-  delete_prekey(prekey_id: number): Promise<string>;
+  delete_prekey(prekey_id: number): Promise<number>;
 
   /**
    * Deletes a specified session.

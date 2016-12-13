@@ -68,8 +68,13 @@ export default class LocalStorage implements CryptoboxStore {
     });
   }
 
-  public delete_prekey(prekey_id: number): Promise<string> {
-    return this.delete(this.preKeyStore, prekey_id.toString());
+  public delete_prekey(prekey_id: number): Promise<number> {
+    return Promise.resolve()
+      .then(() => {
+        return this.delete(this.preKeyStore, prekey_id.toString());
+      }).then(() => {
+        return prekey_id;
+      });
   }
 
   public delete_session(session_id: string): Promise<string> {

@@ -109,11 +109,12 @@ export default class IndexedDB implements CryptoboxStore {
     });
   }
 
-  public delete_prekey(prekey_id: number): Promise<string> {
+  public delete_prekey(prekey_id: number): Promise<number> {
     return new Promise((resolve) => {
-      this.delete(this.TABLE.PRE_KEYS, prekey_id.toString()).then((primary_key: string) => {
-        resolve(primary_key);
-      });
+      this.delete(this.TABLE.PRE_KEYS, prekey_id.toString())
+        .then(function () {
+          resolve(prekey_id);
+        });
     });
   }
 

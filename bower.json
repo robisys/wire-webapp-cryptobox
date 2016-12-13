@@ -2,11 +2,11 @@
   "dependencies": {
     "bazinga64": "3.0.3",
     "dexie": "1.5.1",
-    "logdown": "1.4.3",
+    "logdown": "1.4.4",
     "postal.js": "2.0.4",
     "system.js": "0.19.41",
     "wire-webapp-lru-cache": "1.0.2",
-    "wire-webapp-proteus": "https://github.com/wireapp/proteus.js.git#v2.1.9"
+    "wire-webapp-proteus": "https://github.com/wireapp/proteus.js.git#v2.1.11"
   },
   "ignore": [
     "**/.*",
