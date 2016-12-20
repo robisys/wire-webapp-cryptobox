@@ -25,18 +25,26 @@ Run all tests (in Chrome & Node.js):
 npm test
 ```
 
-## Usage
+### Installation
 
-### Node.js
+**Browser**
 
-```javascript
-var cryptobox = require('wire-webapp-cryptobox');
-
-var store = new cryptobox.store.Cache();
-var box = new cryptobox.Cryptobox(store);
-
-box.init().then(function () {
-  var fingerprint = box.identity.public_key.fingerprint();
-  console.log('Public Fingerprint', fingerprint);
-});
+```bash
+bower install wire-webapp-cryptobox
 ```
+
+**Node.js**
+
+```bash
+npm install wire-webapp-cryptobox
+```
+
+### Usage
+
+**Browser**
+
+- [index.html](./dist/index.html)
+
+**Node.js**
+
+- [index.js](./dist/index.js) 

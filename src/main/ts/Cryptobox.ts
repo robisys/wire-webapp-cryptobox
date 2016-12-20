@@ -1,9 +1,9 @@
 import * as Proteus from "wire-webapp-proteus";
-import {LRUCache} from "wire-webapp-lru-cache";
 import {CryptoboxSession} from "./CryptoboxSession";
 import {CryptoboxStore} from "./store/CryptoboxStore";
 import {ReadOnlyStore} from "./store/ReadOnlyStore";
 import Logdown = require("logdown");
+import LRUCache = require("wire-webapp-lru-cache");
 import postal = require("postal");
 
 export class Cryptobox {

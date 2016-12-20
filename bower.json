@@ -1,12 +1,11 @@
 {
   "dependencies": {
-    "bazinga64": "3.0.3",
+    "bazinga64": "4.0.0",
     "dexie": "1.5.1",
     "logdown": "1.4.4",
     "postal.js": "2.0.4",
-    "system.js": "0.19.41",
-    "wire-webapp-lru-cache": "1.0.2",
-    "wire-webapp-proteus": "https://github.com/wireapp/proteus.js.git#v2.1.11"
+    "wire-webapp-lru-cache": "2.0.0",
+    "wire-webapp-proteus": "3.0.0"
   },
   "ignore": [
     "**/.*",
@@ -17,7 +16,7 @@
   ],
   "license": "GPL-3.0",
   "main": [
-    "dist/system/wire-webapp-cryptobox.js"
+    "dist/window/wire-webapp-cryptobox.js"
   ],
   "name": "wire-webapp-cryptobox"
 }

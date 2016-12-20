@@ -28,23 +28,19 @@ var gutil = require('gulp-util');
 var jasmine = require('gulp-jasmine');
 var karma = require('karma');
 var merge = require('merge2');
-var pkg = require('./package.json');
 var replace = require('gulp-replace');
 var runSequence = require('run-sequence');
 var sourcemaps = require('gulp-sourcemaps');
 var ts = require('gulp-typescript');
-var tsProjectBrowser = ts.createProject('tsconfig.json', {
-  outFile: pkg.name + ".js"
-});
-var tsProjectNode = ts.createProject('tsconfig.json', {
-  module: "commonjs"
-});
+var tsProjectNode = ts.createProject('tsconfig.json');
+var webpack = require('webpack');
+var ProgressPlugin = require('webpack/lib/ProgressPlugin');
 
 gulp.task('clean', ['clean_browser', 'clean_node'], function() {
 });
 
 gulp.task('clean_browser', function() {
-  return gulp.src('dist/system').pipe(clean());
+  return gulp.src('dist/window').pipe(clean());
 });
 
 gulp.task('clean_node', function() {
@@ -52,14 +48,23 @@ gulp.task('clean_node', function() {
 });
 
 gulp.task('build', function(done) {
-  runSequence('build_ts_browser', 'build_ts_node', done);
+  runSequence('build_ts_node', 'build_ts_browser', done);
 });
 
-gulp.task('build_ts_browser', function() {
-  return tsProjectBrowser.src()
-    .pipe(tsProjectBrowser())
-    .pipe(replace('new Logdown', 'new Logdown.default'))
-    .pipe(gulp.dest('dist/system'));
+gulp.task('build_ts_browser', function(callback) {
+  var compiler = webpack(require('./webpack.config.js'));
+
+  compiler.apply(new ProgressPlugin(function(percentage, message) {
+    console.log(~~(percentage * 100) + '%', message);
+  }));
+
+  compiler.run(function(error) {
+    if (error) {
+      throw new gutil.PluginError('webpack', error);
+    }
+
+    callback();
+  });
 });
 
 gulp.task('build_ts_node', ['clean_node'], function() {
@@ -73,20 +78,6 @@ gulp.task('build_ts_node', ['clean_node'], function() {
 
 gulp.task('default', ['dist'], function() {
   gulp.watch('dist/**/*.*').on('change', browserSync.reload);
-  gulp.watch('src/main/ts/**/*.*', ['build_ts_browser']);
-
-  browserSync.init({
-    port: 3636,
-    server: {baseDir: './'},
-    startPath: '/dist'
-  });
-});
-
-gulp.task('tdd', ['dist'], function() {
-  gulp.watch('dist/**/*.*').on('change', browserSync.reload);
-  gulp.watch('src/main/ts/**/*.*', function() {
-    runSequence('build_ts_browser', 'test_browser');
-  });
 
   browserSync.init({
     port: 3636,
@@ -134,12 +125,9 @@ gulp.task('test_browser', function(done) {
     configFile: __dirname + '/karma.conf.js',
     files: [
       // Libraries
-      {pattern: 'dist/lib/static/**/*.js', included: true, served: true, nocache: true},
-      {pattern: 'dist/lib/dynamic/**/*.js', included: false, served: true, nocache: true},
-      // Utilities
-      {pattern: 'dist/util/**/*.js', included: true, served: true, nocache: true},
+      {pattern: 'dist/lib/dynamic/**/*.js', included: true, served: true, nocache: true},
       // Application
-      'dist/system/**/*.js',
+      'dist/window/**/*.js',
       // Tests
       (file) ? `test/js/specs/${file}` : 'test/js/specs/**/*Spec.js'
     ],

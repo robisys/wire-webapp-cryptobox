@@ -24,13 +24,9 @@ describe('cryptobox.store.IndexedDB', function() {
 
   beforeAll(function(done) {
     if (typeof window === 'object') {
-      SystemJS.import('wire-webapp-cryptobox').then(function(module) {
-        cryptobox = module.default;
-        return SystemJS.import('dexie');
-      }).then(function(module) {
-        Dexie = module;
-        done();
-      });
+     cryptobox = window.cryptobox;
+     Dexie = window.Dexie;
+     done();
     }
   });
 

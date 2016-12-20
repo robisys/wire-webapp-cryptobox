@@ -1,12 +1,12 @@
 {
   "dependencies": {
     "@types/postal": "1.0.28",
-    "bazinga64": "3.0.3",
+    "bazinga64": "4.0.0",
     "dexie": "1.5.1",
     "logdown": "1.4.4",
     "postal": "2.0.4",
-    "wire-webapp-lru-cache": "1.0.2",
-    "wire-webapp-proteus": "2.1.11"
+    "wire-webapp-lru-cache": "2.0.0",
+    "wire-webapp-proteus": "3.0.0"
   },
   "description": "High-level API with persistent storage for Proteus.",
   "devDependencies": {
@@ -30,7 +30,8 @@
     "karma-jasmine": "^1.0.2",
     "merge2": "^1.0.2",
     "run-sequence": "^1.2.2",
-    "typescript": "^2.0.3"
+    "typescript": "^2.0.3",
+    "webpack": "^2.2.0-rc.0"
   },
   "license": "GPL-3.0",
   "main": "dist/commonjs/wire-webapp-cryptobox.js",
@@ -40,7 +41,6 @@
     "url": "git://github.com/wireapp/wire-webapp-cryptobox.git"
   },
   "scripts": {
-    "build": "gulp build",
     "prepublish": "gulp dist",
     "self_test_node": "node dist/index.js",
     "start": "gulp default",

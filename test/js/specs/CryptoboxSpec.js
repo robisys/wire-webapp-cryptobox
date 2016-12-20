@@ -28,16 +28,11 @@ describe('cryptobox.Cryptobox', function() {
 
   beforeAll(function(done) {
     if (typeof window === 'object') {
-      SystemJS.import('wire-webapp-cryptobox').then(function(module) {
-        cryptobox = module.default;
-        return SystemJS.import('wire-webapp-proteus');
-      }).then(function(module) {
-        Proteus = module;
-        return SystemJS.import('bazinga64');
-      }).then(function(module) {
-        bazinga64 = module;
-        done();
-      });
+      bazinga64 = window.bazinga64;
+      cryptobox = window.cryptobox;
+      Proteus = window.Proteus;
+      bazinga64 = window.bazinga64;
+      done();
     } else {
       bazinga64 = require('bazinga64');
       cryptobox = require('../../../dist/commonjs/wire-webapp-cryptobox').default;

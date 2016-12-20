@@ -24,13 +24,9 @@ describe('Store Compatibility', function() {
 
   beforeAll(function(done) {
     if (typeof window === 'object') {
-      SystemJS.import('wire-webapp-cryptobox').then(function(module) {
-        cryptobox = module.default;
-        return SystemJS.import('wire-webapp-proteus');
-      }).then(function(module) {
-        Proteus = module;
-        done();
-      });
+      cryptobox = window.cryptobox;
+      Proteus = window.Proteus;
+      done();
     } else {
       cryptobox = require('../../../../dist/commonjs/wire-webapp-cryptobox');
       Proteus = require('wire-webapp-proteus');

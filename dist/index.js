@@ -1,13 +1,13 @@
-// Proteus
+// Test: Proteus
 var Proteus = require('wire-webapp-proteus');
 var lastResort = Proteus.keys.PreKey.MAX_PREKEY_ID;
 var preKey = Proteus.keys.PreKey.new(lastResort);
 var serializedPreKey = preKey.serialise();
 
-// Cryptobox
+// Test: Cryptobox
 var cryptobox = require('./commonjs/wire-webapp-cryptobox');
 var store = new cryptobox.store.Cache();
-var box = new cryptobox.Cryptobox(store);
+var box = new cryptobox.Cryptobox(store, 5);
 box.init()
   .then(function() {
     var fingerprint = box.identity.public_key.fingerprint();
