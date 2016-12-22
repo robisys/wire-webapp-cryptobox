@@ -1,12 +1,12 @@
 {
   "dependencies": {
-    "@types/postal": "1.0.28",
-    "bazinga64": "4.0.0",
-    "dexie": "1.5.1",
-    "logdown": "1.4.4",
-    "postal": "2.0.4",
-    "wire-webapp-lru-cache": "2.0.0",
-    "wire-webapp-proteus": "3.0.0"
+    "@types/postal": "~1.0.28",
+    "bazinga64": "~4.0.0",
+    "dexie": "~1.5.1",
+    "logdown": "~1.4.4",
+    "postal": "~2.0.4",
+    "wire-webapp-lru-cache": "~2.0.0",
+    "wire-webapp-proteus": "~3.0.0"
   },
   "description": "High-level API with persistent storage for Proteus.",
   "devDependencies": {
