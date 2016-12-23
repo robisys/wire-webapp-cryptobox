@@ -611,6 +611,7 @@ var IndexedDB = (function () {
         }
         else {
             this.db = identifier;
+            this.logger.log("Using cryptobox with existing database \"" + this.db.name + "\".");
         }
         this.db.on('blocked', function (event) {
             _this.logger.warn("Database access to \"" + _this.db.name + "\" got blocked.", event);

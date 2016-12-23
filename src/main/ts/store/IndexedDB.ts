@@ -38,6 +38,7 @@ export default class IndexedDB implements CryptoboxStore {
       this.db.version(1).stores(schema);
     } else {
       this.db = identifier;
+      this.logger.log(`Using cryptobox with existing database "${this.db.name}".`);
     }
 
     this.db.on('blocked', (event) => {
