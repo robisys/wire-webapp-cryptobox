@@ -55,4 +55,4 @@ npm test
 1. Adjust `version` in `package.json`
 1. Run `npm publish`
 1. Run `git push`
-1. Create [GitHub Release](./releases)
+1. Create [GitHub Release](../../releases)
