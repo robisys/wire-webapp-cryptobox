@@ -10,13 +10,38 @@ For licensing information, see the attached LICENSE file and the list of third-p
 
 [![Build Status](https://travis-ci.org/wireapp/wire-webapp-cryptobox.svg?branch=master)](https://travis-ci.org/wireapp/wire-webapp-cryptobox)
 
-## Instructions
+## Installation
+
+### Bower
+
+```bash
+bower install wire-webapp-cryptobox
+```
+
+### npm
+
+```bash
+npm install wire-webapp-cryptobox
+```
+
+## Usage
+
+### Browser
+
+- [index.html](./dist/index.html)
+
+### Node.js
+
+- [index.js](./dist/index.js) 
+
+## Development
+
+### Testing
 
 Run individual test:
 
 ```bash
-gulp test_browser --file compliance/IntegrationSpec.js
-gulp test_node --file compliance/IntegrationSpec.js
+gulp test_browser --file ...
 ```
 
 Run all tests (in Chrome & Node.js):
@@ -25,26 +50,9 @@ Run all tests (in Chrome & Node.js):
 npm test
 ```
 
-### Installation
+### Releasing
 
-**Browser**
-
-```bash
-bower install wire-webapp-cryptobox
-```
-
-**Node.js**
-
-```bash
-npm install wire-webapp-cryptobox
-```
-
-### Usage
-
-**Browser**
-
-- [index.html](./dist/index.html)
-
-**Node.js**
-
-- [index.js](./dist/index.js) 
+1. Adjust `version` in `package.json`
+1. Run `npm publish`
+1. Run `git push`
+1. Create [GitHub Release](./releases)
