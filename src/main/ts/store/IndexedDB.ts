@@ -4,6 +4,7 @@ import Dexie from "dexie";
 import Logdown = require('logdown');
 import {CryptoboxStore} from "./CryptoboxStore";
 import {SerialisedRecord} from "./SerialisedRecord";
+import {RecordNotFoundError} from "./RecordNotFoundError";
 
 export default class IndexedDB implements CryptoboxStore {
 
@@ -29,7 +30,7 @@ export default class IndexedDB implements CryptoboxStore {
     }
 
     if (typeof identifier === 'string') {
-      let schema: { [key: string]: string; } = {};
+      let schema: {[key: string]: string;} = {};
       schema[this.TABLE.LOCAL_IDENTITY] = '';
       schema[this.TABLE.PRE_KEYS] = '';
       schema[this.TABLE.SESSIONS] = '';
@@ -72,7 +73,7 @@ export default class IndexedDB implements CryptoboxStore {
           this.logger.log(`Loaded record "${primary_key}" from store "${store_name}".`, record);
           resolve(record);
         } else {
-          reject(new Error(`Record "${primary_key}" not found in store "${store_name}".`));
+          reject(new RecordNotFoundError(`Record "${primary_key}" not found in store "${store_name}".`));
         }
       }).catch(reject);
     });
@@ -153,7 +154,7 @@ export default class IndexedDB implements CryptoboxStore {
 
   // TODO: Option to keep PreKeys in memory
   public load_prekeys(): Promise<Array<Proteus.keys.PreKey>> {
-    return new Dexie.Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       this.validate_store(this.TABLE.PRE_KEYS).then((store: Dexie.Table<any, any>) => {
         return store.toArray();
         // TODO: Make records an "Array<SerialisedRecord>"

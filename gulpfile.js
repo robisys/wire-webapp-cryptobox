@@ -23,7 +23,6 @@ var bower = require('gulp-bower');
 var browserSync = require('browser-sync').create();
 var clean = require('gulp-clean');
 var gulp = require('gulp');
-var gulpTypings = require('gulp-typings');
 var gutil = require('gulp-util');
 var jasmine = require('gulp-jasmine');
 var karma = require('karma');
@@ -90,7 +89,7 @@ gulp.task('dist', function(done) {
   runSequence('clean', 'install', 'build', done);
 });
 
-gulp.task('install', ['install_bower_assets', 'install_typings'], function() {
+gulp.task('install', ['install_bower_assets'], function() {
 });
 
 gulp.task('install_bower', function() {
@@ -105,11 +104,6 @@ gulp.task('install_bower_assets', ['install_bower'], function() {
       }
     }))
     .pipe(gulp.dest('dist/lib'));
-});
-
-gulp.task('install_typings', function() {
-  return gulp.src('./typings.json')
-    .pipe(gulpTypings());
 });
 
 gulp.task('test', function(done) {

@@ -41,18 +41,18 @@ export class Cryptobox {
   }
 
   private save_session_in_cache(session: CryptoboxSession): CryptoboxSession {
-    this.logger.log(`Saving Session with ID "${session.id}" in cache.`);
+    this.logger.log(`Saving Session with ID "${session.id}" in cache...`);
     this.cachedSessions.set(session.id, session);
     return session;
   }
 
   private load_session_from_cache(session_id: string): CryptoboxSession {
-    this.logger.log(`Loading Session with ID "${session_id}" from cache.`);
+    this.logger.log(`Trying to load Session with ID "${session_id}" from cache...`);
     return this.cachedSessions.get(session_id);
   }
 
   public remove_session_from_cache(session_id: string): void {
-    this.logger.log(`Removing Session with ID "${session_id}" from cache.`);
+    this.logger.log(`Removing Session with ID "${session_id}" from cache...`);
     this.cachedSessions.set(session_id, undefined);
   }
 
@@ -77,6 +77,7 @@ export class Cryptobox {
           return this.new_last_resort_prekey(lastResortID);
         })
         .then((lastResortPreKey: Proteus.keys.PreKey) => {
+          this.lastResortPreKey = lastResortPreKey;
           this.logger.log(`Loaded Last Resort PreKey with ID "${lastResortPreKey.key_id}".`);
           this.logger.log(`Loading "${this.minimumAmountOfPreKeys - 1}" Standard PreKeys...`);
           return this.refill_prekeys(false);
@@ -86,6 +87,28 @@ export class Cryptobox {
           return allPreKeys;
         });
     });
+  }
+
+  public get_serialized_last_resort_prekey(): Promise<Object> {
+    return Promise.resolve().then(() => {
+      return this.serialize_prekey(this.lastResortPreKey);
+    });
+  }
+
+  public get_serialized_standard_prekeys(): Promise<Array<Object>> {
+    return this.store.load_prekeys()
+      .then((preKeysFromStorage: Array<Proteus.keys.PreKey>) => {
+        let serializedPreKeys = [];
+
+        preKeysFromStorage.forEach((preKey: Proteus.keys.PreKey) => {
+          let preKeyJson: any = this.serialize_prekey(preKey);
+          if (preKeyJson.id !== 65535) {
+            serializedPreKeys.push(preKeyJson);
+          }
+        });
+
+        return serializedPreKeys;
+      });
   }
 
   /**
@@ -136,26 +159,41 @@ export class Cryptobox {
     });
   }
 
-  public session_from_prekey(client_id: string, pre_key_bundle: ArrayBuffer): Promise<CryptoboxSession> {
+  /**
+   * Creates a new session which can be used for cryptographic operations (encryption & decryption) from a remote PreKey bundle.
+   * Saving the session takes automatically place when the session is used to encrypt or decrypt a message.
+   */
+  public session_from_prekey(session_id: string, pre_key_bundle: ArrayBuffer): Promise<CryptoboxSession> {
     return Promise.resolve().then(() => {
       let bundle: Proteus.keys.PreKeyBundle = Proteus.keys.PreKeyBundle.deserialise(pre_key_bundle);
-      return Proteus.session.Session.init_from_prekey(this.identity, bundle).then((session: Proteus.session.Session) => {
-        return new CryptoboxSession(client_id, this.pk_store, session);
-      });
+      return Proteus.session.Session.init_from_prekey(this.identity, bundle)
+        .then((session: Proteus.session.Session) => {
+          let cryptobox_session = new CryptoboxSession(session_id, this.pk_store, session);
+          return this.save_session_in_cache(cryptobox_session);
+        });
     });
   }
 
-  public session_from_message(session_id: string, envelope: ArrayBuffer): Promise<(CryptoboxSession | Uint8Array)[]> {
+  /**
+   * Uses a cipher message to create a new session and to decrypt to message which the given cipher message contains.
+   * Saving the newly created session is not needed as it's done during the inbuilt decryption phase.
+   */
+  public session_from_message(session_id: string, envelope: ArrayBuffer): Promise<any> {
     return Promise.resolve().then(() => {
       let env: Proteus.message.Envelope = Proteus.message.Envelope.deserialise(envelope);
+      let returnTuple: any;
 
       return Proteus.session.Session.init_from_message(this.identity, this.pk_store, env)
         .then((tuple: Proteus.session.SessionFromMessageTuple) => {
           let session: Proteus.session.Session = tuple[0];
           let decrypted: Uint8Array = tuple[1];
           let cryptoBoxSession: CryptoboxSession = new CryptoboxSession(session_id, this.pk_store, session);
-          return [cryptoBoxSession, decrypted];
+          returnTuple = [cryptoBoxSession, decrypted];
+          return this.session_save(cryptoBoxSession);
         })
+        .then(function () {
+          return returnTuple;
+        });
     });
   }
 
@@ -168,13 +206,9 @@ export class Cryptobox {
 
       return this.store.load_session(this.identity, session_id)
         .then((session: Proteus.session.Session) => {
-          if (session) {
-            return new CryptoboxSession(session_id, this.pk_store, session);
-          } else {
-            throw new Error(`Session with ID "${session}" not found.`);
-          }
+          return new CryptoboxSession(session_id, this.pk_store, session);
         })
-        .then(function (session) {
+        .then((session) => {
           return this.save_session_in_cache(session);
         });
     });
