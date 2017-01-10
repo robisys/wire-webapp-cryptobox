@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v2.0.1 */
+/*! wire-webapp-cryptobox v2.0.2 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -375,6 +375,7 @@ var Cryptobox = (function () {
     Cryptobox.prototype.session_load = function (session_id) {
         var _this = this;
         return Promise.resolve().then(function () {
+            _this.logger.log("Trying to load Session with ID \"" + session_id + "\"...");
             var cachedSession = _this.load_session_from_cache(session_id);
             if (cachedSession) {
                 return cachedSession;
@@ -691,14 +692,15 @@ var IndexedDB = (function () {
         return new Promise(function (resolve, reject) {
             _this.validate_store(store_name)
                 .then(function (store) {
+                _this.logger.log("Trying to load record \"" + primary_key + "\" from object store \"" + store_name + "\".");
                 return store.get(primary_key);
             }).then(function (record) {
                 if (record) {
-                    _this.logger.log("Loaded record \"" + primary_key + "\" from store \"" + store_name + "\".", record);
+                    _this.logger.log("Loaded record \"" + primary_key + "\" from object store \"" + store_name + "\".", record);
                     resolve(record);
                 }
                 else {
-                    reject(new RecordNotFoundError_1.RecordNotFoundError("Record \"" + primary_key + "\" not found in store \"" + store_name + "\"."));
+                    reject(new RecordNotFoundError_1.RecordNotFoundError("Record \"" + primary_key + "\" not found in object store \"" + store_name + "\"."));
                 }
             }).catch(reject);
         });
@@ -709,7 +711,7 @@ var IndexedDB = (function () {
             _this.validate_store(store_name).then(function (store) {
                 return store.put(entity, primary_key);
             }).then(function (key) {
-                _this.logger.log("Saved record \"" + primary_key + "\" into store \"" + store_name + "\".", entity);
+                _this.logger.log("Saved record \"" + primary_key + "\" into object store \"" + store_name + "\".", entity);
                 resolve(key);
             });
         });
@@ -721,7 +723,7 @@ var IndexedDB = (function () {
                 resolve(_this.db[store_name]);
             }
             else {
-                reject(new Error("Data store \"" + store_name + "\" not found."));
+                reject(new Error("Object store \"" + store_name + "\" not found."));
             }
         });
     };
@@ -849,7 +851,7 @@ var IndexedDB = (function () {
                 _this.logger.log("Saving a batch of \"" + items.length + "\" PreKeys (" + keys.join(', ') + ") into object store \"" + store.name + "\"...", prekeys);
                 return store.bulkPut(items, keys);
             }).then(function () {
-                _this.logger.log("Saved a batch of \"" + items.length + "\" PreKeys. From ID \"" + items[0].id + "\" to ID \"" + items[items.length - 1].id + "\".", items);
+                _this.logger.log("Saved a batch of \"" + items.length + "\" PreKeys: " + keys.join(', ') + ".", items);
                 resolve(prekeys);
             }).catch(reject);
         });
