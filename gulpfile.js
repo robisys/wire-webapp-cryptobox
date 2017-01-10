@@ -66,7 +66,7 @@ gulp.task('build_ts_browser', function(callback) {
   });
 });
 
-gulp.task('build_ts_node', ['clean_node'], function() {
+gulp.task('build_ts_node', function() {
   var tsResult = tsProjectNode.src().pipe(tsProjectNode());
 
   return merge([
@@ -77,6 +77,7 @@ gulp.task('build_ts_node', ['clean_node'], function() {
 
 gulp.task('default', ['dist'], function() {
   gulp.watch('dist/**/*.*').on('change', browserSync.reload);
+  gulp.watch('src/main/ts/**/*.*', ['build']);
 
   browserSync.init({
     port: 3636,

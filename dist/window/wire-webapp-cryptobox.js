@@ -429,6 +429,9 @@ var Cryptobox = (function () {
     Cryptobox.prototype.new_prekeys = function (start, size) {
         var _this = this;
         if (size === void 0) { size = 0; }
+        if (size === 0) {
+            return Promise.resolve([]);
+        }
         return Promise.resolve()
             .then(function () {
             return Proteus.keys.PreKey.generate_prekeys(start, size);
@@ -843,7 +846,8 @@ var IndexedDB = (function () {
                 keys.push(key);
             });
             _this.validate_store(_this.TABLE.PRE_KEYS).then(function (store) {
-                return store.bulkAdd(items, keys);
+                _this.logger.log("Saving a batch of \"" + items.length + "\" PreKeys (" + keys.join(', ') + ") into object store \"" + store.name + "\"...", prekeys);
+                return store.bulkPut(items, keys);
             }).then(function () {
                 _this.logger.log("Saved a batch of \"" + items.length + "\" PreKeys. From ID \"" + items[0].id + "\" to ID \"" + items[items.length - 1].id + "\".", items);
                 resolve(prekeys);

@@ -67,13 +67,14 @@ export default class IndexedDB implements CryptoboxStore {
     return new Promise((resolve, reject) => {
       this.validate_store(store_name)
         .then((store: Dexie.Table<any, any>) => {
+          this.logger.log(`Trying to load record "${primary_key}" from object store "${store_name}".`);
           return store.get(primary_key);
         }).then((record: any) => {
         if (record) {
-          this.logger.log(`Loaded record "${primary_key}" from store "${store_name}".`, record);
+          this.logger.log(`Loaded record "${primary_key}" from object store "${store_name}".`, record);
           resolve(record);
         } else {
-          reject(new RecordNotFoundError(`Record "${primary_key}" not found in store "${store_name}".`));
+          reject(new RecordNotFoundError(`Record "${primary_key}" not found in object store "${store_name}".`));
         }
       }).catch(reject);
     });
@@ -84,7 +85,7 @@ export default class IndexedDB implements CryptoboxStore {
       this.validate_store(store_name).then((store: Dexie.Table<any, any>) => {
         return store.put(entity, primary_key);
       }).then((key: any) => {
-        this.logger.log(`Saved record "${primary_key}" into store "${store_name}".`, entity);
+        this.logger.log(`Saved record "${primary_key}" into object store "${store_name}".`, entity);
         resolve(key);
       });
     });
@@ -95,7 +96,7 @@ export default class IndexedDB implements CryptoboxStore {
       if (this.db[store_name]) {
         resolve(this.db[store_name]);
       } else {
-        reject(new Error(`Data store "${store_name}" not found.`));
+        reject(new Error(`Object store "${store_name}" not found.`));
       }
     });
   }
@@ -231,12 +232,12 @@ export default class IndexedDB implements CryptoboxStore {
       });
 
       this.validate_store(this.TABLE.PRE_KEYS).then((store: Dexie.Table<any, any>) => {
-        return store.bulkAdd(items, keys);
+        this.logger.log(`Saving a batch of "${items.length}" PreKeys (${keys.join(', ')}) into object store "${store.name}"...`, prekeys);
+        return store.bulkPut(items, keys);
       }).then(() => {
-        this.logger.log(`Saved a batch of "${items.length}" PreKeys. From ID "${items[0].id}" to ID "${items[items.length - 1].id}".`, items);
+        this.logger.log(`Saved a batch of "${items.length}" PreKeys: ${keys.join(', ')}.`, items);
         resolve(prekeys);
       }).catch(reject);
-
     });
   }
 

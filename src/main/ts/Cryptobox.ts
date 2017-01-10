@@ -199,6 +199,8 @@ export class Cryptobox {
 
   public session_load(session_id: string): Promise<CryptoboxSession> {
     return Promise.resolve().then(() => {
+      this.logger.log(`Trying to load Session with ID "${session_id}"...`);
+
       let cachedSession = this.load_session_from_cache(session_id);
       if (cachedSession) {
         return cachedSession;
@@ -262,6 +264,10 @@ export class Cryptobox {
    * Creates new PreKeys and saves them into the storage.
    */
   public new_prekeys(start: number, size: number = 0): Promise<Array<Proteus.keys.PreKey>> {
+    if(size === 0) {
+      return Promise.resolve([]);
+    }
+
     return Promise.resolve()
       .then(() => {
         return Proteus.keys.PreKey.generate_prekeys(start, size);
