@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v2.0.3 */
+/*! wire-webapp-cryptobox v2.0.4 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -711,7 +711,18 @@ var IndexedDB = (function () {
             _this.validate_store(store_name).then(function (store) {
                 return store.put(entity, primary_key);
             }).then(function (key) {
-                _this.logger.log("Saved record \"" + primary_key + "\" into object store \"" + store_name + "\".", entity);
+                _this.logger.log("Put record \"" + primary_key + "\" into object store \"" + store_name + "\".", entity);
+                resolve(key);
+            });
+        });
+    };
+    IndexedDB.prototype.save_once = function (store_name, primary_key, entity) {
+        var _this = this;
+        return new dexie_1.default.Promise(function (resolve) {
+            _this.validate_store(store_name).then(function (store) {
+                return store.add(entity, primary_key);
+            }).then(function (key) {
+                _this.logger.log("Added record \"" + primary_key + "\" into object store \"" + store_name + "\".", entity);
                 resolve(key);
             });
         });
@@ -810,7 +821,7 @@ var IndexedDB = (function () {
             _this.identity = identity;
             var serialised = bazinga64.Encoder.toBase64(identity.serialise()).asString;
             var payload = new SerialisedRecord_1.SerialisedRecord(serialised, _this.localIdentityKey);
-            _this.save(_this.TABLE.LOCAL_IDENTITY, payload.id, payload).then(function (primaryKey) {
+            _this.save_once(_this.TABLE.LOCAL_IDENTITY, payload.id, payload).then(function (primaryKey) {
                 var fingerprint = identity.public_key.fingerprint();
                 var message = "Saved local identity \"" + fingerprint + "\""
                     + (" with key \"" + primaryKey + "\" into storage \"" + _this.TABLE.LOCAL_IDENTITY + "\"");

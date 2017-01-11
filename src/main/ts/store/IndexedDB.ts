@@ -85,7 +85,18 @@ export default class IndexedDB implements CryptoboxStore {
       this.validate_store(store_name).then((store: Dexie.Table<any, any>) => {
         return store.put(entity, primary_key);
       }).then((key: any) => {
-        this.logger.log(`Saved record "${primary_key}" into object store "${store_name}".`, entity);
+        this.logger.log(`Put record "${primary_key}" into object store "${store_name}".`, entity);
+        resolve(key);
+      });
+    });
+  }
+
+  private save_once(store_name: string, primary_key: string, entity: Object): Dexie.Promise<string> {
+    return new Dexie.Promise((resolve) => {
+      this.validate_store(store_name).then((store: Dexie.Table<any, any>) => {
+        return store.add(entity, primary_key);
+      }).then((key: any) => {
+        this.logger.log(`Added record "${primary_key}" into object store "${store_name}".`, entity);
         resolve(key);
       });
     });
@@ -189,7 +200,7 @@ export default class IndexedDB implements CryptoboxStore {
       let serialised: string = bazinga64.Encoder.toBase64(identity.serialise()).asString;
       let payload: SerialisedRecord = new SerialisedRecord(serialised, this.localIdentityKey);
 
-      this.save(this.TABLE.LOCAL_IDENTITY, payload.id, payload).then((primaryKey: string) => {
+      this.save_once(this.TABLE.LOCAL_IDENTITY, payload.id, payload).then((primaryKey: string) => {
         let fingerprint: string = identity.public_key.fingerprint();
         let message = `Saved local identity "${fingerprint}"`
           + ` with key "${primaryKey}" into storage "${this.TABLE.LOCAL_IDENTITY}"`;
