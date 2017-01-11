@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v2.0.2 */
+/*! wire-webapp-cryptobox v2.0.3 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -252,7 +252,7 @@ var Cryptobox = (function () {
     };
     Cryptobox.prototype.remove_session_from_cache = function (session_id) {
         this.logger.log("Removing Session with ID \"" + session_id + "\" from cache...");
-        this.cachedSessions.set(session_id, undefined);
+        this.cachedSessions.delete(session_id);
     };
     Cryptobox.prototype.init = function () {
         var _this = this;
