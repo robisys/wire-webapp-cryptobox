@@ -53,7 +53,7 @@ export class Cryptobox {
 
   public remove_session_from_cache(session_id: string): void {
     this.logger.log(`Removing Session with ID "${session_id}" from cache...`);
-    this.cachedSessions.set(session_id, undefined);
+    this.cachedSessions.delete(session_id);
   }
 
   public init(): Promise<Array<Proteus.keys.PreKey>> {
