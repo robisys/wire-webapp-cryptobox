@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v2.0.4-TEST */
+/*! wire-webapp-cryptobox v2.0.5 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -296,7 +296,7 @@ var Cryptobox = (function () {
             var ids = allPreKeys.map(function (preKey) {
                 return preKey.key_id.toString();
             });
-            _this.logger.log("Initialized Cryptobox with a total amount of \"" + allPreKeys.length + "\" PreKeys: " + ids.join(', ') + ".", allPreKeys);
+            _this.logger.log("Initialized Cryptobox with a total amount of \"" + allPreKeys.length + "\" PreKeys (" + ids.join(', ') + ").", allPreKeys);
             return allPreKeys;
         });
     };
@@ -908,7 +908,7 @@ var IndexedDB = (function () {
                 return store.bulkPut(items, keys);
             })
                 .then(function () {
-                _this.logger.log("Saved a batch of \"" + items.length + "\" PreKeys: " + keys.join(', ') + ".", items);
+                _this.logger.log("Saved a batch of \"" + items.length + "\" PreKeys (" + keys.join(', ') + ").", items);
                 resolve(prekeys);
             })
                 .catch(reject);
