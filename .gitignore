@@ -12,6 +12,5 @@
 /dist/system/
 /dist/lib
 /node_modules
-/npm-debug.log
 /typings
 /npm-debug.log*
