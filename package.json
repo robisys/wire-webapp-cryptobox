@@ -1,12 +1,12 @@
 {
   "dependencies": {
     "@types/postal": "~1.0.28",
-    "bazinga64": "~4.0.0",
+    "bazinga64": "~5.0.0",
     "dexie": "~1.5.1",
-    "logdown": "~1.4.5",
+    "logdown": "~2.0.2",
     "postal": "~2.0.4",
     "wire-webapp-lru-cache": "~2.0.0",
-    "wire-webapp-proteus": "~3.0.0"
+    "wire-webapp-proteus": "~3.0.2"
   },
   "description": "High-level API with persistent storage for Proteus.",
   "devDependencies": {
@@ -41,11 +41,11 @@
   },
   "scripts": {
     "build": "npm run prepublish",
-    "prepublish": "gulp dist",
+    "prepublish": "gulp dist && npm test",
     "self_test_node": "node dist/index.js",
     "start": "gulp default",
     "test": "npm run self_test_node && gulp test"
   },
   "typings": "dist/typings/wire-webapp-cryptobox.d.ts",
-  "version": "2.0.4"
+  "version": "2.0.4-TEST"
 }

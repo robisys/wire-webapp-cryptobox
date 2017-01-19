@@ -10,9 +10,6 @@
         <JSCodeStyleSettings>
           <option name="SPACE_BEFORE_FUNCTION_LEFT_PARENTH" value="false" />
         </JSCodeStyleSettings>
-        <TypeScriptCodeStyleSettings>
-          <option name="SPACE_AFTER_TYPE_COLON" value="true" />
-        </TypeScriptCodeStyleSettings>
         <XML>
           <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
         </XML>

@@ -1,7 +1,7 @@
 {
   "dynamic": {
     "bazinga64@copy": [
-      "bazinga64/dist/browser/bazinga64.js"
+      "bazinga64/dist/window/bazinga64.js"
     ],
     "dexie@copy": [
       "dexie/dist/dexie.js"
@@ -10,7 +10,7 @@
       "lodash/dist/lodash.js"
     ],
     "logdown@copy": [
-      "logdown/dist/index.js"
+      "logdown/dist/logdown.js"
     ],
     "wire-webapp-lru-cache@copy": [
       "wire-webapp-lru-cache/dist/window/LRUCache.js"

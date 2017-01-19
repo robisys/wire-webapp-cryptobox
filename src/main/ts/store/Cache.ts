@@ -9,7 +9,7 @@ export default class Cache implements CryptoboxStore {
   private sessions: Object = {};
 
   constructor() {
-    this.logger = new Logdown({prefix: 'cryptobox.store.Cache', alignOuput: true});
+    this.logger = new Logdown({prefix: 'cryptobox.store.Cache', alignOutput: true});
   }
 
   public delete_all(): Promise<boolean> {
@@ -37,11 +37,11 @@ export default class Cache implements CryptoboxStore {
   }
 
   public load_identity(): Promise<Proteus.keys.IdentityKeyPair> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (this.identity) {
         resolve(this.identity);
       } else {
-        reject(new Error(`No local identity present.`));
+        resolve(undefined);
       }
     });
   }
@@ -52,7 +52,7 @@ export default class Cache implements CryptoboxStore {
       if (serialised) {
         resolve(Proteus.keys.PreKey.deserialise(serialised));
       } else {
-        reject(new Error(`PreKey with ID "${prekey_id}" not found.`));
+        resolve(undefined);
       }
     });
   }

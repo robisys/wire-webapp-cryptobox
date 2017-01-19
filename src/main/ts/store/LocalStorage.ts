@@ -2,10 +2,13 @@ import * as bazinga64 from "bazinga64";
 import * as Proteus from "wire-webapp-proteus";
 import {CryptoboxStore} from "./CryptoboxStore";
 import {SerialisedRecord} from "./SerialisedRecord";
+import {RecordNotFoundError} from "./RecordNotFoundError";
+import Logdown = require("logdown");
 
 export default class LocalStorage implements CryptoboxStore {
   private localIdentityKey: string = 'local_identity';
   private localIdentityStore: string;
+  private logger: Logdown;
   private preKeyStore: string;
   private sessionStore: string;
   private storage: Storage;
@@ -19,6 +22,7 @@ export default class LocalStorage implements CryptoboxStore {
       this.preKeyStore = `cryptobox@${identifier}@prekey`;
       this.sessionStore = `cryptobox@${identifier}@session`;
       this.storage = localStorage;
+      this.logger = new Logdown({prefix: 'cryptobox.store.LocalStorage', alignOutput: true});
     }
   }
 
@@ -36,7 +40,9 @@ export default class LocalStorage implements CryptoboxStore {
       if (item) {
         resolve(item);
       } else {
-        reject(new Error(`Item "${primary_key}" not found in "${store_name}".`));
+        let message: string = `Item "${primary_key}" not found in "${store_name}".`;
+        this.logger.warn(message);
+        reject(new RecordNotFoundError(message));
       }
     });
   };
@@ -83,24 +89,36 @@ export default class LocalStorage implements CryptoboxStore {
 
   public load_identity(): Promise<Proteus.keys.IdentityKeyPair> {
     return new Promise((resolve, reject) => {
-      this.load(this.localIdentityStore, this.localIdentityKey).then(function (payload: string) {
-        if (payload) {
+      this.load(this.localIdentityStore, this.localIdentityKey)
+        .then(function (payload: string) {
           let bytes = bazinga64.Decoder.fromBase64(payload).asBytes;
           let ikp: Proteus.keys.IdentityKeyPair = Proteus.keys.IdentityKeyPair.deserialise(bytes.buffer);
           resolve(ikp);
-        } else {
-          reject(new Error(`No local identity present.`));
-        }
-      }).catch(reject);
+        })
+        .catch(function (error: Error) {
+          if (error instanceof RecordNotFoundError) {
+            resolve(undefined);
+          } else {
+            reject(error);
+          }
+        });
     });
   }
 
   public load_prekey(prekey_id: number): Promise<Proteus.keys.PreKey> {
     return new Promise((resolve, reject) => {
-      this.load(this.preKeyStore, prekey_id.toString()).then((serialised: string) => {
-        let bytes = bazinga64.Decoder.fromBase64(serialised).asBytes;
-        resolve(Proteus.keys.PreKey.deserialise(bytes.buffer));
-      }).catch(reject);
+      this.load(this.preKeyStore, prekey_id.toString())
+        .then((payload: string) => {
+          let bytes = bazinga64.Decoder.fromBase64(payload).asBytes;
+          resolve(Proteus.keys.PreKey.deserialise(bytes.buffer));
+        })
+        .catch(function (error: Error) {
+          if (error instanceof RecordNotFoundError) {
+            resolve(undefined);
+          } else {
+            reject(error);
+          }
+        });
     });
   }
 

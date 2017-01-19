@@ -26,7 +26,7 @@ export class Cryptobox {
       throw new Error(`You cannot initialize Cryptobox without a storage component.`);
     }
 
-    this.logger = new Logdown({prefix: 'cryptobox.Cryptobox', alignOuput: true});
+    this.logger = new Logdown({prefix: 'cryptobox.Cryptobox', alignOutput: true});
 
     this.cachedSessions = new LRUCache(1000);
     this.channel = postal.channel(this.CHANNEL_CRYPTOBOX);
@@ -57,36 +57,47 @@ export class Cryptobox {
   }
 
   public init(): Promise<Array<Proteus.keys.PreKey>> {
-    return Promise.resolve().then(() => {
-      this.logger.log(`Loading local identity...`);
-      return this.store.load_identity()
-        .catch(() => {
-          let identity: Proteus.keys.IdentityKeyPair = Proteus.keys.IdentityKeyPair.new();
-          this.logger.warn(`No existing identity found. Created new identity with fingerprint "${identity.public_key.fingerprint()}".`, identity);
+    this.logger.log(`Initializing Cryptobox. Loading local identity...`);
+    return this.store.load_identity()
+      .then((identity: Proteus.keys.IdentityKeyPair) => {
+        if (identity) {
+          this.logger.log(`Found existing local identity.`, identity);
+          return identity;
+        } else {
+          identity = Proteus.keys.IdentityKeyPair.new();
+          this.logger.warn(`No existing local identity found. Created new local identity.`, identity);
           return this.store.save_identity(identity);
-        })
-        .then((identity: Proteus.keys.IdentityKeyPair) => {
-          this.identity = identity;
-          this.logger.log(`Loaded local identity. Fingerprint is "${this.identity.public_key.fingerprint()}".`, this.identity);
-          this.logger.log(`Loading Last Resort PreKey with ID "${Proteus.keys.PreKey.MAX_PREKEY_ID}"...`);
-          return this.store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
-        })
-        .catch((error: Error) => {
+        }
+      })
+      .then((identity: Proteus.keys.IdentityKeyPair) => {
+        this.identity = identity;
+        this.logger.log(`Initialized Cryptobox with local identity. Fingerprint is "${identity.public_key.fingerprint()}".`, this.identity);
+        this.logger.log(`Loading Last Resort PreKey with ID "${Proteus.keys.PreKey.MAX_PREKEY_ID}"...`);
+        return this.store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
+      })
+      .then((lastResortPreKey: Proteus.keys.PreKey) => {
+        if (lastResortPreKey) {
+          this.logger.log(`Found existing Last Resort PreKey.`, lastResortPreKey);
+          return lastResortPreKey;
+        } else {
+          this.logger.warn(`No Last Resort PreKey found. Creating new one...`);
           let lastResortID: number = Proteus.keys.PreKey.MAX_PREKEY_ID;
-          this.logger.warn(`No last resort PreKey found: ${error.message}`);
           return this.new_last_resort_prekey(lastResortID);
-        })
-        .then((lastResortPreKey: Proteus.keys.PreKey) => {
-          this.lastResortPreKey = lastResortPreKey;
-          this.logger.log(`Loaded Last Resort PreKey with ID "${lastResortPreKey.key_id}".`);
-          this.logger.log(`Loading "${this.minimumAmountOfPreKeys - 1}" Standard PreKeys...`);
-          return this.refill_prekeys(false);
-        })
-        .then((allPreKeys: Array<Proteus.keys.PreKey>) => {
-          this.logger.log(`Initialized Cryptobox with a total amount of "${allPreKeys.length}" PreKeys.`);
-          return allPreKeys;
+        }
+      })
+      .then((lastResortPreKey: Proteus.keys.PreKey) => {
+        this.lastResortPreKey = lastResortPreKey;
+        this.logger.log(`Loaded Last Resort PreKey with ID "${lastResortPreKey.key_id}".`, lastResortPreKey);
+        this.logger.log(`Loading "${this.minimumAmountOfPreKeys - 1}" Standard PreKeys...`);
+        return this.refill_prekeys(false);
+      })
+      .then((allPreKeys: Array<Proteus.keys.PreKey>) => {
+        let ids: Array<string> = allPreKeys.map(function (preKey: Proteus.keys.PreKey) {
+          return preKey.key_id.toString();
         });
-    });
+        this.logger.log(`Initialized Cryptobox with a total amount of "${allPreKeys.length}" PreKeys (${ids.join(', ')}).`, allPreKeys);
+        return allPreKeys;
+      });
   }
 
   public get_serialized_last_resort_prekey(): Promise<Object> {
@@ -179,22 +190,20 @@ export class Cryptobox {
    * Saving the newly created session is not needed as it's done during the inbuilt decryption phase.
    */
   public session_from_message(session_id: string, envelope: ArrayBuffer): Promise<any> {
-    return Promise.resolve().then(() => {
-      let env: Proteus.message.Envelope = Proteus.message.Envelope.deserialise(envelope);
-      let returnTuple: any;
+    let env: Proteus.message.Envelope = Proteus.message.Envelope.deserialise(envelope);
+    let returnTuple: any;
 
-      return Proteus.session.Session.init_from_message(this.identity, this.pk_store, env)
-        .then((tuple: Proteus.session.SessionFromMessageTuple) => {
-          let session: Proteus.session.Session = tuple[0];
-          let decrypted: Uint8Array = tuple[1];
-          let cryptoBoxSession: CryptoboxSession = new CryptoboxSession(session_id, this.pk_store, session);
-          returnTuple = [cryptoBoxSession, decrypted];
-          return this.session_save(cryptoBoxSession);
-        })
-        .then(function () {
-          return returnTuple;
-        });
-    });
+    return Proteus.session.Session.init_from_message(this.identity, this.pk_store, env)
+      .then((tuple: Proteus.session.SessionFromMessageTuple) => {
+        let session: Proteus.session.Session = tuple[0];
+        let decrypted: Uint8Array = tuple[1];
+        let cryptoBoxSession: CryptoboxSession = new CryptoboxSession(session_id, this.pk_store, session);
+        returnTuple = [cryptoBoxSession, decrypted];
+        return this.session_save(cryptoBoxSession);
+      })
+      .then(function () {
+        return returnTuple;
+      });
   }
 
   public session_load(session_id: string): Promise<CryptoboxSession> {
@@ -246,7 +255,7 @@ export class Cryptobox {
     return this.store.delete_session(session_id);
   }
 
-  public new_last_resort_prekey(prekey_id: number): Promise<Proteus.keys.PreKey> {
+  private new_last_resort_prekey(prekey_id: number): Promise<Proteus.keys.PreKey> {
     return Promise.resolve()
       .then(() => {
         this.lastResortPreKey = Proteus.keys.PreKey.last_resort();
@@ -264,7 +273,7 @@ export class Cryptobox {
    * Creates new PreKeys and saves them into the storage.
    */
   public new_prekeys(start: number, size: number = 0): Promise<Array<Proteus.keys.PreKey>> {
-    if(size === 0) {
+    if (size === 0) {
       return Promise.resolve([]);
     }
 
