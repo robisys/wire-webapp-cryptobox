@@ -66,7 +66,7 @@ export class Cryptobox {
         } else {
           identity = Proteus.keys.IdentityKeyPair.new();
           this.logger.warn(`No existing local identity found. Created new local identity.`, identity);
-          return this.store.save_identity(identity);
+          return this.save_new_identity(identity);
         }
       })
       .then((identity: Proteus.keys.IdentityKeyPair) => {
@@ -168,6 +168,17 @@ export class Cryptobox {
           return allPreKeys;
         });
     });
+  }
+
+  public save_new_identity(identity: Proteus.keys.IdentityKeyPair): Promise<Proteus.keys.IdentityKeyPair> {
+    return Promise.resolve()
+      .then(() => {
+        return this.store.delete_all();
+      })
+      .then(() => {
+        this.logger.log(`Cleaned cryptographic items to save a new local identity.`, identity);
+        return this.store.save_identity(identity);
+      });
   }
 
   /**
