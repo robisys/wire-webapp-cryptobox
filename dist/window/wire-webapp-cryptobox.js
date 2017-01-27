@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v2.0.5 */
+/*! wire-webapp-cryptobox v2.0.6 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -266,7 +266,7 @@ var Cryptobox = (function () {
             else {
                 identity = Proteus.keys.IdentityKeyPair.new();
                 _this.logger.warn("No existing local identity found. Created new local identity.", identity);
-                return _this.store.save_identity(identity);
+                return _this.save_new_identity(identity);
             }
         })
             .then(function (identity) {
@@ -354,6 +354,17 @@ var Cryptobox = (function () {
                 }
                 return allPreKeys;
             });
+        });
+    };
+    Cryptobox.prototype.save_new_identity = function (identity) {
+        var _this = this;
+        return Promise.resolve()
+            .then(function () {
+            return _this.store.delete_all();
+        })
+            .then(function () {
+            _this.logger.log("Cleaned cryptographic items to save a new local identity.", identity);
+            return _this.store.save_identity(identity);
         });
     };
     Cryptobox.prototype.session_from_prekey = function (session_id, pre_key_bundle) {
@@ -735,19 +746,6 @@ var IndexedDB = (function () {
             });
         });
     };
-    IndexedDB.prototype.save_once = function (store_name, primary_key, entity) {
-        var _this = this;
-        return new dexie_1.default.Promise(function (resolve) {
-            _this.validate_store(store_name)
-                .then(function (store) {
-                return store.add(entity, primary_key);
-            })
-                .then(function (key) {
-                _this.logger.log("Added record \"" + primary_key + "\" into object store \"" + store_name + "\".", entity);
-                resolve(key);
-            });
-        });
-    };
     IndexedDB.prototype.validate_store = function (store_name) {
         var _this = this;
         return new dexie_1.default.Promise(function (resolve, reject) {
@@ -861,7 +859,7 @@ var IndexedDB = (function () {
             _this.identity = identity;
             var serialised = bazinga64.Encoder.toBase64(identity.serialise()).asString;
             var payload = new SerialisedRecord_1.SerialisedRecord(serialised, _this.localIdentityKey);
-            _this.save_once(_this.TABLE.LOCAL_IDENTITY, payload.id, payload)
+            _this.save(_this.TABLE.LOCAL_IDENTITY, payload.id, payload)
                 .then(function (primaryKey) {
                 var fingerprint = identity.public_key.fingerprint();
                 var message = "Saved local identity \"" + fingerprint + "\""
