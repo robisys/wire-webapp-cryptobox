@@ -110,14 +110,22 @@ export default class IndexedDB implements CryptoboxStore {
   }
 
   public delete_all(): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      this.logger.info(`Deleting "${this.db.name}".`);
-      this.db.delete()
-        .then(function () {
-          resolve(true);
-        })
-        .catch(reject);
-    });
+    return Promise.resolve()
+      .then(() => {
+        return this.db[this.TABLE.LOCAL_IDENTITY].clear();
+      })
+      .then(() => {
+        this.logger.log(`Deleted all records in object store "${this.TABLE.LOCAL_IDENTITY}".`);
+        return this.db[this.TABLE.PRE_KEYS].clear();
+      })
+      .then(() => {
+        this.logger.log(`Deleted all records in object store "${this.TABLE.PRE_KEYS}".`);
+        return this.db[this.TABLE.SESSIONS].clear();
+      })
+      .then(() => {
+        this.logger.log(`Deleted all records in object store "${this.TABLE.SESSIONS}".`);
+        return true;
+      });
   }
 
   public delete_prekey(prekey_id: number): Promise<number> {

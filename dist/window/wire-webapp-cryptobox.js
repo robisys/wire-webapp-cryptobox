@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v2.0.6 */
+/*! wire-webapp-cryptobox v2.0.7 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -363,7 +363,7 @@ var Cryptobox = (function () {
             return _this.store.delete_all();
         })
             .then(function () {
-            _this.logger.log("Cleaned cryptographic items to save a new local identity.", identity);
+            _this.logger.warn("Cleaned cryptographic items to save a new local identity.", identity);
             return _this.store.save_identity(identity);
         });
     };
@@ -759,13 +759,21 @@ var IndexedDB = (function () {
     };
     IndexedDB.prototype.delete_all = function () {
         var _this = this;
-        return new Promise(function (resolve, reject) {
-            _this.logger.info("Deleting \"" + _this.db.name + "\".");
-            _this.db.delete()
-                .then(function () {
-                resolve(true);
-            })
-                .catch(reject);
+        return Promise.resolve()
+            .then(function () {
+            return _this.db[_this.TABLE.LOCAL_IDENTITY].clear();
+        })
+            .then(function () {
+            _this.logger.log("Deleted all records in object store \"" + _this.TABLE.LOCAL_IDENTITY + "\".");
+            return _this.db[_this.TABLE.PRE_KEYS].clear();
+        })
+            .then(function () {
+            _this.logger.log("Deleted all records in object store \"" + _this.TABLE.PRE_KEYS + "\".");
+            return _this.db[_this.TABLE.SESSIONS].clear();
+        })
+            .then(function () {
+            _this.logger.log("Deleted all records in object store \"" + _this.TABLE.SESSIONS + "\".");
+            return true;
         });
     };
     IndexedDB.prototype.delete_prekey = function (prekey_id) {

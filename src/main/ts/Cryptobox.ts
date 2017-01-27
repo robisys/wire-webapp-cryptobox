@@ -176,7 +176,7 @@ export class Cryptobox {
         return this.store.delete_all();
       })
       .then(() => {
-        this.logger.log(`Cleaned cryptographic items to save a new local identity.`, identity);
+        this.logger.warn(`Cleaned cryptographic items to save a new local identity.`, identity);
         return this.store.save_identity(identity);
       });
   }
