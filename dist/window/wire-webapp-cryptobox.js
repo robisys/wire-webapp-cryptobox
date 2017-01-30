@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v2.0.7 */
+/*! wire-webapp-cryptobox v2.1.0 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
