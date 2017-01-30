@@ -9,22 +9,12 @@
     <script src="lib/dynamic/dexie/dexie.js"></script>
     <script src="lib/dynamic/lodash/lodash.js"></script>
     <script src="lib/dynamic/logdown/logdown.js"></script>
-    <script src="lib/dynamic/postal.js/postal.js"></script>
     <script src="lib/dynamic/wire-webapp-lru-cache/LRUCache.js"></script>
     <script src="lib/dynamic/wire-webapp-proteus/proteus.js"></script>
     <script src="window/wire-webapp-cryptobox.js"></script>
   </head>
   <body>
     <script>
-      postal.subscribe({
-        channel: cryptobox.Cryptobox.prototype.CHANNEL_CRYPTOBOX,
-        topic: cryptobox.Cryptobox.prototype.TOPIC_NEW_PREKEYS,
-        callback: function(data) {
-          var logger = new Logdown({prefix: 'postal', alignOutput: true});
-          logger.log(`Received "${data.length}" new PreKey(s).`, data);
-        }
-      });
-
       var storage = new cryptobox.store.IndexedDB('bundle_test');
       var box = new cryptobox.Cryptobox(storage, 5);
 

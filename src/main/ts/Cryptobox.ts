@@ -2,17 +2,15 @@ import * as Proteus from "wire-webapp-proteus";
 import {CryptoboxSession} from "./CryptoboxSession";
 import {CryptoboxStore} from "./store/CryptoboxStore";
 import {ReadOnlyStore} from "./store/ReadOnlyStore";
+import EventEmitter = require("events");
 import Logdown = require("logdown");
 import LRUCache = require("wire-webapp-lru-cache");
-import postal = require("postal");
 
-export class Cryptobox {
-  public CHANNEL_CRYPTOBOX: string;
+export class Cryptobox extends EventEmitter {
   public TOPIC_NEW_PREKEYS: string;
 
   private lastResortPreKey: Proteus.keys.PreKey;
   private cachedSessions: LRUCache;
-  private channel;
 
   private logger: Logdown;
   private minimumAmountOfPreKeys: number;
@@ -22,6 +20,8 @@ export class Cryptobox {
   public identity: Proteus.keys.IdentityKeyPair;
 
   constructor(cryptoBoxStore: CryptoboxStore, minimumAmountOfPreKeys: number = 1) {
+    super();
+
     if (!cryptoBoxStore) {
       throw new Error(`You cannot initialize Cryptobox without a storage component.`);
     }
@@ -29,8 +29,6 @@ export class Cryptobox {
     this.logger = new Logdown({prefix: 'cryptobox.Cryptobox', alignOutput: true});
 
     this.cachedSessions = new LRUCache(1000);
-    this.channel = postal.channel(this.CHANNEL_CRYPTOBOX);
-    this.logger.log(`Prepared event channel "${this.CHANNEL_CRYPTOBOX}".`);
 
     this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
     this.store = cryptoBoxStore;
@@ -160,8 +158,8 @@ export class Cryptobox {
           if (newPreKeys.length > 0) {
             this.logger.log(`Generated PreKeys from ID "${newPreKeys[0].key_id}" to ID "${newPreKeys[newPreKeys.length - 1].key_id}".`);
             if (publish_new_prekeys) {
-              this.channel.publish(this.TOPIC_NEW_PREKEYS, newPreKeys);
-              this.logger.log(`Published event "${this.CHANNEL_CRYPTOBOX}:${this.TOPIC_NEW_PREKEYS}".`, newPreKeys);
+              this.emit(this.TOPIC_NEW_PREKEYS, newPreKeys);
+              this.logger.log(`Published event "${this.TOPIC_NEW_PREKEYS}".`, newPreKeys);
             }
           }
 
@@ -347,5 +345,4 @@ export class Cryptobox {
   }
 }
 
-Cryptobox.prototype.CHANNEL_CRYPTOBOX = "cryptobox";
 Cryptobox.prototype.TOPIC_NEW_PREKEYS = "new-prekeys";

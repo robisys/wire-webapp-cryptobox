@@ -22,11 +22,15 @@ module.exports = {
       'request': {}
     },
     'logdown': 'Logdown',
-    'postal': true,
     'wire-webapp-lru-cache': 'LRUCache',
     'wire-webapp-proteus': 'Proteus'
   },
   plugins: [
     new webpack.BannerPlugin(`${pkg.name} v${pkg.version}`)
-  ]
+  ],
+  performance: {
+    maxAssetSize: 100,
+    maxEntrypointSize: 300,
+    hints: 'warning'
+  }
 };

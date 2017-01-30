@@ -15,9 +15,6 @@
     "wire-webapp-lru-cache@copy": [
       "wire-webapp-lru-cache/dist/window/LRUCache.js"
     ],
-    "postal.js@copy": [
-      "postal.js/lib/postal.js"
-    ],
     "wire-webapp-proteus@copy": [
       "wire-webapp-proteus/dist/window/proteus.js"
     ]
