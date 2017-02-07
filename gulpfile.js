@@ -30,7 +30,6 @@ var karma = require('karma');
 var merge = require('merge2');
 var replace = require('gulp-replace');
 var runSequence = require('run-sequence');
-var sourcemaps = require('gulp-sourcemaps');
 var ts = require('gulp-typescript');
 var tsProjectNode = ts.createProject('tsconfig.json');
 var webpack = require('webpack');
