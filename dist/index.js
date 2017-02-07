@@ -6,11 +6,13 @@ var serializedPreKey = preKey.serialise();
 
 // Test: Cryptobox
 var cryptobox = require('./commonjs/wire-webapp-cryptobox');
+var Logdown = require('logdown');
+
+var logger = new Logdown({prefix: 'Demo', alignOutput: true});
+logger.log(`Testing Cryptobox v${cryptobox.version}`);
 
 var store = new cryptobox.store.Cache();
 var box = new cryptobox.Cryptobox(store, 5);
-
-console.log(`Testing Cryptobox v${cryptobox.version}`);
 
 box.init()
   .then(function() {
