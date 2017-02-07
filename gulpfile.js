@@ -32,6 +32,7 @@ var replace = require('gulp-replace');
 var runSequence = require('run-sequence');
 var ts = require('gulp-typescript');
 var tsProjectNode = ts.createProject('tsconfig.json');
+
 var webpack = require('webpack');
 var ProgressPlugin = require('webpack/lib/ProgressPlugin');
 
@@ -70,8 +71,11 @@ gulp.task('build_ts_node', function() {
   var tsResult = tsProjectNode.src().pipe(tsProjectNode());
 
   return merge([
-    tsResult.dts.pipe(gulp.dest('dist/typings')),
-    tsResult.js.pipe(replace('exports.default = {', 'module.exports = {')).pipe(gulp.dest('dist/commonjs'))
+    tsResult.dts
+      .pipe(gulp.dest('dist/typings')),
+    tsResult.js
+      .pipe(replace('exports.default = {', 'module.exports = {'))
+      .pipe(gulp.dest('dist/commonjs'))
   ]);
 });
 
