@@ -75,6 +75,8 @@ gulp.task('build_ts_node', function() {
       .pipe(gulp.dest('dist/typings')),
     tsResult.js
       .pipe(replace('exports.default = {', 'module.exports = {'))
+      .pipe(replace(/var Logdown[^\n]*/ig, ''))
+      .pipe(replace(/[_]?this.logger[^\n]*/igm, ''))
       .pipe(gulp.dest('dist/commonjs'))
   ]);
 });
