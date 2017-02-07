@@ -7,7 +7,10 @@ import Logdown = require("logdown");
 import LRUCache = require("wire-webapp-lru-cache");
 
 export class Cryptobox extends EventEmitter {
-  public TOPIC_NEW_PREKEYS: string;
+  public static TOPIC = {
+    NEW_PREKEYS: "new-prekeys",
+    NEW_SESSION: "new-session"
+  };
 
   private lastResortPreKey: Proteus.keys.PreKey;
   private cachedSessions: LRUCache;
@@ -158,8 +161,8 @@ export class Cryptobox extends EventEmitter {
           if (newPreKeys.length > 0) {
             this.logger.log(`Generated PreKeys from ID "${newPreKeys[0].key_id}" to ID "${newPreKeys[newPreKeys.length - 1].key_id}".`);
             if (publish_new_prekeys) {
-              this.emit(this.TOPIC_NEW_PREKEYS, newPreKeys);
-              this.logger.log(`Published event "${this.TOPIC_NEW_PREKEYS}".`, newPreKeys);
+              this.emit(Cryptobox.TOPIC.NEW_PREKEYS, newPreKeys);
+              this.logger.log(`Published event "${Cryptobox.TOPIC.NEW_PREKEYS}".`, newPreKeys);
             }
           }
 
@@ -324,11 +327,12 @@ export class Cryptobox extends EventEmitter {
         return this.session_from_message(session_id, ciphertext);
       })
       // TODO: "value" can be of type CryptoboxSession | Array[CryptoboxSession, Uint8Array]
-      .then(function (value: any) {
+      .then((value: any) => {
         let decrypted_message: Uint8Array;
 
         if (value[0] !== undefined) {
           [session, decrypted_message] = value;
+          this.emit(Cryptobox.TOPIC.NEW_SESSION, session.id);
           return decrypted_message;
         } else {
           session = value;
@@ -344,5 +348,3 @@ export class Cryptobox extends EventEmitter {
       });
   }
 }
-
-Cryptobox.prototype.TOPIC_NEW_PREKEYS = "new-prekeys";

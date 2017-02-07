@@ -15,16 +15,20 @@
   </head>
   <body>
     <script>
+      var logger = new Logdown({prefix: 'Demo', alignOutput: true});
+      logger.log(`Testing Cryptobox v${cryptobox.version}`);
+
       var storage = new cryptobox.store.IndexedDB('bundle_test');
       var box = new cryptobox.Cryptobox(storage, 5);
+      box.on(cryptobox.Cryptobox.TOPIC.NEW_PREKEYS, function(preKeys) {
+        logger.log(`Received more PreKeys`, preKeys);
+      });
 
-      console.log(`Testing Cryptobox v${cryptobox.version}`);
-
-      box.init().then(function() {
-        var logger = new Logdown({prefix: 'bundle_test', alignOutput: true});
+      box.init().then(function(initialPreKeys) {
         var fingerprint = box.identity.public_key.fingerprint();
-        var message = 'Local Identity: ' + fingerprint;
+        var message = `Local identity: ${fingerprint}`;
         logger.log(message);
+        logger.log(`Initial PreKeys`, initialPreKeys);
         document.write(message);
       });
     </script>
