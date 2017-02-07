@@ -23,6 +23,7 @@ var bower = require('gulp-bower');
 var browserSync = require('browser-sync').create();
 var clean = require('gulp-clean');
 var gulp = require('gulp');
+var gulpif = require('gulp-if');
 var gulpTypings = require('gulp-typings');
 var gutil = require('gulp-util');
 var jasmine = require('gulp-jasmine');
@@ -69,14 +70,15 @@ gulp.task('build_ts_browser', function(callback) {
 
 gulp.task('build_ts_node', function() {
   var tsResult = tsProjectNode.src().pipe(tsProjectNode());
+  var disableLogging = true;
 
   return merge([
     tsResult.dts
       .pipe(gulp.dest('dist/typings')),
     tsResult.js
       .pipe(replace('exports.default = {', 'module.exports = {'))
-      .pipe(replace(/var Logdown[^\n]*/ig, ''))
-      .pipe(replace(/[_]?this.logger[^\n]*/igm, ''))
+      .pipe(gulpif(disableLogging, replace(/var Logdown[^\n]*/ig, '')))
+      .pipe(gulpif(disableLogging, replace(/[_]?this.logger[^\n]*/igm, '')))
       .pipe(gulp.dest('dist/commonjs'))
   ]);
 });
