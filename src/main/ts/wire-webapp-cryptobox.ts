@@ -15,5 +15,7 @@ export default {
     LocalStorage,
     ReadOnlyStore,
     RecordNotFoundError,
-  }
+  },
+  // Note: Path to "package.json" must be relative to the "commonjs" dist files
+  version: require('../../package.json').version
 }

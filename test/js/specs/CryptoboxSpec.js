@@ -74,6 +74,10 @@ describe('cryptobox.Cryptobox', function() {
         done();
       }).catch(done.fail);
     });
+
+    it('returns the current version', function() {
+      expect(cryptobox.version).toBeDefined();
+    });
   });
 
   describe('Sessions', function() {

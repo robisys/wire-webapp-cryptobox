@@ -18,6 +18,8 @@
       var storage = new cryptobox.store.IndexedDB('bundle_test');
       var box = new cryptobox.Cryptobox(storage, 5);
 
+      console.log(`Testing Cryptobox v${cryptobox.version}`);
+
       box.init().then(function() {
         var logger = new Logdown({prefix: 'bundle_test', alignOutput: true});
         var fingerprint = box.identity.public_key.fingerprint();

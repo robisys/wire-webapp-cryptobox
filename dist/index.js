@@ -6,8 +6,12 @@ var serializedPreKey = preKey.serialise();
 
 // Test: Cryptobox
 var cryptobox = require('./commonjs/wire-webapp-cryptobox');
+
 var store = new cryptobox.store.Cache();
 var box = new cryptobox.Cryptobox(store, 5);
+
+console.log(`Testing Cryptobox v${cryptobox.version}`);
+
 box.init()
   .then(function() {
     var fingerprint = box.identity.public_key.fingerprint();
