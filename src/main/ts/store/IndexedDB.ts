@@ -53,60 +53,37 @@ export default class IndexedDB implements CryptoboxStore {
     return this.db.open();
   }
 
-  private delete(store_name: string, primary_key: string|any): Dexie.Promise<string> {
-    return new Dexie.Promise((resolve) => {
-      this.validate_store(store_name)
-        .then((store: Dexie.Table<any, any>) => {
-          return store.delete(primary_key);
-        })
-        .then(() => {
-          resolve(primary_key);
-        });
-    });
+  private delete(store_name: string, primary_key: string|any): Promise<string> {
+    return Promise.resolve()
+      .then(() => {
+        return this.db[store_name].delete(primary_key);
+      })
+      .then(() => {
+        return primary_key;
+      });
   }
 
   private load(store_name: string, primary_key: string): Promise<Object> {
-    return new Promise((resolve, reject) => {
-      this.validate_store(store_name)
-        .then((store: Dexie.Table<any, any>) => {
-          this.logger.log(`Trying to load record "${primary_key}" from object store "${store_name}".`);
-          return store.get(primary_key);
-        })
-        .then((record: any) => {
-          if (record) {
-            this.logger.log(`Loaded record "${primary_key}" from object store "${store_name}".`, record);
-            resolve(record);
-          } else {
-            let message: string = `Record "${primary_key}" from object store "${store_name}" could not be found.`;
-            this.logger.warn(message);
-            reject(new RecordNotFoundError(message));
-          }
-        })
-        .catch(reject);
-    });
+    return Promise.resolve()
+      .then(() => {
+        this.logger.log(`Trying to load record "${primary_key}" from object store "${store_name}".`);
+        return this.db[store_name].get(primary_key);
+      })
+      .then((record: any) => {
+        if (record) {
+          this.logger.log(`Loaded record "${primary_key}" from object store "${store_name}".`, record);
+          return record;
+        } else {
+          let message: string = `Record "${primary_key}" from object store "${store_name}" could not be found.`;
+          this.logger.warn(message);
+          throw new RecordNotFoundError(message);
+        }
+      });
   }
 
   private save(store_name: string, primary_key: string, entity: Object): Dexie.Promise<string> {
-    return new Dexie.Promise((resolve) => {
-      this.validate_store(store_name)
-        .then((store: Dexie.Table<any, any>) => {
-          return store.put(entity, primary_key);
-        })
-        .then((key: any) => {
-          this.logger.log(`Put record "${primary_key}" into object store "${store_name}".`, entity);
-          resolve(key);
-        });
-    });
-  }
-
-  private validate_store(store_name: string): Dexie.Promise<Dexie.Table<any, any>> {
-    return new Dexie.Promise((resolve, reject) => {
-      if (this.db[store_name]) {
-        resolve(this.db[store_name]);
-      } else {
-        reject(new Error(`Object store "${store_name}" not found.`));
-      }
-    });
+    this.logger.log(`Put record "${primary_key}" into object store "${store_name}".`, entity);
+    return this.db[store_name].put(entity, primary_key);
   }
 
   public delete_all(): Promise<boolean> {
@@ -181,27 +158,22 @@ export default class IndexedDB implements CryptoboxStore {
     });
   }
 
-  // TODO: Option to keep PreKeys in memory
   public load_prekeys(): Promise<Array<Proteus.keys.PreKey>> {
-    return new Promise((resolve, reject) => {
-      this.validate_store(this.TABLE.PRE_KEYS)
-        .then((store: Dexie.Table<any, any>) => {
-          return store.toArray();
-        })
-        // TODO: Make records an "Array<SerialisedRecord>"
-        .then((records: any) => {
-          let preKeys: any = [];
+    return Promise.resolve()
+      .then(() => {
+        return this.db[this.TABLE.PRE_KEYS].toArray();
+      })
+      .then((records: any) => {
+        let preKeys: any = [];
 
-          records.forEach((record: SerialisedRecord) => {
-            let bytes: Uint8Array = bazinga64.Decoder.fromBase64(record.serialised).asBytes;
-            let preKey: Proteus.keys.PreKey = Proteus.keys.PreKey.deserialise(bytes.buffer);
-            preKeys.push(preKey);
-          });
+        records.forEach((record: SerialisedRecord) => {
+          let bytes: Uint8Array = bazinga64.Decoder.fromBase64(record.serialised).asBytes;
+          let preKey: Proteus.keys.PreKey = Proteus.keys.PreKey.deserialise(bytes.buffer);
+          preKeys.push(preKey);
+        });
 
-          resolve(preKeys);
-        })
-        .catch(reject);
-    });
+        return preKeys;
+      });
   }
 
   public load_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session> {
@@ -268,11 +240,9 @@ export default class IndexedDB implements CryptoboxStore {
         keys.push(key);
       });
 
-      this.validate_store(this.TABLE.PRE_KEYS)
-        .then((store: Dexie.Table<any, any>) => {
-          this.logger.log(`Saving a batch of "${items.length}" PreKeys (${keys.join(', ')}) into object store "${store.name}"...`, prekeys);
-          return store.bulkPut(items, keys);
-        })
+      this.logger.log(`Saving a batch of "${items.length}" PreKeys (${keys.join(', ')}) into object store "${this.TABLE.PRE_KEYS}"...`, prekeys);
+
+      this.db[this.TABLE.PRE_KEYS].bulkPut(items, keys)
         .then(() => {
           this.logger.log(`Saved a batch of "${items.length}" PreKeys (${keys.join(', ')}).`, items);
           resolve(prekeys);
