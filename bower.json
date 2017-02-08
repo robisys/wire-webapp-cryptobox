@@ -4,15 +4,18 @@
     "dexie": "~1.5.1",
     "logdown": "~2.0.3",
     "wire-webapp-lru-cache": "~2.0.0",
-    "wire-webapp-proteus": "~3.0.3"
+    "wire-webapp-proteus": "~3.1.1"
   },
   "ignore": [
     "**/.*",
-    "node_modules",
     "bower_components",
+    "dist/commonjs",
+    "dist/index.html",
+    "dist/index.js",
+    "dist/typings",
+    "node_modules",
     "src",
-    "test",
-    "tests"
+    "test"
   ],
   "license": "GPL-3.0",
   "main": [

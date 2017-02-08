@@ -123,11 +123,11 @@ describe('cryptobox.CryptoboxSession', function() {
           return sessionWithBob.encrypt(plaintext);
         }).then(function(serialisedCipherText) {
           var envelope = Proteus.message.Envelope.deserialise(serialisedCipherText);
-          expect(bob.pre_key_store.removed_prekeys.length).toBe(0);
+          expect(bob.pre_key_store.prekeys.length).toBe(0);
           return Proteus.session.Session.init_from_message(bob.identity, bob.pre_key_store, envelope);
         }).then(function(proteusSession) {
           // When Bob decrypts a PreKey message, he knows that one of his PreKeys has been "consumed"
-          expect(bob.pre_key_store.removed_prekeys.length).toBe(1);
+          expect(bob.pre_key_store.prekeys.length).toBe(1);
           var decryptedBuffer = proteusSession[1];
           var decrypted = bazinga64.Converter.toString(decryptedBuffer);
           expect(decrypted).toBe(plaintext);
@@ -142,10 +142,10 @@ describe('cryptobox.CryptoboxSession', function() {
           return sessionWithBob.encrypt(plaintext);
         }).then(function(serialisedCipherText) {
           var envelope = Proteus.message.Envelope.deserialise(serialisedCipherText);
-          expect(bob.pre_key_store.removed_prekeys.length).toBe(0);
+          expect(bob.pre_key_store.prekeys.length).toBe(0);
           return Proteus.session.Session.init_from_message(bob.identity, bob.pre_key_store, envelope);
         }).then(function(proteusSession) {
-          expect(bob.pre_key_store.removed_prekeys.length).toBe(0);
+          expect(bob.pre_key_store.prekeys.length).toBe(0);
           var decryptedBuffer = proteusSession[1];
           var decrypted = bazinga64.Converter.toString(decryptedBuffer);
           expect(decrypted).toBe(plaintext);

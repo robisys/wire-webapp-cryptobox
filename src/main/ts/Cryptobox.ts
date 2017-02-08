@@ -239,7 +239,7 @@ export class Cryptobox extends EventEmitter {
 
   public session_save(session: CryptoboxSession): Promise<String> {
     return this.store.save_session(session.id, session.session).then(() => {
-      let prekey_deletions = this.pk_store.removed_prekeys.map((preKeyId: number) => {
+      let prekey_deletions = this.pk_store.prekeys.map((preKeyId: number) => {
         return this.store.delete_prekey(preKeyId);
       });
 
@@ -247,7 +247,7 @@ export class Cryptobox extends EventEmitter {
     }).then((deletedPreKeyIds) => {
       // Delete PreKeys from "ReadOnlyStore" cache
       deletedPreKeyIds.forEach((id: number) => {
-        let index: number = this.pk_store.removed_prekeys.indexOf(id);
+        let index: number = this.pk_store.prekeys.indexOf(id);
         if (index > -1) {
           deletedPreKeyIds.splice(index, 1);
         }
