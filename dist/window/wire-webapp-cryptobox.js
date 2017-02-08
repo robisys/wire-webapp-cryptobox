@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v2.2.1 */
+/*! wire-webapp-cryptobox v2.3.0 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -160,13 +160,13 @@ var ReadOnlyStore = (function (_super) {
     function ReadOnlyStore(store) {
         var _this = _super.call(this) || this;
         _this.store = store;
-        _this.removed_prekeys = [];
+        _this.prekeys = [];
         return _this;
     }
     ReadOnlyStore.prototype.get_prekey = function (prekey_id) {
         var _this = this;
         return new Promise(function (resolve, reject) {
-            if (_this.removed_prekeys.indexOf(prekey_id) !== -1) {
+            if (_this.prekeys.indexOf(prekey_id) !== -1) {
                 reject(new Error("PreKey \"" + prekey_id + "\" not found."));
             }
             else {
@@ -177,7 +177,7 @@ var ReadOnlyStore = (function (_super) {
         });
     };
     ReadOnlyStore.prototype.remove = function (prekey_id) {
-        this.removed_prekeys.push(prekey_id);
+        this.prekeys.push(prekey_id);
         return Promise.resolve(prekey_id);
     };
     return ReadOnlyStore;
@@ -414,13 +414,13 @@ var Cryptobox = (function (_super) {
     Cryptobox.prototype.session_save = function (session) {
         var _this = this;
         return this.store.save_session(session.id, session.session).then(function () {
-            var prekey_deletions = _this.pk_store.removed_prekeys.map(function (preKeyId) {
+            var prekey_deletions = _this.pk_store.prekeys.map(function (preKeyId) {
                 return _this.store.delete_prekey(preKeyId);
             });
             return Promise.all(prekey_deletions);
         }).then(function (deletedPreKeyIds) {
             deletedPreKeyIds.forEach(function (id) {
-                var index = _this.pk_store.removed_prekeys.indexOf(id);
+                var index = _this.pk_store.prekeys.indexOf(id);
                 if (index > -1) {
                     deletedPreKeyIds.splice(index, 1);
                 }
@@ -704,61 +704,36 @@ var IndexedDB = (function () {
     };
     IndexedDB.prototype.delete = function (store_name, primary_key) {
         var _this = this;
-        return new dexie_1.default.Promise(function (resolve) {
-            _this.validate_store(store_name)
-                .then(function (store) {
-                return store.delete(primary_key);
-            })
-                .then(function () {
-                resolve(primary_key);
-            });
+        return Promise.resolve()
+            .then(function () {
+            return _this.db[store_name].delete(primary_key);
+        })
+            .then(function () {
+            return primary_key;
         });
     };
     IndexedDB.prototype.load = function (store_name, primary_key) {
         var _this = this;
-        return new Promise(function (resolve, reject) {
-            _this.validate_store(store_name)
-                .then(function (store) {
+        return Promise.resolve()
+            .then(function () {
+            
+            return _this.db[store_name].get(primary_key);
+        })
+            .then(function (record) {
+            if (record) {
                 
-                return store.get(primary_key);
-            })
-                .then(function (record) {
-                if (record) {
-                    
-                    resolve(record);
-                }
-                else {
-                    var message = "Record \"" + primary_key + "\" from object store \"" + store_name + "\" could not be found.";
-                    
-                    reject(new RecordNotFoundError_1.RecordNotFoundError(message));
-                }
-            })
-                .catch(reject);
+                return record;
+            }
+            else {
+                var message = "Record \"" + primary_key + "\" from object store \"" + store_name + "\" could not be found.";
+                
+                throw new RecordNotFoundError_1.RecordNotFoundError(message);
+            }
         });
     };
     IndexedDB.prototype.save = function (store_name, primary_key, entity) {
-        var _this = this;
-        return new dexie_1.default.Promise(function (resolve) {
-            _this.validate_store(store_name)
-                .then(function (store) {
-                return store.put(entity, primary_key);
-            })
-                .then(function (key) {
-                
-                resolve(key);
-            });
-        });
-    };
-    IndexedDB.prototype.validate_store = function (store_name) {
-        var _this = this;
-        return new dexie_1.default.Promise(function (resolve, reject) {
-            if (_this.db[store_name]) {
-                resolve(_this.db[store_name]);
-            }
-            else {
-                reject(new Error("Object store \"" + store_name + "\" not found."));
-            }
-        });
+        
+        return this.db[store_name].put(entity, primary_key);
     };
     IndexedDB.prototype.delete_all = function () {
         var _this = this;
@@ -836,21 +811,18 @@ var IndexedDB = (function () {
     };
     IndexedDB.prototype.load_prekeys = function () {
         var _this = this;
-        return new Promise(function (resolve, reject) {
-            _this.validate_store(_this.TABLE.PRE_KEYS)
-                .then(function (store) {
-                return store.toArray();
-            })
-                .then(function (records) {
-                var preKeys = [];
-                records.forEach(function (record) {
-                    var bytes = bazinga64.Decoder.fromBase64(record.serialised).asBytes;
-                    var preKey = Proteus.keys.PreKey.deserialise(bytes.buffer);
-                    preKeys.push(preKey);
-                });
-                resolve(preKeys);
-            })
-                .catch(reject);
+        return Promise.resolve()
+            .then(function () {
+            return _this.db[_this.TABLE.PRE_KEYS].toArray();
+        })
+            .then(function (records) {
+            var preKeys = [];
+            records.forEach(function (record) {
+                var bytes = bazinga64.Decoder.fromBase64(record.serialised).asBytes;
+                var preKey = Proteus.keys.PreKey.deserialise(bytes.buffer);
+                preKeys.push(preKey);
+            });
+            return preKeys;
         });
     };
     IndexedDB.prototype.load_session = function (identity, session_id) {
@@ -911,11 +883,8 @@ var IndexedDB = (function () {
                 items.push(payload);
                 keys.push(key);
             });
-            _this.validate_store(_this.TABLE.PRE_KEYS)
-                .then(function (store) {
-                
-                return store.bulkPut(items, keys);
-            })
+            
+            _this.db[_this.TABLE.PRE_KEYS].bulkPut(items, keys)
                 .then(function () {
                 
                 resolve(prekeys);
@@ -1147,7 +1116,7 @@ module.exports = {
 		"dexie": "~1.5.1",
 		"logdown": "~2.0.3",
 		"wire-webapp-lru-cache": "~2.0.0",
-		"wire-webapp-proteus": "~3.0.3"
+		"wire-webapp-proteus": "~3.1.1"
 	},
 	"description": "High-level API with persistent storage for Proteus.",
 	"devDependencies": {
@@ -1189,7 +1158,7 @@ module.exports = {
 		"test": "npm run self_test_node && gulp test"
 	},
 	"typings": "dist/typings/wire-webapp-cryptobox.d.ts",
-	"version": "2.2.1"
+	"version": "2.3.0"
 };
 
 /***/ }),
