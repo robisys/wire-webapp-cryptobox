@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "bazinga64": "~5.0.1",
     "dexie": "~1.5.1",
     "logdown": "~2.0.3",
     "wire-webapp-lru-cache": "~2.0.0",

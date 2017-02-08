@@ -1,8 +1,8 @@
 export class SerialisedRecord {
   public id: string;
-  public serialised: string;
+  public serialised: ArrayBuffer;
 
-  constructor(serialised: string, id: string) {
+  constructor(serialised: ArrayBuffer, id: string) {
     this.id = id;
     this.serialised = serialised;
   }

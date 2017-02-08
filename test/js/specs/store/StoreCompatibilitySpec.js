@@ -42,32 +42,24 @@ describe('Store Compatibility', function() {
       var identifier = 'compatibility-test';
       var storeCache = new cryptobox.store.Cache();
       var storeIndexedDB = new cryptobox.store.IndexedDB(identifier);
-      var storeLocalStorage = new cryptobox.store.LocalStorage(identifier);
 
       var identityFromCache = undefined;
       var identityFromIndexedDB = undefined;
-      var identityFromLocalStorage = undefined;
 
       storeIndexedDB.init().then(function() {
         return storeCache.save_identity(identity);
       }).then(function() {
         return storeIndexedDB.save_identity(identity);
       }).then(function() {
-        return storeLocalStorage.save_identity(identity);
-      }).then(function() {
         return storeCache.load_identity();
       }).then(function(identity) {
         identityFromCache = identity;
         return storeIndexedDB.load_identity();
-      }).then(function(identity) {
+      }).then(function() {
         identityFromIndexedDB = identity;
-        return storeLocalStorage.load_identity();
-      }).then(function(identity) {
-        identityFromLocalStorage = identity;
 
         expect(identityFromCache.public_key.fingerprint()).toBe(fingerprint);
         expect(identityFromIndexedDB.public_key.fingerprint()).toBe(fingerprint);
-        expect(identityFromLocalStorage.public_key.fingerprint()).toBe(fingerprint);
 
         done();
       }).catch(done.fail);

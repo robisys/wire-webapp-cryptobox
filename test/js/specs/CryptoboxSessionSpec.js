@@ -19,20 +19,20 @@
 
 describe('cryptobox.CryptoboxSession', function() {
 
-  var bazinga64 = undefined;
   var cryptobox = undefined;
   var Proteus = undefined;
+  var sodium = undefined;
 
   beforeAll(function(done) {
     if (typeof window === 'object') {
-      bazinga64 = window.bazinga64;
       cryptobox = window.cryptobox;
       Proteus = window.Proteus;
+      sodium = window.sodium;
       done();
     } else {
-      bazinga64 = require('bazinga64');
       cryptobox = require('../../../dist/commonjs/wire-webapp-cryptobox').default;
       Proteus = require('wire-webapp-proteus');
+      sodium = require('libsodium');
       done();
     }
   });
@@ -129,7 +129,7 @@ describe('cryptobox.CryptoboxSession', function() {
           // When Bob decrypts a PreKey message, he knows that one of his PreKeys has been "consumed"
           expect(bob.pre_key_store.prekeys.length).toBe(1);
           var decryptedBuffer = proteusSession[1];
-          var decrypted = bazinga64.Converter.toString(decryptedBuffer);
+          var decrypted = sodium.to_string(decryptedBuffer);
           expect(decrypted).toBe(plaintext);
           done();
         }).catch(done.fail);
@@ -147,7 +147,7 @@ describe('cryptobox.CryptoboxSession', function() {
         }).then(function(proteusSession) {
           expect(bob.pre_key_store.prekeys.length).toBe(0);
           var decryptedBuffer = proteusSession[1];
-          var decrypted = bazinga64.Converter.toString(decryptedBuffer);
+          var decrypted = sodium.to_string(decryptedBuffer);
           expect(decrypted).toBe(plaintext);
           done();
         }).catch(done.fail);

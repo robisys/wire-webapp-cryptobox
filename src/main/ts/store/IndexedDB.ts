@@ -1,4 +1,3 @@
-import * as bazinga64 from "bazinga64";
 import * as Proteus from "wire-webapp-proteus";
 import Dexie from "dexie";
 import Logdown = require('logdown');
@@ -127,8 +126,7 @@ export default class IndexedDB implements CryptoboxStore {
     return new Promise((resolve, reject) => {
       this.load(this.TABLE.LOCAL_IDENTITY, this.localIdentityKey)
         .then((record: SerialisedRecord) => {
-          let bytes: Uint8Array = bazinga64.Decoder.fromBase64(record.serialised).asBytes;
-          let identity: Proteus.keys.IdentityKeyPair = Proteus.keys.IdentityKeyPair.deserialise(bytes.buffer);
+          let identity: Proteus.keys.IdentityKeyPair = Proteus.keys.IdentityKeyPair.deserialise(record.serialised);
           resolve(identity);
         })
         .catch(function (error: Error) {
@@ -145,8 +143,7 @@ export default class IndexedDB implements CryptoboxStore {
     return new Promise((resolve, reject) => {
       this.load(this.TABLE.PRE_KEYS, prekey_id.toString())
         .then((record: SerialisedRecord) => {
-          let bytes: Uint8Array = bazinga64.Decoder.fromBase64(record.serialised).asBytes;
-          resolve(Proteus.keys.PreKey.deserialise(bytes.buffer));
+          resolve(Proteus.keys.PreKey.deserialise(record.serialised));
         })
         .catch(function (error: Error) {
           if (error instanceof RecordNotFoundError) {
@@ -167,8 +164,7 @@ export default class IndexedDB implements CryptoboxStore {
         let preKeys: any = [];
 
         records.forEach((record: SerialisedRecord) => {
-          let bytes: Uint8Array = bazinga64.Decoder.fromBase64(record.serialised).asBytes;
-          let preKey: Proteus.keys.PreKey = Proteus.keys.PreKey.deserialise(bytes.buffer);
+          let preKey: Proteus.keys.PreKey = Proteus.keys.PreKey.deserialise(record.serialised);
           preKeys.push(preKey);
         });
 
@@ -177,22 +173,17 @@ export default class IndexedDB implements CryptoboxStore {
   }
 
   public load_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session> {
-    return new Promise((resolve, reject) => {
-      this.load(this.TABLE.SESSIONS, session_id)
-        .then((payload: SerialisedRecord) => {
-          let bytes = bazinga64.Decoder.fromBase64(payload.serialised).asBytes;
-          resolve(Proteus.session.Session.deserialise(identity, bytes.buffer));
-        })
-        .catch(reject);
-    });
+    return this.load(this.TABLE.SESSIONS, session_id)
+      .then((payload: SerialisedRecord) => {
+        return Proteus.session.Session.deserialise(identity, payload.serialised);
+      });
   }
 
   public save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<Proteus.keys.IdentityKeyPair> {
     return new Promise((resolve, reject) => {
       this.identity = identity;
 
-      let serialised: string = bazinga64.Encoder.toBase64(identity.serialise()).asString;
-      let payload: SerialisedRecord = new SerialisedRecord(serialised, this.localIdentityKey);
+      let payload: SerialisedRecord = new SerialisedRecord(identity.serialise(), this.localIdentityKey);
 
       this.save(this.TABLE.LOCAL_IDENTITY, payload.id, payload)
         .then((primaryKey: string) => {
@@ -210,8 +201,7 @@ export default class IndexedDB implements CryptoboxStore {
     return new Promise((resolve, reject) => {
       this.prekeys[prekey.key_id] = prekey;
 
-      let serialised: string = bazinga64.Encoder.toBase64(prekey.serialise()).asString;
-      let payload: SerialisedRecord = new SerialisedRecord(serialised, prekey.key_id.toString());
+      let payload: SerialisedRecord = new SerialisedRecord(prekey.serialise(), prekey.key_id.toString());
 
       this.save(this.TABLE.PRE_KEYS, payload.id, payload)
         .then((primaryKey: string) => {
@@ -233,9 +223,8 @@ export default class IndexedDB implements CryptoboxStore {
       let keys: Array<string> = [];
 
       prekeys.forEach(function (preKey: Proteus.keys.PreKey) {
-        let serialised: string = bazinga64.Encoder.toBase64(preKey.serialise()).asString;
         let key: string = preKey.key_id.toString();
-        let payload: SerialisedRecord = new SerialisedRecord(serialised, key);
+        let payload: SerialisedRecord = new SerialisedRecord(preKey.serialise(), key);
         items.push(payload);
         keys.push(key);
       });
@@ -253,8 +242,7 @@ export default class IndexedDB implements CryptoboxStore {
 
   public save_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
     return new Promise((resolve, reject) => {
-      let serialised: string = bazinga64.Encoder.toBase64(session.serialise()).asString;
-      let payload: SerialisedRecord = new SerialisedRecord(serialised, session_id);
+      let payload: SerialisedRecord = new SerialisedRecord(session.serialise(), session_id);
 
       this.save(this.TABLE.SESSIONS, payload.id, payload)
         .then((primaryKey: string) => {

@@ -19,7 +19,6 @@
 
 describe('cryptobox.Cryptobox', function() {
 
-  var bazinga64 = undefined;
   var cryptobox = undefined;
   var Proteus = undefined;
 
@@ -28,7 +27,6 @@ describe('cryptobox.Cryptobox', function() {
 
   beforeAll(function(done) {
     if (typeof window === 'object') {
-      bazinga64 = window.bazinga64;
       cryptobox = window.cryptobox;
       Proteus = window.Proteus;
       bazinga64 = window.bazinga64;

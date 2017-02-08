@@ -1,13 +1,7 @@
 {
   "dynamic": {
-    "bazinga64@copy": [
-      "bazinga64/dist/window/bazinga64.js"
-    ],
     "dexie@copy": [
       "dexie/dist/dexie.js"
-    ],
-    "lodash@copy": [
-      "lodash/dist/lodash.js"
     ],
     "logdown@copy": [
       "logdown/dist/logdown.js"
