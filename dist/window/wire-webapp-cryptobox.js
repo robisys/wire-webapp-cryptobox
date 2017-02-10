@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v3.0.0 */
+/*! wire-webapp-cryptobox v3.0.1 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -136,6 +136,15 @@ var ReadOnlyStore = (function (_super) {
         _this.prekeys = [];
         return _this;
     }
+    ReadOnlyStore.prototype.release_prekeys = function (deletedPreKeyIds) {
+        var _this = this;
+        deletedPreKeyIds.forEach(function (id) {
+            var index = _this.prekeys.indexOf(id);
+            if (index > -1) {
+                _this.prekeys.splice(index, 1);
+            }
+        });
+    };
     ReadOnlyStore.prototype.get_prekey = function (prekey_id) {
         var _this = this;
         return new Promise(function (resolve, reject) {
@@ -210,7 +219,11 @@ var Cryptobox = (function (_super) {
         if (!cryptoBoxStore) {
             throw new Error("You cannot initialize Cryptobox without a storage component.");
         }
+        if (minimumAmountOfPreKeys > Proteus.keys.PreKey.MAX_PREKEY_ID) {
+            minimumAmountOfPreKeys = Proteus.keys.PreKey.MAX_PREKEY_ID;
+        }
         
+        _this.cachedPreKeys = [];
         _this.cachedSessions = new LRUCache(1000);
         _this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
         _this.store = cryptoBoxStore;
@@ -260,20 +273,22 @@ var Cryptobox = (function (_super) {
             }
             else {
                 
-                var lastResortID = Proteus.keys.PreKey.MAX_PREKEY_ID;
-                return _this.new_last_resort_prekey(lastResortID);
+                return _this.new_last_resort_prekey();
             }
         })
             .then(function (lastResortPreKey) {
             _this.lastResortPreKey = lastResortPreKey;
             
             
-            return _this.refill_prekeys(false);
+            return _this.store.load_prekeys();
         })
-            .then(function (allPreKeys) {
-            var ids = allPreKeys.map(function (preKey) {
-                return preKey.key_id.toString();
-            });
+            .then(function (preKeysFromStorage) {
+            _this.cachedPreKeys = preKeysFromStorage;
+            return _this.refill_prekeys();
+        })
+            .then(function () {
+            var allPreKeys = _this.cachedPreKeys;
+            var ids = allPreKeys.map(function (preKey) { return preKey.key_id.toString(); });
             
             return allPreKeys;
         });
@@ -291,47 +306,50 @@ var Cryptobox = (function (_super) {
             var serializedPreKeys = [];
             preKeysFromStorage.forEach(function (preKey) {
                 var preKeyJson = _this.serialize_prekey(preKey);
-                if (preKeyJson.id !== 65535) {
+                if (preKeyJson.id !== Proteus.keys.PreKey.MAX_PREKEY_ID) {
                     serializedPreKeys.push(preKeyJson);
                 }
             });
             return serializedPreKeys;
         });
     };
-    Cryptobox.prototype.refill_prekeys = function (publish_new_prekeys) {
+    Cryptobox.prototype.publish_event = function (topic, event) {
+        this.emit(topic, event);
+        
+    };
+    Cryptobox.prototype.publish_prekeys = function (newPreKeys) {
+        if (newPreKeys.length > 0) {
+            this.publish_event(Cryptobox.TOPIC.NEW_PREKEYS, newPreKeys);
+        }
+    };
+    Cryptobox.prototype.publish_session_id = function (session) {
+        this.publish_event(Cryptobox.TOPIC.NEW_SESSION, session.id);
+    };
+    Cryptobox.prototype.refill_prekeys = function () {
         var _this = this;
-        if (publish_new_prekeys === void 0) { publish_new_prekeys = true; }
-        return Promise.resolve().then(function () {
-            var allPreKeys = [];
-            return _this.store.load_prekeys()
-                .then(function (preKeysFromStorage) {
-                allPreKeys = preKeysFromStorage;
-                var missingAmount = 0;
-                var highestId = 0;
-                if (preKeysFromStorage.length < _this.minimumAmountOfPreKeys) {
-                    missingAmount = _this.minimumAmountOfPreKeys - preKeysFromStorage.length;
-                    highestId = -1;
-                    preKeysFromStorage.forEach(function (preKey) {
-                        if (preKey.key_id > highestId && preKey.key_id !== Proteus.keys.PreKey.MAX_PREKEY_ID) {
-                            highestId = preKey.key_id;
-                        }
-                    });
-                    highestId += 1;
-                    
-                }
-                return _this.new_prekeys(highestId, missingAmount);
-            })
-                .then(function (newPreKeys) {
-                allPreKeys = allPreKeys.concat(newPreKeys);
-                if (newPreKeys.length > 0) {
-                    
-                    if (publish_new_prekeys) {
-                        _this.emit(Cryptobox.TOPIC.NEW_PREKEYS, newPreKeys);
-                        
+        return Promise.resolve()
+            .then(function () {
+            var missingAmount = 0;
+            var highestId = 0;
+            if (_this.cachedPreKeys.length < _this.minimumAmountOfPreKeys) {
+                missingAmount = _this.minimumAmountOfPreKeys - _this.cachedPreKeys.length;
+                highestId = -1;
+                _this.cachedPreKeys.forEach(function (preKey) {
+                    if (preKey.key_id > highestId && preKey.key_id !== Proteus.keys.PreKey.MAX_PREKEY_ID) {
+                        highestId = preKey.key_id;
                     }
-                }
-                return allPreKeys;
-            });
+                });
+                highestId += 1;
+                
+            }
+            return _this.new_prekeys(highestId, missingAmount);
+        })
+            .then(function (newPreKeys) {
+            if (newPreKeys.length > 0) {
+                
+                _this.cachedPreKeys = _this.cachedPreKeys.concat(newPreKeys);
+            }
+            return newPreKeys;
         });
     };
     Cryptobox.prototype.save_new_identity = function (identity) {
@@ -366,9 +384,6 @@ var Cryptobox = (function (_super) {
             var decrypted = tuple[1];
             var cryptoBoxSession = new CryptoboxSession_1.CryptoboxSession(session_id, _this.pk_store, session);
             returnTuple = [cryptoBoxSession, decrypted];
-            return _this.session_save(cryptoBoxSession);
-        })
-            .then(function () {
             return returnTuple;
         });
     };
@@ -398,13 +413,12 @@ var Cryptobox = (function (_super) {
             return Promise.all(prekey_deletions);
         }).then(function (deletedPreKeyIds) {
             deletedPreKeyIds.forEach(function (id) {
-                var index = _this.pk_store.prekeys.indexOf(id);
-                if (index > -1) {
-                    deletedPreKeyIds.splice(index, 1);
-                }
+                _this.cachedPreKeys = _this.cachedPreKeys.filter(function (preKey) { return preKey.key_id !== id; });
             });
+            _this.pk_store.release_prekeys(deletedPreKeyIds);
             return _this.refill_prekeys();
-        }).then(function () {
+        }).then(function (newPreKeys) {
+            _this.publish_prekeys(newPreKeys);
             return _this.save_session_in_cache(session);
         }).then(function () {
             return session.id;
@@ -414,7 +428,7 @@ var Cryptobox = (function (_super) {
         this.remove_session_from_cache(session_id);
         return this.store.delete_session(session_id);
     };
-    Cryptobox.prototype.new_last_resort_prekey = function (prekey_id) {
+    Cryptobox.prototype.new_last_resort_prekey = function () {
         var _this = this;
         return Promise.resolve()
             .then(function () {
@@ -472,7 +486,7 @@ var Cryptobox = (function (_super) {
             var decrypted_message;
             if (value[0] !== undefined) {
                 session = value[0], decrypted_message = value[1];
-                _this.emit(Cryptobox.TOPIC.NEW_SESSION, session.id);
+                _this.publish_session_id(session);
                 return decrypted_message;
             }
             else {
@@ -686,6 +700,7 @@ var IndexedDB = (function () {
             return _this.db[store_name].delete(primary_key);
         })
             .then(function () {
+            
             return primary_key;
         });
     };
@@ -928,7 +943,7 @@ module.exports = {
 		"test": "npm run self_test_node && gulp test"
 	},
 	"typings": "dist/typings/wire-webapp-cryptobox.d.ts",
-	"version": "3.0.0"
+	"version": "3.0.1"
 };
 
 /***/ }),

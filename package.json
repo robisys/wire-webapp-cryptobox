@@ -45,5 +45,5 @@
     "test": "npm run self_test_node && gulp test"
   },
   "typings": "dist/typings/wire-webapp-cryptobox.d.ts",
-  "version": "3.0.0"
+  "version": "3.0.1"
 }
