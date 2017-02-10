@@ -9,7 +9,7 @@ export default class Cache implements CryptoboxStore {
   private sessions: Object = {};
 
   constructor() {
-    this.logger = new Logdown({prefix: 'cryptobox.store.Cache', alignOutput: true});
+    this.logger = new Logdown({alignOutput: true, markdown: false, prefix: 'cryptobox.store.Cache'});
   }
 
   public delete_all(): Promise<boolean> {

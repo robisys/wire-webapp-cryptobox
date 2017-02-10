@@ -21,7 +21,7 @@ export default class IndexedDB implements CryptoboxStore {
   private localIdentityKey: string = 'local_identity';
 
   constructor(identifier: string | Dexie) {
-    this.logger = new Logdown({prefix: 'cryptobox.store.IndexedDB', alignOutput: true});
+    this.logger = new Logdown({alignOutput: true, markdown: false, prefix: 'cryptobox.store.IndexedDB'});
 
     if (typeof indexedDB === "undefined") {
       let warning = `IndexedDB isn't supported by your platform.`;
@@ -58,6 +58,7 @@ export default class IndexedDB implements CryptoboxStore {
         return this.db[store_name].delete(primary_key);
       })
       .then(() => {
+        this.logger.log(`Deleted record with primary key "${primary_key}" from object store "${store_name}".`);
         return primary_key;
       });
   }

@@ -24,10 +24,92 @@ describe('cryptobox.store.IndexedDB', function() {
 
   beforeAll(function(done) {
     if (typeof window === 'object') {
-     cryptobox = window.cryptobox;
-     Dexie = window.Dexie;
-     done();
+      cryptobox = window.cryptobox;
+      Dexie = window.Dexie;
+      sodium = window.sodium;
+      done();
     }
+  });
+
+  describe('Basic functionality', function() {
+
+    it('removes PreKeys from the storage (when a session gets established) and creates new PreKeys if needed.', function(done) {
+      var alice = {
+        // PreKeys: ["65535", "0", "1"]
+        desktop: new cryptobox.Cryptobox(new cryptobox.store.IndexedDB('alice_desktop'), 3)
+      };
+
+      var bob = {
+        // PreKeys: ["65535"]
+        desktop: new cryptobox.Cryptobox(new cryptobox.store.IndexedDB('bob_desktop'), 1),
+        // PreKeys: ["65535"]
+        mobile: new cryptobox.Cryptobox(new cryptobox.store.IndexedDB('bob_mobile'), 1)
+      };
+
+      spyOn(alice.desktop, 'publish_prekeys').and.callThrough();
+      spyOn(alice.desktop.pk_store, 'release_prekeys').and.callThrough();
+
+      var messageFromBob = 'Hello Alice!';
+
+      // Initialize Cryptoboxes
+      Promise.all([alice.desktop.init(), bob.desktop.init(), bob.mobile.init()])
+        .then(function() {
+          expect(alice.desktop.cachedPreKeys.length).toBe(3);
+          expect(bob.desktop.cachedPreKeys.length).toBe(1);
+          expect(bob.mobile.cachedPreKeys.length).toBe(1);
+          return alice.desktop.store.load_prekey(0);
+        })
+        .then(function(prekey) {
+          // Bob's desktop client takes the public PreKey bundle from Alice's desktop client and creates a session with it
+          var publicPreKeyBundle = Proteus.keys.PreKeyBundle.new(alice.desktop.identity.public_key, prekey);
+          return bob.desktop.session_from_prekey('to_alice_desktop', publicPreKeyBundle.serialise());
+        })
+        .then(function(cryptoboxSession) {
+          // Bob sends a message (with PreKey material and ciphertext) to Alice's desktop client
+          return bob.desktop.encrypt(cryptoboxSession, messageFromBob);
+        })
+        .then(function(ciphertext) {
+          // Alice creates a session with Bob's PreKey message and decrypts the ciphertext
+          expect(alice.desktop.pk_store.prekeys.length).toBe(0);
+          expect(alice.desktop.publish_prekeys).not.toHaveBeenCalled();
+          return alice.desktop.decrypt('to_bob_desktop', ciphertext);
+        })
+        .then(function(plaintext) {
+          var expectedNewPreKeyId = 2;
+          expect(alice.desktop.pk_store.prekeys.length).toBe(0);
+          expect(alice.desktop.cachedSessions.size()).toBe(1);
+          expect(alice.desktop.pk_store.release_prekeys.calls.count()).toEqual(1);
+          expect(alice.desktop.publish_prekeys.calls.count()).toEqual(1);
+          expect(alice.desktop.cachedPreKeys[alice.desktop.cachedPreKeys.length - 1].key_id).toBe(expectedNewPreKeyId);
+          expect(sodium.to_string(plaintext)).toBe(messageFromBob);
+          // Bob now establishes a connection with his mobile client to Alice's desktop client...
+          return alice.desktop.store.load_prekey(expectedNewPreKeyId);
+        })
+        .then(function(prekey) {
+          var publicPreKeyBundle = Proteus.keys.PreKeyBundle.new(alice.desktop.identity.public_key, prekey);
+          return bob.mobile.session_from_prekey('to_alice_desktop', publicPreKeyBundle.serialise());
+        })
+        .then(function(cryptoboxSession) {
+          return bob.mobile.encrypt(cryptoboxSession, messageFromBob);
+        })
+        .then(function(ciphertext) {
+          // Alice creates a session with Bob's PreKey message and decrypts the ciphertext
+          expect(alice.desktop.pk_store.prekeys.length).toBe(0);
+          return alice.desktop.decrypt('to_bob_mobile', ciphertext);
+        })
+        .then(function(plaintext) {
+          expect(alice.desktop.pk_store.prekeys.length).toBe(0);
+          expect(alice.desktop.cachedSessions.size()).toBe(2);
+          expect(alice.desktop.pk_store.release_prekeys.calls.count()).toEqual(2);
+          expect(alice.desktop.publish_prekeys.calls.count()).toEqual(2); // Published PreKey ID "3"
+          expect(sodium.to_string(plaintext)).toBe(messageFromBob);
+        })
+        .then(function() {
+          done();
+        })
+        .catch(done.fail);
+    });
+
   });
 
   describe('constructor', function() {
@@ -35,8 +117,6 @@ describe('cryptobox.store.IndexedDB', function() {
 
     afterEach(function(done) {
       if (store) {
-        // TODO: Check why this get's blocked!
-        // @see https://github.com/dfahlander/Dexie.js/issues/17#issuecomment-53684633
         store.delete_all().then(done).catch(done.fail);
       }
     });
@@ -81,24 +161,5 @@ describe('cryptobox.store.IndexedDB', function() {
         done();
       }).catch(done.fail);
     });
-
-
-    xit('creates the specified amount of PreKeys', function(done) {
-    });
-
-    xit('creates new PreKeys if only the half of the minimum PreKey threshold was initially available', function(done) {
-    });
-
-    xit('automatically creates new PreKeys if all PreKeys have been used', function(done) {
-    });
   });
-
-  describe('refill_prekeys', function() {
-    xit('publishes an event with newly generated PreKeys', function(done) {
-    });
-
-    xit('doesn\'t publish an event when there are no new PreKeys', function(done) {
-    });
-  });
-
 });

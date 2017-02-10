@@ -16,19 +16,59 @@
       var logger = new Logdown({prefix: 'Demo', alignOutput: true});
       logger.log(`Testing Cryptobox v${cryptobox.version}`);
 
-      var storage = new cryptobox.store.IndexedDB('bundle_test');
-      var box = new cryptobox.Cryptobox(storage, 5);
-      box.on(cryptobox.Cryptobox.TOPIC.NEW_PREKEYS, function(preKeys) {
-        logger.log(`Received more PreKeys`, preKeys);
+      var alice = {
+        desktop: new cryptobox.Cryptobox(new cryptobox.store.IndexedDB('alice_desktop'), 3)
+      };
+
+      var bob = {
+        desktop: new cryptobox.Cryptobox(new cryptobox.store.IndexedDB('bob_desktop'), 1),
+        mobile: new cryptobox.Cryptobox(new cryptobox.store.IndexedDB('bob_mobile'), 1)
+      };
+
+      alice.desktop.on(cryptobox.Cryptobox.TOPIC.NEW_PREKEYS, function(preKeys) {
+        logger.log(`New PreKeys from "alice_desktop"`, preKeys);
       });
 
-      box.init().then(function(initialPreKeys) {
-        var fingerprint = box.identity.public_key.fingerprint();
-        var message = `Local identity: ${fingerprint}`;
-        logger.log(message);
-        logger.log(`Initial PreKeys`, initialPreKeys);
-        document.write(message);
+      bob.desktop.on(cryptobox.Cryptobox.TOPIC.NEW_PREKEYS, function(preKeys) {
+        logger.log(`New PreKeys from "bob_desktop"`, preKeys);
       });
+
+      bob.mobile.on(cryptobox.Cryptobox.TOPIC.NEW_PREKEYS, function(preKeys) {
+        logger.log(`New PreKeys from "bob_mobile"`, preKeys);
+      });
+
+      var messageFromBob = 'Hello Alice!';
+
+      Promise
+        .all([
+          alice.desktop.store.delete_all(),
+          bob.desktop.store.delete_all(),
+          bob.mobile.store.delete_all()
+        ])
+        .then(function() {
+          return Promise.all([
+            alice.desktop.init(),
+            bob.desktop.init(),
+            bob.mobile.init()
+          ])
+        })
+        .then(function() {
+          return alice.desktop.store.load_prekey(0);
+        })
+        .then(function(prekey) {
+          var publicPreKeyBundle = Proteus.keys.PreKeyBundle.new(alice.desktop.identity.public_key, prekey);
+          return bob.desktop.session_from_prekey('to_alice_desktop', publicPreKeyBundle.serialise());
+        })
+        .then(function(cryptoboxSession) {
+          return bob.desktop.encrypt(cryptoboxSession, messageFromBob);
+        })
+        .then(function(ciphertext) {
+          return alice.desktop.decrypt('to_bob_desktop', ciphertext);
+        })
+        .then(function(plaintext) {
+          document.write(sodium.to_string(plaintext));
+          return alice.desktop.store.load_prekey(2);
+        });
     </script>
   </body>
 </html>
