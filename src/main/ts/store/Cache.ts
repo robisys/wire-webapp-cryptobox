@@ -69,7 +69,7 @@ export default class Cache implements CryptoboxStore {
     return Promise.all(prekey_promises);
   }
 
-  public load_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session> {
+  public read_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session> {
     return new Promise((resolve, reject) => {
       let serialised: ArrayBuffer = this.sessions[session_id];
       if (serialised) {
@@ -118,7 +118,7 @@ export default class Cache implements CryptoboxStore {
     });
   }
 
-  public save_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
+  public create_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
     return new Promise((resolve, reject) => {
 
       try {
@@ -129,5 +129,9 @@ export default class Cache implements CryptoboxStore {
 
       resolve(session);
     });
+  }
+
+  public update_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
+    return this.create_session(session_id, session);
   }
 }

@@ -60,13 +60,9 @@ describe('cryptobox.store.IndexedDB', function() {
           return alice.desktop.store.load_prekey(0);
         })
         .then(function(prekey) {
-          // Bob's desktop client takes the public PreKey bundle from Alice's desktop client and creates a session with it
-          var publicPreKeyBundle = Proteus.keys.PreKeyBundle.new(alice.desktop.identity.public_key, prekey);
-          return bob.desktop.session_from_prekey('to_alice_desktop', publicPreKeyBundle.serialise());
-        })
-        .then(function(cryptoboxSession) {
           // Bob sends a message (with PreKey material and ciphertext) to Alice's desktop client
-          return bob.desktop.encrypt(cryptoboxSession, messageFromBob);
+          var publicPreKeyBundle = Proteus.keys.PreKeyBundle.new(alice.desktop.identity.public_key, prekey);
+          return bob.desktop.encrypt('to_alice_desktop', messageFromBob, publicPreKeyBundle.serialise());
         })
         .then(function(ciphertext) {
           // Alice creates a session with Bob's PreKey message and decrypts the ciphertext
@@ -87,10 +83,7 @@ describe('cryptobox.store.IndexedDB', function() {
         })
         .then(function(prekey) {
           var publicPreKeyBundle = Proteus.keys.PreKeyBundle.new(alice.desktop.identity.public_key, prekey);
-          return bob.mobile.session_from_prekey('to_alice_desktop', publicPreKeyBundle.serialise());
-        })
-        .then(function(cryptoboxSession) {
-          return bob.mobile.encrypt(cryptoboxSession, messageFromBob);
+          return bob.mobile.encrypt('to_alice_desktop', messageFromBob, publicPreKeyBundle.serialise());
         })
         .then(function(ciphertext) {
           // Alice creates a session with Bob's PreKey message and decrypts the ciphertext

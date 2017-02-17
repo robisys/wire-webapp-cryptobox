@@ -17,6 +17,7 @@
  *
  */
 
+var args = require('yargs').argv;
 var assets = require('gulp-bower-assets');
 var babel = require('gulp-babel');
 var bower = require('gulp-bower');
@@ -70,7 +71,9 @@ gulp.task('build_ts_browser', function(callback) {
 
 gulp.task('build_ts_node', function() {
   var tsResult = tsProjectNode.src().pipe(tsProjectNode());
-  var disableLogging = true;
+  var disableLogging = Boolean(args.env === 'production');
+
+  gutil.log(gutil.colors.yellow('Disable log statements: ' + disableLogging));
 
   return merge([
     tsResult.dts

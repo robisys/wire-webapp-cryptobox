@@ -6,7 +6,6 @@ import {SerialisedRecord} from "./SerialisedRecord";
 import {RecordNotFoundError} from "./RecordNotFoundError";
 
 export default class IndexedDB implements CryptoboxStore {
-
   public identity: Proteus.keys.IdentityKeyPair;
 
   private db: Dexie;
@@ -52,18 +51,12 @@ export default class IndexedDB implements CryptoboxStore {
     return this.db.open();
   }
 
-  private delete(store_name: string, primary_key: string|any): Promise<string> {
-    return Promise.resolve()
-      .then(() => {
-        return this.db[store_name].delete(primary_key);
-      })
-      .then(() => {
-        this.logger.log(`Deleted record with primary key "${primary_key}" from object store "${store_name}".`);
-        return primary_key;
-      });
+  private create(store_name: string, primary_key: string, entity: Object): Dexie.Promise<string> {
+    this.logger.log(`Add record "${primary_key}" in object store "${store_name}"...`, entity);
+    return this.db[store_name].add(entity, primary_key);
   }
 
-  private load(store_name: string, primary_key: string): Promise<Object> {
+  private read(store_name: string, primary_key: string): Promise<Object> {
     return Promise.resolve()
       .then(() => {
         this.logger.log(`Trying to load record "${primary_key}" from object store "${store_name}".`);
@@ -81,9 +74,20 @@ export default class IndexedDB implements CryptoboxStore {
       });
   }
 
-  private save(store_name: string, primary_key: string, entity: Object): Dexie.Promise<string> {
-    this.logger.log(`Put record "${primary_key}" into object store "${store_name}".`, entity);
-    return this.db[store_name].put(entity, primary_key);
+  private update(store_name: string, primary_key: string, changes: Object): Dexie.Promise<string> {
+    this.logger.log(`Changing record "${primary_key}" in object store "${store_name}"...`, changes);
+    return this.db[store_name].update(primary_key, changes);
+  }
+
+  private delete(store_name: string, primary_key: string): Promise<string> {
+    return Promise.resolve()
+      .then(() => {
+        return this.db[store_name].delete(primary_key);
+      })
+      .then(() => {
+        this.logger.log(`Deleted record with primary key "${primary_key}" from object store "${store_name}".`);
+        return primary_key;
+      });
   }
 
   public delete_all(): Promise<boolean> {
@@ -125,7 +129,7 @@ export default class IndexedDB implements CryptoboxStore {
 
   public load_identity(): Promise<Proteus.keys.IdentityKeyPair> {
     return new Promise((resolve, reject) => {
-      this.load(this.TABLE.LOCAL_IDENTITY, this.localIdentityKey)
+      this.read(this.TABLE.LOCAL_IDENTITY, this.localIdentityKey)
         .then((record: SerialisedRecord) => {
           let identity: Proteus.keys.IdentityKeyPair = Proteus.keys.IdentityKeyPair.deserialise(record.serialised);
           resolve(identity);
@@ -142,7 +146,7 @@ export default class IndexedDB implements CryptoboxStore {
 
   public load_prekey(prekey_id: number): Promise<Proteus.keys.PreKey> {
     return new Promise((resolve, reject) => {
-      this.load(this.TABLE.PRE_KEYS, prekey_id.toString())
+      this.read(this.TABLE.PRE_KEYS, prekey_id.toString())
         .then((record: SerialisedRecord) => {
           resolve(Proteus.keys.PreKey.deserialise(record.serialised));
         })
@@ -173,8 +177,8 @@ export default class IndexedDB implements CryptoboxStore {
       });
   }
 
-  public load_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session> {
-    return this.load(this.TABLE.SESSIONS, session_id)
+  public read_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session> {
+    return this.read(this.TABLE.SESSIONS, session_id)
       .then((payload: SerialisedRecord) => {
         return Proteus.session.Session.deserialise(identity, payload.serialised);
       });
@@ -186,11 +190,11 @@ export default class IndexedDB implements CryptoboxStore {
 
       let payload: SerialisedRecord = new SerialisedRecord(identity.serialise(), this.localIdentityKey);
 
-      this.save(this.TABLE.LOCAL_IDENTITY, payload.id, payload)
+      this.create(this.TABLE.LOCAL_IDENTITY, payload.id, payload)
         .then((primaryKey: string) => {
           let fingerprint: string = identity.public_key.fingerprint();
           let message = `Saved local identity "${fingerprint}"`
-            + ` with key "${primaryKey}" into object store "${this.TABLE.LOCAL_IDENTITY}".`;
+            + ` with key "${primaryKey}" in object store "${this.TABLE.LOCAL_IDENTITY}".`;
           this.logger.log(message);
           resolve(identity);
         })
@@ -204,9 +208,9 @@ export default class IndexedDB implements CryptoboxStore {
 
       let payload: SerialisedRecord = new SerialisedRecord(prekey.serialise(), prekey.key_id.toString());
 
-      this.save(this.TABLE.PRE_KEYS, payload.id, payload)
+      this.create(this.TABLE.PRE_KEYS, payload.id, payload)
         .then((primaryKey: string) => {
-          let message = `Saved PreKey (ID "${prekey.key_id}") with key "${primaryKey}" into object store "${this.TABLE.PRE_KEYS}".`;
+          let message = `Saved PreKey (ID "${prekey.key_id}") with key "${primaryKey}" in object store "${this.TABLE.PRE_KEYS}".`;
           this.logger.log(message);
           resolve(prekey);
         })
@@ -230,7 +234,7 @@ export default class IndexedDB implements CryptoboxStore {
         keys.push(key);
       });
 
-      this.logger.log(`Saving a batch of "${items.length}" PreKeys (${keys.join(', ')}) into object store "${this.TABLE.PRE_KEYS}"...`, prekeys);
+      this.logger.log(`Saving a batch of "${items.length}" PreKeys (${keys.join(', ')}) in object store "${this.TABLE.PRE_KEYS}"...`, prekeys);
 
       this.db[this.TABLE.PRE_KEYS].bulkPut(items, keys)
         .then(() => {
@@ -241,13 +245,27 @@ export default class IndexedDB implements CryptoboxStore {
     });
   }
 
-  public save_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
+  public create_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
     return new Promise((resolve, reject) => {
       let payload: SerialisedRecord = new SerialisedRecord(session.serialise(), session_id);
 
-      this.save(this.TABLE.SESSIONS, payload.id, payload)
+      this.create(this.TABLE.SESSIONS, payload.id, payload)
         .then((primaryKey: string) => {
-          let message = `Saved session ID "${session_id}" into storage "${this.TABLE.SESSIONS}" with key "${primaryKey}".`;
+          let message = `Added session ID "${session_id}" in object store "${this.TABLE.SESSIONS}" with key "${primaryKey}".`;
+          this.logger.log(message);
+          resolve(session);
+        })
+        .catch(reject);
+    });
+  }
+
+  public update_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
+    return new Promise((resolve, reject) => {
+      let payload: SerialisedRecord = new SerialisedRecord(session.serialise(), session_id);
+
+      this.update(this.TABLE.SESSIONS, payload.id, {serialised: payload.serialised})
+        .then((primaryKey: string) => {
+          let message = `Updated session ID "${session_id}" in object store "${this.TABLE.SESSIONS}" with key "${primaryKey}".`;
           this.logger.log(message);
           resolve(session);
         })

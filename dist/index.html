@@ -57,10 +57,7 @@
         })
         .then(function(prekey) {
           var publicPreKeyBundle = Proteus.keys.PreKeyBundle.new(alice.desktop.identity.public_key, prekey);
-          return bob.desktop.session_from_prekey('to_alice_desktop', publicPreKeyBundle.serialise());
-        })
-        .then(function(cryptoboxSession) {
-          return bob.desktop.encrypt(cryptoboxSession, messageFromBob);
+          return bob.desktop.encrypt('to_alice_desktop', messageFromBob, publicPreKeyBundle.serialise());
         })
         .then(function(ciphertext) {
           return alice.desktop.decrypt('to_bob_desktop', ciphertext);

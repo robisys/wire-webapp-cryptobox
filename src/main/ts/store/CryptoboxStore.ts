@@ -10,12 +10,6 @@ export interface CryptoboxStore {
   delete_prekey(prekey_id: number): Promise<number>;
 
   /**
-   * Deletes a specified session.
-   * @return Promise<string> Resolves with the "ID" from the record, which has been deleted.
-   */
-  delete_session(session_id: string): Promise<string>;
-
-  /**
    * Loads the local identity.
    * @return Promise<Proteus.keys.IdentityKeyPair> Resolves with the "key pair" from the local identity.
    */
@@ -31,12 +25,6 @@ export interface CryptoboxStore {
    * Loads all available PreKeys.
    */
   load_prekeys(): Promise<Array<Proteus.keys.PreKey>>;
-
-  /**
-   * Loads a specified session.
-   * @return Promise<Proteus.session.Session> Resolves with the the specified "session".
-   */
-  load_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session>;
 
   /**
    * Saves the local identity.
@@ -60,5 +48,19 @@ export interface CryptoboxStore {
    * Saves a specified session.
    * @return Promise<string> Resolves with the "ID" from the saved session record.
    */
-  save_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session>;
+  create_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session>;
+
+  /**
+   * Loads a specified session.
+   * @return Promise<Proteus.session.Session> Resolves with the the specified "session".
+   */
+  read_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session>;
+
+  update_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session>;
+
+  /**
+   * Deletes a specified session.
+   * @return Promise<string> Resolves with the "ID" from the record, which has been deleted.
+   */
+  delete_session(session_id: string): Promise<string>;
 }

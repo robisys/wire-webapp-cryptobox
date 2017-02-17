@@ -28,7 +28,8 @@
     "merge2": "^1.0.2",
     "run-sequence": "^1.2.2",
     "typescript": "^2.1.4",
-    "webpack": "^2.2.0"
+    "webpack": "^2.2.0",
+    "yargs": "^6.6.0"
   },
   "license": "GPL-3.0",
   "main": "dist/commonjs/wire-webapp-cryptobox.js",
@@ -39,9 +40,9 @@
   },
   "scripts": {
     "build": "npm run prepublish",
-    "prepublish": "gulp dist && npm test",
+    "prepublish": "gulp dist --env production && npm test",
     "self_test_node": "node dist/index.js",
-    "start": "gulp default",
+    "start": "gulp",
     "test": "npm run self_test_node && gulp test"
   },
   "typings": "dist/typings/wire-webapp-cryptobox.d.ts",
