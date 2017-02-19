@@ -111,6 +111,43 @@ describe('cryptobox.Cryptobox', function() {
         .catch(done.fail);
     });
 
+    describe('session_from_prekey', function() {
+      it('creates a session from a valid PreKey format', function(done) {
+        var remotePreKey = {
+          id: 65535,
+          key: "pQABARn//wKhAFggY/Yre8URI2xF93otjO7pUJ3ZjP4aM+sNJb6pL6J+iYgDoQChAFggZ049puHgS2zw8wjJorpl+EG9/op9qEOANG7ecEU2hfwE9g=="
+        };
+        var sessionId = 'session_id';
+        var decodedPreKeyBundleBuffer = sodium.from_base64(remotePreKey.key).buffer;
+
+        box.session_from_prekey(sessionId, decodedPreKeyBundleBuffer)
+          .then(function(session) {
+            expect(session.id).toBe(sessionId);
+            done();
+          })
+          .catch(done.fail);
+      });
+
+      it('fails for outdated PreKey formats', function(done) {
+        var remotePreKey = {
+          id: 65535,
+          key: "hAEZ//9YIOxZw78oQCH6xKyAI7WqagtbvRZ/LaujG+T790hOTbf7WCDqAE5Dc75VfmYji6wEz976hJ2hYuODYE6pA59DNFn/KQ=="
+        };
+        var sessionId = 'session_id';
+        var decodedPreKeyBundleBuffer = sodium.from_base64(remotePreKey.key).buffer;
+
+        box.session_from_prekey(sessionId, decodedPreKeyBundleBuffer)
+          .then(done.fail)
+          .catch(function(error) {
+            if(error instanceof cryptobox.InvalidPreKeyFormatError) {
+              done();
+            } else {
+              done.fail();
+            }
+          });
+      });
+    });
+
     describe('session_load', function() {
       it('it loads a session from the cache', function(done) {
         spyOn(box.store, 'read_session').and.callThrough();

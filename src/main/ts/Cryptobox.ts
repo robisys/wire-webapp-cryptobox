@@ -5,6 +5,7 @@ import {ReadOnlyStore} from "./store/ReadOnlyStore";
 import EventEmitter = require("events");
 import Logdown = require("logdown");
 import LRUCache = require("wire-webapp-lru-cache");
+import {InvalidPreKeyFormatError} from "./InvalidPreKeyFormatError";
 
 export class Cryptobox extends EventEmitter {
   public static TOPIC = {
@@ -199,14 +200,22 @@ export class Cryptobox extends EventEmitter {
    * Saving the session takes automatically place when the session is used to encrypt or decrypt a message.
    */
   private session_from_prekey(session_id: string, pre_key_bundle: ArrayBuffer): Promise<CryptoboxSession> {
-    return Promise.resolve().then(() => {
-      let bundle: Proteus.keys.PreKeyBundle = Proteus.keys.PreKeyBundle.deserialise(pre_key_bundle);
-      return Proteus.session.Session.init_from_prekey(this.identity, bundle)
-        .then((session: Proteus.session.Session) => {
-          let cryptobox_session = new CryptoboxSession(session_id, this.pk_store, session);
-          return this.session_save(cryptobox_session);
-        });
-    });
+    return Promise.resolve()
+      .then(() => {
+        let bundle: Proteus.keys.PreKeyBundle;
+
+        try {
+          bundle = Proteus.keys.PreKeyBundle.deserialise(pre_key_bundle);
+        } catch (error) {
+          throw new InvalidPreKeyFormatError(`PreKey bundle for session "${session_id}" has an unsupported format.`);
+        }
+
+        return Proteus.session.Session.init_from_prekey(this.identity, bundle)
+          .then((session: Proteus.session.Session) => {
+            let cryptobox_session = new CryptoboxSession(session_id, this.pk_store, session);
+            return this.session_save(cryptobox_session);
+          });
+      });
   }
 
   /**
