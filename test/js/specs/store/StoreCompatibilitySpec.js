@@ -46,23 +46,26 @@ describe('Store Compatibility', function() {
       var identityFromCache = undefined;
       var identityFromIndexedDB = undefined;
 
-      storeIndexedDB.init().then(function() {
-        return storeCache.save_identity(identity);
-      }).then(function() {
-        return storeIndexedDB.save_identity(identity);
-      }).then(function() {
-        return storeCache.load_identity();
-      }).then(function(identity) {
-        identityFromCache = identity;
-        return storeIndexedDB.load_identity();
-      }).then(function() {
-        identityFromIndexedDB = identity;
+      storeCache.save_identity(identity)
+        .then(function() {
+          return storeIndexedDB.save_identity(identity);
+        })
+        .then(function() {
+          return storeCache.load_identity();
+        })
+        .then(function(identity) {
+          identityFromCache = identity;
+          return storeIndexedDB.load_identity();
+        })
+        .then(function() {
+          identityFromIndexedDB = identity;
 
-        expect(identityFromCache.public_key.fingerprint()).toBe(fingerprint);
-        expect(identityFromIndexedDB.public_key.fingerprint()).toBe(fingerprint);
+          expect(identityFromCache.public_key.fingerprint()).toBe(fingerprint);
+          expect(identityFromIndexedDB.public_key.fingerprint()).toBe(fingerprint);
 
-        done();
-      }).catch(done.fail);
+          done();
+        })
+        .catch(done.fail);
     });
   });
 });

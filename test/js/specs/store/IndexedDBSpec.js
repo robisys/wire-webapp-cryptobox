@@ -74,8 +74,8 @@ describe('cryptobox.store.IndexedDB', function() {
           var expectedNewPreKeyId = 2;
           expect(alice.desktop.pk_store.prekeys.length).toBe(0);
           expect(alice.desktop.cachedSessions.size()).toBe(1);
-          expect(alice.desktop.pk_store.release_prekeys.calls.count()).toEqual(1);
-          expect(alice.desktop.publish_prekeys.calls.count()).toEqual(1);
+          expect(alice.desktop.pk_store.release_prekeys.calls.count()).toBe(1);
+          expect(alice.desktop.publish_prekeys.calls.count()).toBe(1);
           expect(alice.desktop.cachedPreKeys[alice.desktop.cachedPreKeys.length - 1].key_id).toBe(expectedNewPreKeyId);
           expect(sodium.to_string(plaintext)).toBe(messageFromBob);
           // Bob now establishes a connection with his mobile client to Alice's desktop client...
@@ -93,8 +93,8 @@ describe('cryptobox.store.IndexedDB', function() {
         .then(function(plaintext) {
           expect(alice.desktop.pk_store.prekeys.length).toBe(0);
           expect(alice.desktop.cachedSessions.size()).toBe(2);
-          expect(alice.desktop.pk_store.release_prekeys.calls.count()).toEqual(2);
-          expect(alice.desktop.publish_prekeys.calls.count()).toEqual(2); // Published PreKey ID "3"
+          expect(alice.desktop.pk_store.release_prekeys.calls.count()).toBe(2);
+          expect(alice.desktop.publish_prekeys.calls.count()).toBe(2); // Published PreKey ID "3"
           expect(sodium.to_string(plaintext)).toBe(messageFromBob);
         })
         .then(function() {
@@ -114,16 +114,7 @@ describe('cryptobox.store.IndexedDB', function() {
       }
     });
 
-    it('constructs a new IndexedDB', function(done) {
-      var identifier = 'IndexedDBSpec';
-      store = new cryptobox.store.IndexedDB(identifier);
-      store.init().then(function(db) {
-        expect(db.name).toEqual(jasmine.any(String));
-        done();
-      }).catch(done.fail);
-    });
-
-    it('works with a given Dexie instance', function(done) {
+    it('works with a given Dexie instance', function() {
       var schema = {
         "amplify": '',
         "clients": ', meta.primary_key',
@@ -136,23 +127,56 @@ describe('cryptobox.store.IndexedDB', function() {
 
       var name = 'wire@production@532af01e-1e24-4366-aacf-33b67d4ee376@temporary';
       var db = new Dexie(name);
-      var dbVersion = db.version(7).stores(schema);
-      dbVersion.upgrade(function(transaction) {
-        transaction['conversation_events'].toCollection().modify(function(event) {
-          var mapped_event;
-          mapped_event = event.mapped || event.raw;
-          delete event.mapped;
-          delete event.raw;
-          delete event.meta;
-          return Object.assign({}, event, mapped_event);
-        });
-      });
+      db.version(7).stores(schema);
 
       store = new cryptobox.store.IndexedDB(db);
-      store.init().then(function(db) {
-        expect(db.name).toEqual(name);
-        done();
-      }).catch(done.fail);
+      expect(store.db.name).toBe(name);
     });
+  });
+
+  describe('create_session', function() {
+
+    var store = undefined;
+
+    beforeEach(function() {
+      store = new cryptobox.store.IndexedDB('bobs_store');
+    });
+
+    afterEach(function(done) {
+      if (store) {
+        store.delete_all().then(done).catch(done.fail);
+      }
+    });
+
+    it('saves a session with meta data', function(done) {
+      var alice = Proteus.keys.IdentityKeyPair.new();
+
+      var bob = Proteus.keys.IdentityKeyPair.new();
+      var preKey = new Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID);
+      var bobPreKeyBundle = Proteus.keys.PreKeyBundle.new(bob.public_key, preKey);
+
+      var sessionId = 'session_with_bob';
+      var proteusSession;
+
+      Proteus.session.Session.init_from_prekey(alice, bobPreKeyBundle)
+        .then(function(session) {
+          proteusSession = session;
+          store.create_session(sessionId, session)
+        })
+        .then(function() {
+          return store.read(store.TABLE.SESSIONS, sessionId);
+        })
+        .then(function(serialisedSession) {
+          expect(serialisedSession.created).toEqual(jasmine.any(Number));
+          expect(serialisedSession.version).toEqual(cryptobox.Cryptobox.prototype.VERSION);
+          return store.read_session(alice, sessionId);
+        })
+        .then(function(loadedSession) {
+          expect(loadedSession.session_tag).toEqual(proteusSession.session_tag);
+          done();
+        })
+        .catch(done.fail);
+    });
+
   });
 });

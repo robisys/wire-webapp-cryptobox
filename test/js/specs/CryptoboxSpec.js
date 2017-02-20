@@ -80,7 +80,7 @@ describe('cryptobox.Cryptobox', function() {
     });
 
     it('returns the current version', function() {
-      expect(cryptobox.version).toBeDefined();
+      expect(cryptobox.Cryptobox.prototype.VERSION).toBeDefined();
     });
   });
 

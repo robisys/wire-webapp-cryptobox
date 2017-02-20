@@ -12,6 +12,7 @@ export class Cryptobox extends EventEmitter {
     NEW_PREKEYS: "new-prekeys",
     NEW_SESSION: "new-session"
   };
+  public VERSION: string;
 
   private cachedPreKeys: Array<Proteus.keys.PreKey>;
   private cachedSessions: LRUCache;
@@ -392,3 +393,6 @@ export class Cryptobox extends EventEmitter {
       });
   }
 }
+
+// Note: Path to "package.json" must be relative to the "commonjs" dist files
+Cryptobox.prototype.VERSION = require('../../package.json').version;

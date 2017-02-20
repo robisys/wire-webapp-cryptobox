@@ -16,7 +16,6 @@ export default class IndexedDB implements CryptoboxStore {
     SESSIONS: "sessions"
   };
   private logger: Logdown;
-
   private localIdentityKey: string = 'local_identity';
 
   constructor(identifier: string | Dexie) {
@@ -46,12 +45,7 @@ export default class IndexedDB implements CryptoboxStore {
     });
   }
 
-  public init(): Dexie.Promise<Dexie> {
-    this.logger.log(`Connecting to IndexedDB database "${this.db.name}"...`);
-    return this.db.open();
-  }
-
-  private create(store_name: string, primary_key: string, entity: Object): Dexie.Promise<string> {
+  private create(store_name: string, primary_key: string, entity: SerialisedRecord): Dexie.Promise<string> {
     this.logger.log(`Add record "${primary_key}" in object store "${store_name}"...`, entity);
     return this.db[store_name].add(entity, primary_key);
   }
