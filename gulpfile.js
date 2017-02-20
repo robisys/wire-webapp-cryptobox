@@ -30,14 +30,20 @@ var gutil = require('gulp-util');
 var jasmine = require('gulp-jasmine');
 var karma = require('karma');
 var merge = require('merge2');
+var ProgressPlugin = require('webpack/lib/ProgressPlugin');
 var replace = require('gulp-replace');
 var runSequence = require('run-sequence');
 var ts = require('gulp-typescript');
 var tsProjectNode = ts.createProject('tsconfig.json');
-
 var webpack = require('webpack');
-var ProgressPlugin = require('webpack/lib/ProgressPlugin');
 
+// Aliases
+gulp.task('b', ['build']);
+gulp.task('c', ['clean']);
+gulp.task('i', ['install']);
+gulp.task('t', ['test']);
+
+// Tasks
 gulp.task('clean', ['clean_browser', 'clean_node'], function() {
 });
 
