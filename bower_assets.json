@@ -3,6 +3,9 @@
     "dexie@copy": [
       "dexie/dist/dexie.js"
     ],
+    "libsodium.js@copy": [
+      "libsodium.js/dist/browsers-sumo/combined/sodium.min.js"
+    ],
     "logdown@copy": [
       "logdown/dist/logdown.js"
     ],

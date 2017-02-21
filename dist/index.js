@@ -1,10 +1,3 @@
-// Test: Proteus
-var Proteus = require('wire-webapp-proteus');
-var lastResort = Proteus.keys.PreKey.MAX_PREKEY_ID;
-var preKey = Proteus.keys.PreKey.new(lastResort);
-var serializedPreKey = preKey.serialise();
-
-// Test: Cryptobox
 var cryptobox = require('./commonjs/wire-webapp-cryptobox');
 var Logdown = require('logdown');
 
