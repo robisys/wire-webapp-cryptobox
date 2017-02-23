@@ -11,16 +11,9 @@ module.exports = {
     library: 'cryptobox',
     path: './dist/window'
   },
-  node: {
-    fs: 'empty',
-    crypto: 'empty'
-  },
   externals: {
     'bazinga64': true,
     'dexie': 'Dexie',
-    'libsodium-native': {
-      'request': {}
-    },
     'logdown': 'Logdown',
     'wire-webapp-lru-cache': 'LRUCache',
     'wire-webapp-proteus': 'Proteus'
