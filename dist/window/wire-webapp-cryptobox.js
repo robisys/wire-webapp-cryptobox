@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v4.0.0 */
+/*! wire-webapp-cryptobox v4.0.1 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -65,7 +65,7 @@ var cryptobox =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 13);
+/******/ 	return __webpack_require__(__webpack_require__.s = 14);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -85,13 +85,41 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
-var Proteus = __webpack_require__(0);
-var CryptoboxSession_1 = __webpack_require__(2);
-var ReadOnlyStore_1 = __webpack_require__(4);
-var EventEmitter = __webpack_require__(9);
+var RecordAlreadyExistsError = (function (_super) {
+    __extends(RecordAlreadyExistsError, _super);
+    function RecordAlreadyExistsError(message) {
+        var _this = _super.call(this, message) || this;
+        _this.message = message;
+        Object.setPrototypeOf(_this, RecordAlreadyExistsError.prototype);
+        _this.name = _this.constructor.name;
+        _this.message = message;
+        _this.stack = new Error().stack;
+        return _this;
+    }
+    return RecordAlreadyExistsError;
+}(Error));
+exports.RecordAlreadyExistsError = RecordAlreadyExistsError;
 
-var LRUCache = __webpack_require__(12);
-var InvalidPreKeyFormatError_1 = __webpack_require__(3);
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
+var Proteus = __webpack_require__(0);
+var EventEmitter = __webpack_require__(10);
+
+var LRUCache = __webpack_require__(13);
+var CryptoboxSession_1 = __webpack_require__(3);
+var InvalidPreKeyFormatError_1 = __webpack_require__(4);
+var ReadOnlyStore_1 = __webpack_require__(5);
+var RecordAlreadyExistsError_1 = __webpack_require__(1);
 var Cryptobox = (function (_super) {
     __extends(Cryptobox, _super);
     function Cryptobox(cryptoBoxStore, minimumAmountOfPreKeys) {
@@ -247,6 +275,10 @@ var Cryptobox = (function (_super) {
     };
     Cryptobox.prototype.session_from_prekey = function (session_id, pre_key_bundle) {
         var _this = this;
+        var cachedSession = this.load_session_from_cache(session_id);
+        if (cachedSession) {
+            return Promise.resolve(cachedSession);
+        }
         return Promise.resolve()
             .then(function () {
             var bundle;
@@ -260,6 +292,15 @@ var Cryptobox = (function (_super) {
                 .then(function (session) {
                 var cryptobox_session = new CryptoboxSession_1.CryptoboxSession(session_id, _this.pk_store, session);
                 return _this.session_save(cryptobox_session);
+            })
+                .catch(function (error) {
+                if (error instanceof RecordAlreadyExistsError_1.RecordAlreadyExistsError) {
+                    
+                    return _this.session_load(session_id);
+                }
+                else {
+                    throw error;
+                }
             });
         });
     };
@@ -278,19 +319,20 @@ var Cryptobox = (function (_super) {
     };
     Cryptobox.prototype.session_load = function (session_id) {
         var _this = this;
-        return Promise.resolve().then(function () {
-            
-            var cachedSession = _this.load_session_from_cache(session_id);
-            if (cachedSession) {
-                return cachedSession;
-            }
-            return _this.store.read_session(_this.identity, session_id)
-                .then(function (session) {
-                return new CryptoboxSession_1.CryptoboxSession(session_id, _this.pk_store, session);
-            })
-                .then(function (session) {
-                return _this.save_session_in_cache(session);
-            });
+        
+        var cachedSession = this.load_session_from_cache(session_id);
+        if (cachedSession) {
+            return Promise.resolve(cachedSession);
+        }
+        return Promise.resolve()
+            .then(function () {
+            return _this.store.read_session(_this.identity, session_id);
+        })
+            .then(function (session) {
+            return new CryptoboxSession_1.CryptoboxSession(session_id, _this.pk_store, session);
+        })
+            .then(function (session) {
+            return _this.save_session_in_cache(session);
         });
     };
     Cryptobox.prototype.session_cleanup = function (session) {
@@ -427,11 +469,11 @@ Cryptobox.TOPIC = {
     NEW_SESSION: "new-session"
 };
 exports.Cryptobox = Cryptobox;
-Cryptobox.prototype.VERSION = __webpack_require__(10).version;
+Cryptobox.prototype.VERSION = __webpack_require__(11).version;
 
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -473,7 +515,7 @@ exports.CryptoboxSession = CryptoboxSession;
 
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -500,7 +542,7 @@ exports.InvalidPreKeyFormatError = InvalidPreKeyFormatError;
 
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -551,7 +593,7 @@ exports.ReadOnlyStore = ReadOnlyStore;
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -578,7 +620,7 @@ exports.RecordNotFoundError = RecordNotFoundError;
 
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -716,16 +758,17 @@ exports.default = Cache;
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 var Proteus = __webpack_require__(0);
-var dexie_1 = __webpack_require__(11);
+var dexie_1 = __webpack_require__(12);
 
-var SerialisedRecord_1 = __webpack_require__(8);
-var RecordNotFoundError_1 = __webpack_require__(5);
+var RecordAlreadyExistsError_1 = __webpack_require__(1);
+var RecordNotFoundError_1 = __webpack_require__(6);
+var SerialisedRecord_1 = __webpack_require__(9);
 var IndexedDB = (function () {
     function IndexedDB(identifier) {
         var _this = this;
@@ -952,7 +995,15 @@ var IndexedDB = (function () {
                 
                 resolve(session);
             })
-                .catch(reject);
+                .catch(function (error) {
+                if (error instanceof dexie_1.default.ConstraintError) {
+                    var message = "Session with ID '" + session_id + "' already exists and cannot get overwritten. You need to delete the session first if you want to do it.";
+                    reject(new RecordAlreadyExistsError_1.RecordAlreadyExistsError(message));
+                }
+                else {
+                    reject(error);
+                }
+            });
         });
     };
     IndexedDB.prototype.update_session = function (session_id, session) {
@@ -975,12 +1026,12 @@ exports.default = IndexedDB;
 
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
-var Cryptobox_1 = __webpack_require__(1);
+var Cryptobox_1 = __webpack_require__(2);
 var SerialisedRecord = (function () {
     function SerialisedRecord(serialised, id) {
         this.created = Date.now();
@@ -994,7 +1045,7 @@ exports.SerialisedRecord = SerialisedRecord;
 
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports) {
 
 // Copyright Joyent, Inc. and other Node contributors.
@@ -1302,7 +1353,7 @@ function isUndefined(arg) {
 
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports) {
 
 module.exports = {
@@ -1328,9 +1379,9 @@ module.exports = {
 		"gulp-typings": "^2.0.4",
 		"gulp-util": "^3.0.7",
 		"gutil": "^1.6.4",
-		"karma": "~1.3.0",
+		"karma": "~1.5.0",
 		"karma-chrome-launcher": "~2.0.0",
-		"karma-jasmine": "~1.0.2",
+		"karma-jasmine": "~1.1.0",
 		"logdown": "~2.0.3",
 		"merge2": "^1.0.2",
 		"run-sequence": "^1.2.2",
@@ -1353,34 +1404,35 @@ module.exports = {
 		"test": "npm run self_test_node && gulp test"
 	},
 	"typings": "dist/typings/wire-webapp-cryptobox.d.ts",
-	"version": "4.0.0"
+	"version": "4.0.1"
 };
-
-/***/ }),
-/* 11 */
-/***/ (function(module, exports) {
-
-module.exports = Dexie;
 
 /***/ }),
 /* 12 */
 /***/ (function(module, exports) {
 
-module.exports = LRUCache;
+module.exports = Dexie;
 
 /***/ }),
 /* 13 */
+/***/ (function(module, exports) {
+
+module.exports = LRUCache;
+
+/***/ }),
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
-var Cache_1 = __webpack_require__(6);
-var IndexedDB_1 = __webpack_require__(7);
-var CryptoboxSession_1 = __webpack_require__(2);
-var Cryptobox_1 = __webpack_require__(1);
-var InvalidPreKeyFormatError_1 = __webpack_require__(3);
-var ReadOnlyStore_1 = __webpack_require__(4);
-var RecordNotFoundError_1 = __webpack_require__(5);
+var Cache_1 = __webpack_require__(7);
+var IndexedDB_1 = __webpack_require__(8);
+var CryptoboxSession_1 = __webpack_require__(3);
+var Cryptobox_1 = __webpack_require__(2);
+var InvalidPreKeyFormatError_1 = __webpack_require__(4);
+var ReadOnlyStore_1 = __webpack_require__(5);
+var RecordAlreadyExistsError_1 = __webpack_require__(1);
+var RecordNotFoundError_1 = __webpack_require__(6);
 Object.defineProperty(exports, "__esModule", { value: true });
 module.exports = {
     Cryptobox: Cryptobox_1.Cryptobox,
@@ -1390,7 +1442,8 @@ module.exports = {
         Cache: Cache_1.default,
         IndexedDB: IndexedDB_1.default,
         ReadOnlyStore: ReadOnlyStore_1.ReadOnlyStore,
-        RecordNotFoundError: RecordNotFoundError_1.RecordNotFoundError,
+        RecordAlreadyExistsError: RecordAlreadyExistsError_1.RecordAlreadyExistsError,
+        RecordNotFoundError: RecordNotFoundError_1.RecordNotFoundError
     }
 };
 
