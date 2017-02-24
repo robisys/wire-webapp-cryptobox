@@ -250,7 +250,7 @@ export class Cryptobox extends EventEmitter {
         .then((session: Proteus.session.Session) => {
           return new CryptoboxSession(session_id, this.pk_store, session);
         })
-        .then((session) => {
+        .then((session: CryptoboxSession) => {
           return this.save_session_in_cache(session);
         });
     });
