@@ -139,7 +139,7 @@ describe('cryptobox.Cryptobox', function() {
         box.session_from_prekey(sessionId, decodedPreKeyBundleBuffer)
           .then(done.fail)
           .catch(function(error) {
-            if(error instanceof cryptobox.InvalidPreKeyFormatError) {
+            if (error instanceof cryptobox.InvalidPreKeyFormatError) {
               done();
             } else {
               done.fail();
@@ -149,17 +149,13 @@ describe('cryptobox.Cryptobox', function() {
     });
 
     describe('session_load', function() {
-      it('it loads a session from the cache', function(done) {
+      it('loads a session from the cache', function(done) {
+        spyOn(box, 'load_session_from_cache').and.callThrough();
         spyOn(box.store, 'read_session').and.callThrough();
         box.session_load(sessionId)
           .then(function(session) {
             expect(session.id).toBe(sessionId);
-            expect(box.store.read_session.calls.count()).toBe(0);
-            return box.session_load(sessionId);
-          })
-          .then(function(session) {
-            expect(session.id).toBe(sessionId);
-            expect(box.store.read_session.calls.count()).toBe(0);
+            expect(box.load_session_from_cache.calls.count()).toBe(1);
             done();
           })
           .catch(done.fail);

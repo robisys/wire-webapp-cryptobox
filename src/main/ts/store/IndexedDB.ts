@@ -2,8 +2,9 @@ import * as Proteus from "wire-webapp-proteus";
 import Dexie from "dexie";
 import Logdown = require('logdown');
 import {CryptoboxStore} from "./CryptoboxStore";
-import {SerialisedRecord} from "./SerialisedRecord";
+import {RecordAlreadyExistsError} from "./RecordAlreadyExistsError";
 import {RecordNotFoundError} from "./RecordNotFoundError";
+import {SerialisedRecord} from "./SerialisedRecord";
 
 export default class IndexedDB implements CryptoboxStore {
   public identity: Proteus.keys.IdentityKeyPair;
@@ -249,7 +250,14 @@ export default class IndexedDB implements CryptoboxStore {
           this.logger.log(message);
           resolve(session);
         })
-        .catch(reject);
+        .catch((error: Error) => {
+          if (error instanceof Dexie.ConstraintError) {
+            let message: string = `Session with ID '${session_id}' already exists and cannot get overwritten. You need to delete the session first if you want to do it.`;
+            reject(new RecordAlreadyExistsError(message));
+          } else {
+            reject(error);
+          }
+        });
     });
   }
 

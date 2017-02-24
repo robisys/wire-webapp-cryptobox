@@ -4,6 +4,7 @@ import {CryptoboxSession} from "./CryptoboxSession";
 import {Cryptobox} from "./Cryptobox";
 import {InvalidPreKeyFormatError} from "./InvalidPreKeyFormatError";
 import {ReadOnlyStore} from "./store/ReadOnlyStore";
+import {RecordAlreadyExistsError} from "./store/RecordAlreadyExistsError";
 import {RecordNotFoundError} from "./store/RecordNotFoundError";
 
 export default {
@@ -14,6 +15,7 @@ export default {
     Cache,
     IndexedDB,
     ReadOnlyStore,
-    RecordNotFoundError,
+    RecordAlreadyExistsError,
+    RecordNotFoundError
   }
 }

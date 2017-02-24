@@ -1,11 +1,12 @@
 import * as Proteus from "wire-webapp-proteus";
-import {CryptoboxSession} from "./CryptoboxSession";
-import {CryptoboxStore} from "./store/CryptoboxStore";
-import {ReadOnlyStore} from "./store/ReadOnlyStore";
 import EventEmitter = require("events");
 import Logdown = require("logdown");
 import LRUCache = require("wire-webapp-lru-cache");
+import {CryptoboxSession} from "./CryptoboxSession";
+import {CryptoboxStore} from "./store/CryptoboxStore";
 import {InvalidPreKeyFormatError} from "./InvalidPreKeyFormatError";
+import {ReadOnlyStore} from "./store/ReadOnlyStore";
+import {RecordAlreadyExistsError} from "./store/RecordAlreadyExistsError";
 
 export class Cryptobox extends EventEmitter {
   public static TOPIC = {
@@ -200,7 +201,12 @@ export class Cryptobox extends EventEmitter {
    * Creates a new session which can be used for cryptographic operations (encryption & decryption) from a remote PreKey bundle.
    * Saving the session takes automatically place when the session is used to encrypt or decrypt a message.
    */
-  private session_from_prekey(session_id: string, pre_key_bundle: ArrayBuffer): Promise<CryptoboxSession> {
+  public session_from_prekey(session_id: string, pre_key_bundle: ArrayBuffer): Promise<CryptoboxSession> {
+    let cachedSession: CryptoboxSession = this.load_session_from_cache(session_id);
+    if (cachedSession) {
+      return Promise.resolve(cachedSession);
+    }
+
     return Promise.resolve()
       .then(() => {
         let bundle: Proteus.keys.PreKeyBundle;
@@ -215,6 +221,14 @@ export class Cryptobox extends EventEmitter {
           .then((session: Proteus.session.Session) => {
             let cryptobox_session = new CryptoboxSession(session_id, this.pk_store, session);
             return this.session_save(cryptobox_session);
+          })
+          .catch((error: Error) => {
+            if (error instanceof RecordAlreadyExistsError) {
+              this.logger.warn(error.message, error);
+              return this.session_load(session_id);
+            } else {
+              throw error;
+            }
           });
       });
   }
@@ -238,22 +252,23 @@ export class Cryptobox extends EventEmitter {
   }
 
   public session_load(session_id: string): Promise<CryptoboxSession> {
-    return Promise.resolve().then(() => {
-      this.logger.log(`Trying to load Session with ID "${session_id}"...`);
+    this.logger.log(`Trying to load Session with ID "${session_id}"...`);
 
-      let cachedSession = this.load_session_from_cache(session_id);
-      if (cachedSession) {
-        return cachedSession;
-      }
+    let cachedSession: CryptoboxSession = this.load_session_from_cache(session_id);
+    if (cachedSession) {
+      return Promise.resolve(cachedSession);
+    }
 
-      return this.store.read_session(this.identity, session_id)
-        .then((session: Proteus.session.Session) => {
-          return new CryptoboxSession(session_id, this.pk_store, session);
-        })
-        .then((session: CryptoboxSession) => {
-          return this.save_session_in_cache(session);
-        });
-    });
+    return Promise.resolve()
+      .then(() => {
+        return this.store.read_session(this.identity, session_id)
+      })
+      .then((session: Proteus.session.Session) => {
+        return new CryptoboxSession(session_id, this.pk_store, session);
+      })
+      .then((session: CryptoboxSession) => {
+        return this.save_session_in_cache(session);
+      });
   }
 
   private session_cleanup(session: CryptoboxSession): Promise<CryptoboxSession> {

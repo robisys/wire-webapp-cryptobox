@@ -17,6 +17,7 @@
  *
  */
 
+// gulp test_browser --file "store/IndexedDBSpec.js"
 describe('cryptobox.store.IndexedDB', function() {
 
   var cryptobox = undefined;
@@ -161,7 +162,7 @@ describe('cryptobox.store.IndexedDB', function() {
       Proteus.session.Session.init_from_prekey(alice, bobPreKeyBundle)
         .then(function(session) {
           proteusSession = session;
-          store.create_session(sessionId, session)
+          return store.create_session(sessionId, session)
         })
         .then(function() {
           return store.read(store.TABLE.SESSIONS, sessionId);
@@ -179,4 +180,42 @@ describe('cryptobox.store.IndexedDB', function() {
     });
 
   });
+
+  describe('session_from_prekey', function() {
+    it('saves and caches a valid session from a serialized PreKey bundle', function(done) {
+      var alice = new cryptobox.Cryptobox(new cryptobox.store.IndexedDB('alice_db'), 1);
+      var sessionId = 'session_with_bob';
+
+      var bob = Proteus.keys.IdentityKeyPair.new();
+      var preKey = new Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID);
+      var bobPreKeyBundle = Proteus.keys.PreKeyBundle.new(bob.public_key, preKey);
+
+      alice.init()
+        .then(function(allPreKeys) {
+          expect(allPreKeys.length).toBe(1);
+          return alice.session_from_prekey(sessionId, bobPreKeyBundle.serialise());
+        })
+        .then(function(cryptoboxSession) {
+          expect(cryptoboxSession.fingerprint_remote()).toBe(bob.public_key.fingerprint());
+          return alice.load_session_from_cache(sessionId);
+        })
+        .then(function(cryptoboxSession) {
+          expect(cryptoboxSession.fingerprint_remote()).toBe(bob.public_key.fingerprint());
+          // Check if code is robust and can handle a second call
+          return alice.session_from_prekey(sessionId, bobPreKeyBundle.serialise());
+        })
+        .then(function(cryptoboxSession) {
+          expect(cryptoboxSession.fingerprint_remote()).toBe(bob.public_key.fingerprint());
+          // Remove local cache and reinforce a session from PreKey
+          alice.cachedSessions = new LRUCache(1);
+          return alice.session_from_prekey(sessionId, bobPreKeyBundle.serialise());
+        })
+        .then(function(cryptoboxSession) {
+          expect(cryptoboxSession.fingerprint_remote()).toBe(bob.public_key.fingerprint());
+          done();
+        })
+        .catch(done.fail);
+    });
+  });
+
 });
