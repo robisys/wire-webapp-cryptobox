@@ -4,12 +4,12 @@ var webpack = require('webpack');
 module.exports = {
   devtool: 'source-map',
   entry: {
-    filename: `./dist/commonjs/${pkg.name}.js`
+    filename: `${__dirname}/dist/commonjs/${pkg.name}.js`
   },
   output: {
     filename: `${pkg.name}.js`,
     library: 'cryptobox',
-    path: './dist/window'
+    path: `${__dirname}/dist/window`
   },
   externals: {
     'bazinga64': true,

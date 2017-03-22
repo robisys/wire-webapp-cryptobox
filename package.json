@@ -28,7 +28,7 @@
     "merge2": "^1.0.2",
     "run-sequence": "^1.2.2",
     "typescript": "^2.1.4",
-    "webpack": "^2.2.0",
+    "webpack": "2.3.0",
     "yargs": "^6.6.0"
   },
   "license": "GPL-3.0",
