@@ -346,7 +346,7 @@ export class Cryptobox extends EventEmitter {
       });
   }
 
-  public encrypt(session_id: string, payload: string|Uint8Array, pre_key_bundle: ArrayBuffer): Promise<ArrayBuffer> {
+  public encrypt(session_id: string, payload: string | Uint8Array, pre_key_bundle: ArrayBuffer): Promise<ArrayBuffer> {
     let encryptedBuffer: ArrayBuffer;
     let loadedSession: CryptoboxSession;
 

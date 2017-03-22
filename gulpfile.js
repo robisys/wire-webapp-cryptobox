@@ -146,7 +146,8 @@ gulp.task('test_browser', function(done) {
       // Application
       'dist/window/**/*.js',
       // Tests
-      (file) ? `test/js/specs/${file}` : 'test/js/specs/**/*Spec.js'
+      (file) ? `test/${file}` : 'test/browser/**/*Spec.js',
+      (file) ? undefined : 'test/common/**/*Spec.js'
     ],
     logLevel: (file) ? 'debug' : 'info'
   }, done);
@@ -160,7 +161,8 @@ gulp.task('test_node', function() {
   var file = process.argv[4];
 
   var tests = [
-    'test/js/specs/store/CacheSpec.js'
+    'test/common/**/*Spec.js',
+    'test/node/**/*Spec.js'
   ];
 
   if (file) {

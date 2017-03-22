@@ -30,7 +30,7 @@ describe('cryptobox.CryptoboxSession', function() {
       sodium = window.sodium;
       done();
     } else {
-      cryptobox = require('../../../dist/commonjs/wire-webapp-cryptobox').default;
+      cryptobox = require('../../dist/commonjs/wire-webapp-cryptobox').default;
       Proteus = require('wire-webapp-proteus');
       sodium = require('libsodium');
       done();
@@ -57,13 +57,13 @@ describe('cryptobox.CryptoboxSession', function() {
         promises.push(cryptobox_store.save_prekey(lastResortKey));
 
         Promise.all(promises)
-        .then(function() {
-          resolve(pre_keys);
-        })
-        .catch(function(error) {
-          console.log('Error in Test PreKey generation.');
-          reject(error);
-        });
+          .then(function() {
+            resolve(pre_keys);
+          })
+          .catch(function(error) {
+            console.log('Error in Test PreKey generation.');
+            reject(error);
+          });
       });
     }
 

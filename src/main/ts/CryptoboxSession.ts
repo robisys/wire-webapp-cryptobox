@@ -22,7 +22,7 @@ export class CryptoboxSession {
     });
   }
 
-  public encrypt(plaintext: string|Uint8Array): Promise<ArrayBuffer> {
+  public encrypt(plaintext: string | Uint8Array): Promise<ArrayBuffer> {
     return new Promise((resolve) => {
       this.session.encrypt(plaintext).then(function (ciphertext: Proteus.message.Envelope) {
         resolve(ciphertext.serialise());
