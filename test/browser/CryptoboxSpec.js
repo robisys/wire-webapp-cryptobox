@@ -27,11 +27,9 @@ describe('cryptobox.Cryptobox', function() {
     if (typeof window === 'object') {
       cryptobox = window.cryptobox;
       Proteus = window.Proteus;
-      bazinga64 = window.bazinga64;
       done();
     } else {
-      bazinga64 = require('bazinga64');
-      cryptobox = require('../../dist/commonjs/wire-webapp-cryptobox').default;
+      cryptobox = require('../../dist/commonjs/wire-webapp-cryptobox');
       Proteus = require('wire-webapp-proteus');
       done();
     }
