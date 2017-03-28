@@ -74,7 +74,7 @@ export class Cryptobox extends EventEmitter {
           this.logger.log(`Found existing local identity.`, identity);
           return identity;
         } else {
-          identity = Proteus.keys.IdentityKeyPair.new();
+          identity = new Proteus.keys.IdentityKeyPair();
           this.logger.warn(`No existing local identity found. Created new local identity.`, identity);
           return this.save_new_identity(identity);
         }
@@ -326,7 +326,7 @@ export class Cryptobox extends EventEmitter {
   }
 
   public serialize_prekey(prekey: Proteus.keys.PreKey): Object {
-    return Proteus.keys.PreKeyBundle.new(this.identity.public_key, prekey).serialised_json();
+    return new Proteus.keys.PreKeyBundle(this.identity.public_key, prekey).serialised_json();
   }
 
   /**

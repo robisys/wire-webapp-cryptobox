@@ -41,7 +41,7 @@ describe('cryptobox.Cryptobox', function() {
 
   describe('init', function() {
     it('initializes a Cryptobox with a given identity', function(done) {
-      var initialIdentity = Proteus.keys.IdentityKeyPair.new();
+      var initialIdentity = new Proteus.keys.IdentityKeyPair();
       var initialFingerPrint = initialIdentity.public_key.fingerprint();
 
       store.save_identity(initialIdentity)
@@ -92,10 +92,10 @@ describe('cryptobox.Cryptobox', function() {
       box.init()
         .then(function() {
           var bob = {
-            identity: Proteus.keys.IdentityKeyPair.new(),
-            prekey: Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID)
+            identity: new Proteus.keys.IdentityKeyPair(),
+            prekey: new Proteus.keys.PreKey(Proteus.keys.PreKey.MAX_PREKEY_ID)
           };
-          bob.bundle = Proteus.keys.PreKeyBundle.new(bob.identity.public_key, bob.prekey);
+          bob.bundle = new Proteus.keys.PreKeyBundle(bob.identity.public_key, bob.prekey);
 
           return Proteus.session.Session.init_from_prekey(box.identity, bob.bundle);
         })

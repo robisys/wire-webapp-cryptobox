@@ -53,7 +53,7 @@ describe('cryptobox.CryptoboxSession', function() {
         });
 
         // Generate Last Resort PreKey
-        var lastResortKey = Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID);
+        var lastResortKey = new Proteus.keys.PreKey(Proteus.keys.PreKey.MAX_PREKEY_ID);
         promises.push(cryptobox_store.save_prekey(lastResortKey));
 
         Promise.all(promises)
@@ -74,7 +74,7 @@ describe('cryptobox.CryptoboxSession', function() {
           return bob.cryptobox_store.load_prekey(preKeyId);
         }).then(function(prekey) {
           // 2. Alice takes Bob's PreKey bundle to initiate a session
-          bob.bundle = Proteus.keys.PreKeyBundle.new(bob.identity.public_key, prekey);
+          bob.bundle = new Proteus.keys.PreKeyBundle(bob.identity.public_key, prekey);
           return Proteus.session.Session.init_from_prekey(alice.identity, bob.bundle);
         }).then(function(session) {
           // 3. Alice upgrades the basic Proteus session into a high-level Cryptobox session
@@ -89,14 +89,14 @@ describe('cryptobox.CryptoboxSession', function() {
 
     beforeEach(function() {
       alice = {
-        identity: Proteus.keys.IdentityKeyPair.new(),
+        identity: new Proteus.keys.IdentityKeyPair(),
         cryptobox_store: new cryptobox.store.Cache()
       };
 
       alice.pre_key_store = new cryptobox.store.ReadOnlyStore(alice.cryptobox_store);
 
       bob = {
-        identity: Proteus.keys.IdentityKeyPair.new(),
+        identity: new Proteus.keys.IdentityKeyPair(),
         cryptobox_store: new cryptobox.store.Cache()
       };
 

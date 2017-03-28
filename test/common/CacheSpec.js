@@ -48,7 +48,7 @@ describe('cryptobox.store.Cache', function() {
 
   describe('save_identity', function() {
     it('saves the local identity', function(done) {
-      var ikp = Proteus.keys.IdentityKeyPair.new();
+      var ikp = new Proteus.keys.IdentityKeyPair();
       store.save_identity(ikp).then(function(identity) {
         expect(identity.public_key.fingerprint()).toEqual(ikp.public_key.fingerprint());
         done();

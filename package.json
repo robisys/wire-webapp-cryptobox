@@ -2,7 +2,7 @@
   "dependencies": {
     "dexie": "~1.5.1",
     "wire-webapp-lru-cache": "~2.0.0",
-    "wire-webapp-proteus": "~4.0.0"
+    "wire-webapp-proteus": "wireapp/proteus.js#libsodium-neon"
   },
   "description": "High-level API with persistent storage for Proteus.",
   "devDependencies": {

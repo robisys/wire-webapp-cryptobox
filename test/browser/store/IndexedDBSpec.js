@@ -62,7 +62,7 @@ describe('cryptobox.store.IndexedDB', function() {
         })
         .then(function(prekey) {
           // Bob sends a message (with PreKey material and ciphertext) to Alice's desktop client
-          var publicPreKeyBundle = Proteus.keys.PreKeyBundle.new(alice.desktop.identity.public_key, prekey);
+          var publicPreKeyBundle = new Proteus.keys.PreKeyBundle(alice.desktop.identity.public_key, prekey);
           return bob.desktop.encrypt('to_alice_desktop', messageFromBob, publicPreKeyBundle.serialise());
         })
         .then(function(ciphertext) {
@@ -83,7 +83,7 @@ describe('cryptobox.store.IndexedDB', function() {
           return alice.desktop.store.load_prekey(expectedNewPreKeyId);
         })
         .then(function(prekey) {
-          var publicPreKeyBundle = Proteus.keys.PreKeyBundle.new(alice.desktop.identity.public_key, prekey);
+          var publicPreKeyBundle = new Proteus.keys.PreKeyBundle(alice.desktop.identity.public_key, prekey);
           return bob.mobile.encrypt('to_alice_desktop', messageFromBob, publicPreKeyBundle.serialise());
         })
         .then(function(ciphertext) {
@@ -150,11 +150,11 @@ describe('cryptobox.store.IndexedDB', function() {
     });
 
     it('saves a session with meta data', function(done) {
-      var alice = Proteus.keys.IdentityKeyPair.new();
+      var alice = new Proteus.keys.IdentityKeyPair();
 
-      var bob = Proteus.keys.IdentityKeyPair.new();
-      var preKey = new Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID);
-      var bobPreKeyBundle = Proteus.keys.PreKeyBundle.new(bob.public_key, preKey);
+      var bob = new Proteus.keys.IdentityKeyPair();
+      var preKey = new Proteus.keys.PreKey(Proteus.keys.PreKey.MAX_PREKEY_ID);
+      var bobPreKeyBundle = new Proteus.keys.PreKeyBundle(bob.public_key, preKey);
 
       var sessionId = 'session_with_bob';
       var proteusSession;
@@ -186,9 +186,9 @@ describe('cryptobox.store.IndexedDB', function() {
       var alice = new cryptobox.Cryptobox(new cryptobox.store.IndexedDB('alice_db'), 1);
       var sessionId = 'session_with_bob';
 
-      var bob = Proteus.keys.IdentityKeyPair.new();
-      var preKey = new Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID);
-      var bobPreKeyBundle = Proteus.keys.PreKeyBundle.new(bob.public_key, preKey);
+      var bob = new Proteus.keys.IdentityKeyPair();
+      var preKey = new Proteus.keys.PreKey(Proteus.keys.PreKey.MAX_PREKEY_ID);
+      var bobPreKeyBundle = new Proteus.keys.PreKeyBundle(bob.public_key, preKey);
 
       alice.init()
         .then(function(allPreKeys) {

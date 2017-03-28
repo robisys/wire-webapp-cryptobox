@@ -9,7 +9,7 @@
     "noImplicitReturns": true,
     "removeComments": true,
     "sourceMap": false,
-    "target": "es5"
+    "target": "es2015"
   },
   "exclude": [
     "bower_components",

@@ -36,7 +36,7 @@ describe('Store Compatibility', function() {
 
   describe('local identity', function() {
     it('saves the same identity', function(done) {
-      var identity = Proteus.keys.IdentityKeyPair.new();
+      var identity = new Proteus.keys.IdentityKeyPair();
       var fingerprint = identity.public_key.fingerprint();
 
       var identifier = 'compatibility-test';
