@@ -1,8 +1,8 @@
 {
   "dependencies": {
-    "dexie": "~1.5.1",
-    "wire-webapp-lru-cache": "~2.0.0",
-    "wire-webapp-proteus": "~4.0.0"
+    "dexie": "1.5.1",
+    "wire-webapp-lru-cache": "2.0.0",
+    "wire-webapp-proteus": "5.0.1"
   },
   "description": "High-level API with persistent storage for Proteus.",
   "devDependencies": {
@@ -17,14 +17,14 @@
     "gulp-if": "^2.0.2",
     "gulp-jasmine": "^2.4.1",
     "gulp-replace": "^0.5.4",
-    "gulp-typescript": "^3.0.1",
+    "gulp-typescript": "3.1.6",
     "gulp-typings": "^2.0.4",
     "gulp-util": "^3.0.7",
     "gutil": "^1.6.4",
     "karma": "~1.5.0",
     "karma-chrome-launcher": "~2.0.0",
     "karma-jasmine": "~1.1.0",
-    "logdown": "~2.0.3",
+    "logdown": "2.2.0",
     "merge2": "^1.0.2",
     "run-sequence": "^1.2.2",
     "typescript": "^2.1.4",
@@ -45,6 +45,6 @@
     "start": "gulp",
     "test": "npm run self_test_node && gulp test"
   },
-  "typings": "dist/typings/wire-webapp-cryptobox.d.ts",
+  "types": "dist/typings/wire-webapp-cryptobox.d.ts",
   "version": "4.0.1"
 }
