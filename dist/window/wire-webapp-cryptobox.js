@@ -65,7 +65,7 @@ var cryptobox =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 11);
+/******/ 	return __webpack_require__(__webpack_require__.s = 10);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -96,24 +96,18 @@ exports.RecordAlreadyExistsError = RecordAlreadyExistsError;
 
 /***/ }),
 /* 2 */
-/***/ (function(module, exports) {
-
-module.exports = Logdown;
-
-/***/ }),
-/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Proteus = __webpack_require__(0);
-const EventEmitter = __webpack_require__(12);
-const Logdown = __webpack_require__(2);
-const LRUCache = __webpack_require__(15);
-const CryptoboxSession_1 = __webpack_require__(4);
-const InvalidPreKeyFormatError_1 = __webpack_require__(5);
-const ReadOnlyStore_1 = __webpack_require__(6);
+const EventEmitter = __webpack_require__(11);
+
+const LRUCache = __webpack_require__(14);
+const CryptoboxSession_1 = __webpack_require__(3);
+const InvalidPreKeyFormatError_1 = __webpack_require__(4);
+const ReadOnlyStore_1 = __webpack_require__(5);
 const RecordAlreadyExistsError_1 = __webpack_require__(1);
 class Cryptobox extends EventEmitter {
     constructor(cryptoBoxStore, minimumAmountOfPreKeys = 1) {
@@ -444,11 +438,11 @@ Cryptobox.TOPIC = {
     NEW_SESSION: "new-session"
 };
 exports.Cryptobox = Cryptobox;
-Cryptobox.prototype.VERSION = __webpack_require__(13).version;
+Cryptobox.prototype.VERSION = __webpack_require__(12).version;
 
 
 /***/ }),
-/* 4 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -488,7 +482,7 @@ exports.CryptoboxSession = CryptoboxSession;
 
 
 /***/ }),
-/* 5 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -508,7 +502,7 @@ exports.InvalidPreKeyFormatError = InvalidPreKeyFormatError;
 
 
 /***/ }),
-/* 6 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -550,7 +544,7 @@ exports.ReadOnlyStore = ReadOnlyStore;
 
 
 /***/ }),
-/* 7 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -570,14 +564,14 @@ exports.RecordNotFoundError = RecordNotFoundError;
 
 
 /***/ }),
-/* 8 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Proteus = __webpack_require__(0);
-const Logdown = __webpack_require__(2);
+
 class Cache {
     constructor() {
         this.prekeys = {};
@@ -696,18 +690,18 @@ exports.default = Cache;
 
 
 /***/ }),
-/* 9 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Proteus = __webpack_require__(0);
-const dexie_1 = __webpack_require__(14);
-const Logdown = __webpack_require__(2);
+const dexie_1 = __webpack_require__(13);
+
 const RecordAlreadyExistsError_1 = __webpack_require__(1);
-const RecordNotFoundError_1 = __webpack_require__(7);
-const SerialisedRecord_1 = __webpack_require__(10);
+const RecordNotFoundError_1 = __webpack_require__(6);
+const SerialisedRecord_1 = __webpack_require__(9);
 class IndexedDB {
     constructor(identifier) {
         this.prekeys = {};
@@ -949,13 +943,13 @@ exports.default = IndexedDB;
 
 
 /***/ }),
-/* 10 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Cryptobox_1 = __webpack_require__(3);
+const Cryptobox_1 = __webpack_require__(2);
 class SerialisedRecord {
     constructor(serialised, id) {
         this.created = Date.now();
@@ -968,20 +962,20 @@ exports.SerialisedRecord = SerialisedRecord;
 
 
 /***/ }),
-/* 11 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const Cache_1 = __webpack_require__(8);
-const IndexedDB_1 = __webpack_require__(9);
-const CryptoboxSession_1 = __webpack_require__(4);
-const Cryptobox_1 = __webpack_require__(3);
-const InvalidPreKeyFormatError_1 = __webpack_require__(5);
-const ReadOnlyStore_1 = __webpack_require__(6);
+const Cache_1 = __webpack_require__(7);
+const IndexedDB_1 = __webpack_require__(8);
+const CryptoboxSession_1 = __webpack_require__(3);
+const Cryptobox_1 = __webpack_require__(2);
+const InvalidPreKeyFormatError_1 = __webpack_require__(4);
+const ReadOnlyStore_1 = __webpack_require__(5);
 const RecordAlreadyExistsError_1 = __webpack_require__(1);
-const RecordNotFoundError_1 = __webpack_require__(7);
+const RecordNotFoundError_1 = __webpack_require__(6);
 module.exports = {
     Cryptobox: Cryptobox_1.Cryptobox,
     CryptoboxSession: CryptoboxSession_1.CryptoboxSession,
@@ -997,7 +991,7 @@ module.exports = {
 
 
 /***/ }),
-/* 12 */
+/* 11 */
 /***/ (function(module, exports) {
 
 // Copyright Joyent, Inc. and other Node contributors.
@@ -1305,7 +1299,7 @@ function isUndefined(arg) {
 
 
 /***/ }),
-/* 13 */
+/* 12 */
 /***/ (function(module, exports) {
 
 module.exports = {
@@ -1360,13 +1354,13 @@ module.exports = {
 };
 
 /***/ }),
-/* 14 */
+/* 13 */
 /***/ (function(module, exports) {
 
 module.exports = Dexie;
 
 /***/ }),
-/* 15 */
+/* 14 */
 /***/ (function(module, exports) {
 
 module.exports = LRUCache;
