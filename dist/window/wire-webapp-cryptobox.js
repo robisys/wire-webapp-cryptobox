@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v4.0.1 */
+/*! wire-webapp-cryptobox v5.0.0 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -65,7 +65,7 @@ var cryptobox =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 14);
+/******/ 	return __webpack_require__(__webpack_require__.s = 11);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -80,409 +80,25 @@ module.exports = Proteus;
 
 "use strict";
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-var RecordAlreadyExistsError = (function (_super) {
-    __extends(RecordAlreadyExistsError, _super);
-    function RecordAlreadyExistsError(message) {
-        var _this = _super.call(this, message) || this;
-        _this.message = message;
-        Object.setPrototypeOf(_this, RecordAlreadyExistsError.prototype);
-        _this.name = _this.constructor.name;
-        _this.message = message;
-        _this.stack = new Error().stack;
-        return _this;
+class RecordAlreadyExistsError extends Error {
+    constructor(message) {
+        super(message);
+        this.message = message;
+        Object.setPrototypeOf(this, RecordAlreadyExistsError.prototype);
+        this.name = this.constructor.name;
+        this.message = message;
+        this.stack = new Error().stack;
     }
-    return RecordAlreadyExistsError;
-}(Error));
+}
 exports.RecordAlreadyExistsError = RecordAlreadyExistsError;
 
 
 /***/ }),
 /* 2 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(module, exports) {
 
-"use strict";
-
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-var Proteus = __webpack_require__(0);
-var EventEmitter = __webpack_require__(10);
-
-var LRUCache = __webpack_require__(13);
-var CryptoboxSession_1 = __webpack_require__(3);
-var InvalidPreKeyFormatError_1 = __webpack_require__(4);
-var ReadOnlyStore_1 = __webpack_require__(5);
-var RecordAlreadyExistsError_1 = __webpack_require__(1);
-var Cryptobox = (function (_super) {
-    __extends(Cryptobox, _super);
-    function Cryptobox(cryptoBoxStore, minimumAmountOfPreKeys) {
-        if (minimumAmountOfPreKeys === void 0) { minimumAmountOfPreKeys = 1; }
-        var _this = _super.call(this) || this;
-        if (!cryptoBoxStore) {
-            throw new Error("You cannot initialize Cryptobox without a storage component.");
-        }
-        if (minimumAmountOfPreKeys > Proteus.keys.PreKey.MAX_PREKEY_ID) {
-            minimumAmountOfPreKeys = Proteus.keys.PreKey.MAX_PREKEY_ID;
-        }
-        
-        _this.cachedPreKeys = [];
-        _this.cachedSessions = new LRUCache(1000);
-        _this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
-        _this.store = cryptoBoxStore;
-        _this.pk_store = new ReadOnlyStore_1.ReadOnlyStore(_this.store);
-        var storageEngine = cryptoBoxStore.constructor.name;
-        
-        return _this;
-    }
-    Cryptobox.prototype.save_session_in_cache = function (session) {
-        
-        this.cachedSessions.set(session.id, session);
-        return session;
-    };
-    Cryptobox.prototype.load_session_from_cache = function (session_id) {
-        
-        return this.cachedSessions.get(session_id);
-    };
-    Cryptobox.prototype.remove_session_from_cache = function (session_id) {
-        
-        this.cachedSessions.delete(session_id);
-    };
-    Cryptobox.prototype.init = function () {
-        var _this = this;
-        
-        return this.store.load_identity()
-            .then(function (identity) {
-            if (identity) {
-                
-                return identity;
-            }
-            else {
-                identity = Proteus.keys.IdentityKeyPair.new();
-                
-                return _this.save_new_identity(identity);
-            }
-        })
-            .then(function (identity) {
-            _this.identity = identity;
-            
-            
-            return _this.store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
-        })
-            .then(function (lastResortPreKey) {
-            if (lastResortPreKey) {
-                
-                return lastResortPreKey;
-            }
-            else {
-                
-                return _this.new_last_resort_prekey();
-            }
-        })
-            .then(function (lastResortPreKey) {
-            _this.lastResortPreKey = lastResortPreKey;
-            
-            
-            return _this.store.load_prekeys();
-        })
-            .then(function (preKeysFromStorage) {
-            _this.cachedPreKeys = preKeysFromStorage;
-            return _this.refill_prekeys();
-        })
-            .then(function () {
-            var allPreKeys = _this.cachedPreKeys;
-            var ids = allPreKeys.map(function (preKey) { return preKey.key_id.toString(); });
-            
-            return allPreKeys;
-        });
-    };
-    Cryptobox.prototype.get_serialized_last_resort_prekey = function () {
-        var _this = this;
-        return Promise.resolve()
-            .then(function () {
-            return _this.serialize_prekey(_this.lastResortPreKey);
-        });
-    };
-    Cryptobox.prototype.get_serialized_standard_prekeys = function () {
-        var _this = this;
-        return this.store.load_prekeys()
-            .then(function (preKeysFromStorage) {
-            var serializedPreKeys = [];
-            preKeysFromStorage.forEach(function (preKey) {
-                var preKeyJson = _this.serialize_prekey(preKey);
-                if (preKeyJson.id !== Proteus.keys.PreKey.MAX_PREKEY_ID) {
-                    serializedPreKeys.push(preKeyJson);
-                }
-            });
-            return serializedPreKeys;
-        });
-    };
-    Cryptobox.prototype.publish_event = function (topic, event) {
-        this.emit(topic, event);
-        
-    };
-    Cryptobox.prototype.publish_prekeys = function (newPreKeys) {
-        if (newPreKeys.length > 0) {
-            this.publish_event(Cryptobox.TOPIC.NEW_PREKEYS, newPreKeys);
-        }
-    };
-    Cryptobox.prototype.publish_session_id = function (session) {
-        this.publish_event(Cryptobox.TOPIC.NEW_SESSION, session.id);
-    };
-    Cryptobox.prototype.refill_prekeys = function () {
-        var _this = this;
-        return Promise.resolve()
-            .then(function () {
-            var missingAmount = 0;
-            var highestId = 0;
-            if (_this.cachedPreKeys.length < _this.minimumAmountOfPreKeys) {
-                missingAmount = _this.minimumAmountOfPreKeys - _this.cachedPreKeys.length;
-                highestId = -1;
-                _this.cachedPreKeys.forEach(function (preKey) {
-                    if (preKey.key_id > highestId && preKey.key_id !== Proteus.keys.PreKey.MAX_PREKEY_ID) {
-                        highestId = preKey.key_id;
-                    }
-                });
-                highestId += 1;
-                
-            }
-            return _this.new_prekeys(highestId, missingAmount);
-        })
-            .then(function (newPreKeys) {
-            if (newPreKeys.length > 0) {
-                
-                _this.cachedPreKeys = _this.cachedPreKeys.concat(newPreKeys);
-            }
-            return newPreKeys;
-        });
-    };
-    Cryptobox.prototype.save_new_identity = function (identity) {
-        var _this = this;
-        return Promise.resolve()
-            .then(function () {
-            return _this.store.delete_all();
-        })
-            .then(function () {
-            
-            return _this.store.save_identity(identity);
-        });
-    };
-    Cryptobox.prototype.session_from_prekey = function (session_id, pre_key_bundle) {
-        var _this = this;
-        var cachedSession = this.load_session_from_cache(session_id);
-        if (cachedSession) {
-            return Promise.resolve(cachedSession);
-        }
-        return Promise.resolve()
-            .then(function () {
-            var bundle;
-            try {
-                bundle = Proteus.keys.PreKeyBundle.deserialise(pre_key_bundle);
-            }
-            catch (error) {
-                throw new InvalidPreKeyFormatError_1.InvalidPreKeyFormatError("PreKey bundle for session \"" + session_id + "\" has an unsupported format.");
-            }
-            return Proteus.session.Session.init_from_prekey(_this.identity, bundle)
-                .then(function (session) {
-                var cryptobox_session = new CryptoboxSession_1.CryptoboxSession(session_id, _this.pk_store, session);
-                return _this.session_save(cryptobox_session);
-            })
-                .catch(function (error) {
-                if (error instanceof RecordAlreadyExistsError_1.RecordAlreadyExistsError) {
-                    
-                    return _this.session_load(session_id);
-                }
-                else {
-                    throw error;
-                }
-            });
-        });
-    };
-    Cryptobox.prototype.session_from_message = function (session_id, envelope) {
-        var _this = this;
-        var env = Proteus.message.Envelope.deserialise(envelope);
-        var returnTuple;
-        return Proteus.session.Session.init_from_message(this.identity, this.pk_store, env)
-            .then(function (tuple) {
-            var session = tuple[0];
-            var decrypted = tuple[1];
-            var cryptoBoxSession = new CryptoboxSession_1.CryptoboxSession(session_id, _this.pk_store, session);
-            returnTuple = [cryptoBoxSession, decrypted];
-            return returnTuple;
-        });
-    };
-    Cryptobox.prototype.session_load = function (session_id) {
-        var _this = this;
-        
-        var cachedSession = this.load_session_from_cache(session_id);
-        if (cachedSession) {
-            return Promise.resolve(cachedSession);
-        }
-        return Promise.resolve()
-            .then(function () {
-            return _this.store.read_session(_this.identity, session_id);
-        })
-            .then(function (session) {
-            return new CryptoboxSession_1.CryptoboxSession(session_id, _this.pk_store, session);
-        })
-            .then(function (session) {
-            return _this.save_session_in_cache(session);
-        });
-    };
-    Cryptobox.prototype.session_cleanup = function (session) {
-        var _this = this;
-        var prekey_deletions = this.pk_store.prekeys.map(function (preKeyId) {
-            return _this.store.delete_prekey(preKeyId);
-        });
-        return Promise.all(prekey_deletions)
-            .then(function (deletedPreKeyIds) {
-            deletedPreKeyIds.forEach(function (id) {
-                _this.cachedPreKeys = _this.cachedPreKeys.filter(function (preKey) { return preKey.key_id !== id; });
-            });
-            _this.pk_store.release_prekeys(deletedPreKeyIds);
-            return _this.refill_prekeys();
-        })
-            .then(function (newPreKeys) {
-            _this.publish_prekeys(newPreKeys);
-            return _this.save_session_in_cache(session);
-        })
-            .then(function () {
-            return session;
-        });
-    };
-    Cryptobox.prototype.session_save = function (session) {
-        var _this = this;
-        return this.store.create_session(session.id, session.session)
-            .then(function () {
-            return _this.session_cleanup(session);
-        });
-    };
-    Cryptobox.prototype.session_update = function (session) {
-        var _this = this;
-        return this.store.update_session(session.id, session.session)
-            .then(function () {
-            return _this.session_cleanup(session);
-        });
-    };
-    Cryptobox.prototype.session_delete = function (session_id) {
-        this.remove_session_from_cache(session_id);
-        return this.store.delete_session(session_id);
-    };
-    Cryptobox.prototype.new_last_resort_prekey = function () {
-        var _this = this;
-        return Promise.resolve()
-            .then(function () {
-            _this.lastResortPreKey = Proteus.keys.PreKey.last_resort();
-            return _this.store.save_prekeys([_this.lastResortPreKey]);
-        })
-            .then(function (preKeys) {
-            return preKeys[0];
-        });
-    };
-    Cryptobox.prototype.serialize_prekey = function (prekey) {
-        return Proteus.keys.PreKeyBundle.new(this.identity.public_key, prekey).serialised_json();
-    };
-    Cryptobox.prototype.new_prekeys = function (start, size) {
-        var _this = this;
-        if (size === void 0) { size = 0; }
-        if (size === 0) {
-            return Promise.resolve([]);
-        }
-        return Promise.resolve()
-            .then(function () {
-            return Proteus.keys.PreKey.generate_prekeys(start, size);
-        })
-            .then(function (newPreKeys) {
-            return _this.store.save_prekeys(newPreKeys);
-        });
-    };
-    Cryptobox.prototype.encrypt = function (session_id, payload, pre_key_bundle) {
-        var _this = this;
-        var encryptedBuffer;
-        var loadedSession;
-        return Promise.resolve()
-            .then(function () {
-            if (pre_key_bundle) {
-                return _this.session_from_prekey(session_id, pre_key_bundle);
-            }
-            else {
-                return _this.session_load(session_id);
-            }
-        })
-            .then(function (session) {
-            loadedSession = session;
-            return loadedSession.encrypt(payload);
-        })
-            .then(function (encrypted) {
-            encryptedBuffer = encrypted;
-            return _this.session_update(loadedSession);
-        })
-            .then(function () {
-            return encryptedBuffer;
-        });
-    };
-    Cryptobox.prototype.decrypt = function (session_id, ciphertext) {
-        var _this = this;
-        var is_new_session = false;
-        var message;
-        var session;
-        return this.session_load(session_id)
-            .catch(function () {
-            return _this.session_from_message(session_id, ciphertext);
-        })
-            .then(function (value) {
-            var decrypted_message;
-            if (value[0] !== undefined) {
-                session = value[0], decrypted_message = value[1];
-                _this.publish_session_id(session);
-                is_new_session = true;
-                return decrypted_message;
-            }
-            else {
-                session = value;
-                return session.decrypt(ciphertext);
-            }
-        })
-            .then(function (decrypted_message) {
-            message = decrypted_message;
-            if (is_new_session) {
-                return _this.session_save(session);
-            }
-            else {
-                return _this.session_update(session);
-            }
-        })
-            .then(function () {
-            return message;
-        });
-    };
-    return Cryptobox;
-}(EventEmitter));
-Cryptobox.TOPIC = {
-    NEW_PREKEYS: "new-prekeys",
-    NEW_SESSION: "new-session"
-};
-exports.Cryptobox = Cryptobox;
-Cryptobox.prototype.VERSION = __webpack_require__(11).version;
-
+module.exports = Logdown;
 
 /***/ }),
 /* 3 */
@@ -491,40 +107,344 @@ Cryptobox.prototype.VERSION = __webpack_require__(11).version;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var Proteus = __webpack_require__(0);
-var CryptoboxSession = (function () {
-    function CryptoboxSession(id, pk_store, session) {
-        this.id = id;
-        this.pk_store = pk_store;
-        this.session = session;
-        Object.freeze(this);
+const Proteus = __webpack_require__(0);
+const EventEmitter = __webpack_require__(12);
+const Logdown = __webpack_require__(2);
+const LRUCache = __webpack_require__(15);
+const CryptoboxSession_1 = __webpack_require__(4);
+const InvalidPreKeyFormatError_1 = __webpack_require__(5);
+const ReadOnlyStore_1 = __webpack_require__(6);
+const RecordAlreadyExistsError_1 = __webpack_require__(1);
+class Cryptobox extends EventEmitter {
+    constructor(cryptoBoxStore, minimumAmountOfPreKeys = 1) {
+        super();
+        if (!cryptoBoxStore) {
+            throw new Error(`You cannot initialize Cryptobox without a storage component.`);
+        }
+        if (minimumAmountOfPreKeys > Proteus.keys.PreKey.MAX_PREKEY_ID) {
+            minimumAmountOfPreKeys = Proteus.keys.PreKey.MAX_PREKEY_ID;
+        }
+        
+        this.cachedPreKeys = [];
+        this.cachedSessions = new LRUCache(1000);
+        this.minimumAmountOfPreKeys = minimumAmountOfPreKeys;
+        this.store = cryptoBoxStore;
+        this.pk_store = new ReadOnlyStore_1.ReadOnlyStore(this.store);
+        let storageEngine = cryptoBoxStore.constructor.name;
+        
     }
-    CryptoboxSession.prototype.decrypt = function (ciphertext) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            var envelope = Proteus.message.Envelope.deserialise(ciphertext);
-            _this.session.decrypt(_this.pk_store, envelope).then(function (plaintext) {
-                resolve(plaintext);
-            }).catch(reject);
+    save_session_in_cache(session) {
+        
+        this.cachedSessions.set(session.id, session);
+        return session;
+    }
+    load_session_from_cache(session_id) {
+        
+        return this.cachedSessions.get(session_id);
+    }
+    remove_session_from_cache(session_id) {
+        
+        this.cachedSessions.delete(session_id);
+    }
+    init() {
+        
+        return this.store.load_identity()
+            .then((identity) => {
+            if (identity) {
+                
+                return identity;
+            }
+            else {
+                identity = Proteus.keys.IdentityKeyPair.new();
+                
+                return this.save_new_identity(identity);
+            }
+        })
+            .then((identity) => {
+            this.identity = identity;
+            
+            
+            return this.store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
+        })
+            .then((lastResortPreKey) => {
+            if (lastResortPreKey) {
+                
+                return lastResortPreKey;
+            }
+            else {
+                
+                return this.new_last_resort_prekey();
+            }
+        })
+            .then((lastResortPreKey) => {
+            this.lastResortPreKey = lastResortPreKey;
+            
+            
+            return this.store.load_prekeys();
+        })
+            .then((preKeysFromStorage) => {
+            this.cachedPreKeys = preKeysFromStorage;
+            return this.refill_prekeys();
+        })
+            .then(() => {
+            let allPreKeys = this.cachedPreKeys;
+            let ids = allPreKeys.map(preKey => preKey.key_id.toString());
+            
+            return allPreKeys;
         });
-    };
-    CryptoboxSession.prototype.encrypt = function (plaintext) {
-        var _this = this;
-        return new Promise(function (resolve) {
-            _this.session.encrypt(plaintext).then(function (ciphertext) {
-                resolve(ciphertext.serialise());
+    }
+    get_serialized_last_resort_prekey() {
+        return Promise.resolve()
+            .then(() => {
+            return this.serialize_prekey(this.lastResortPreKey);
+        });
+    }
+    get_serialized_standard_prekeys() {
+        return this.store.load_prekeys()
+            .then((preKeysFromStorage) => {
+            let serializedPreKeys = [];
+            preKeysFromStorage.forEach((preKey) => {
+                let preKeyJson = this.serialize_prekey(preKey);
+                if (preKeyJson.id !== Proteus.keys.PreKey.MAX_PREKEY_ID) {
+                    serializedPreKeys.push(preKeyJson);
+                }
+            });
+            return serializedPreKeys;
+        });
+    }
+    publish_event(topic, event) {
+        this.emit(topic, event);
+        
+    }
+    publish_prekeys(newPreKeys) {
+        if (newPreKeys.length > 0) {
+            this.publish_event(Cryptobox.TOPIC.NEW_PREKEYS, newPreKeys);
+        }
+    }
+    publish_session_id(session) {
+        this.publish_event(Cryptobox.TOPIC.NEW_SESSION, session.id);
+    }
+    refill_prekeys() {
+        return Promise.resolve()
+            .then(() => {
+            let missingAmount = 0;
+            let highestId = 0;
+            if (this.cachedPreKeys.length < this.minimumAmountOfPreKeys) {
+                missingAmount = this.minimumAmountOfPreKeys - this.cachedPreKeys.length;
+                highestId = -1;
+                this.cachedPreKeys.forEach((preKey) => {
+                    if (preKey.key_id > highestId && preKey.key_id !== Proteus.keys.PreKey.MAX_PREKEY_ID) {
+                        highestId = preKey.key_id;
+                    }
+                });
+                highestId += 1;
+                
+            }
+            return this.new_prekeys(highestId, missingAmount);
+        })
+            .then((newPreKeys) => {
+            if (newPreKeys.length > 0) {
+                
+                this.cachedPreKeys = this.cachedPreKeys.concat(newPreKeys);
+            }
+            return newPreKeys;
+        });
+    }
+    save_new_identity(identity) {
+        return Promise.resolve()
+            .then(() => {
+            return this.store.delete_all();
+        })
+            .then(() => {
+            
+            return this.store.save_identity(identity);
+        });
+    }
+    session_from_prekey(session_id, pre_key_bundle) {
+        let cachedSession = this.load_session_from_cache(session_id);
+        if (cachedSession) {
+            return Promise.resolve(cachedSession);
+        }
+        return Promise.resolve()
+            .then(() => {
+            let bundle;
+            try {
+                bundle = Proteus.keys.PreKeyBundle.deserialise(pre_key_bundle);
+            }
+            catch (error) {
+                throw new InvalidPreKeyFormatError_1.InvalidPreKeyFormatError(`PreKey bundle for session "${session_id}" has an unsupported format.`);
+            }
+            return Proteus.session.Session.init_from_prekey(this.identity, bundle)
+                .then((session) => {
+                let cryptobox_session = new CryptoboxSession_1.CryptoboxSession(session_id, this.pk_store, session);
+                return this.session_save(cryptobox_session);
+            })
+                .catch((error) => {
+                if (error instanceof RecordAlreadyExistsError_1.RecordAlreadyExistsError) {
+                    
+                    return this.session_load(session_id);
+                }
+                else {
+                    throw error;
+                }
             });
         });
-    };
-    CryptoboxSession.prototype.fingerprint_local = function () {
-        return this.session.local_identity.public_key.fingerprint();
-    };
-    CryptoboxSession.prototype.fingerprint_remote = function () {
-        return this.session.remote_identity.fingerprint();
-    };
-    return CryptoboxSession;
-}());
-exports.CryptoboxSession = CryptoboxSession;
+    }
+    session_from_message(session_id, envelope) {
+        let env = Proteus.message.Envelope.deserialise(envelope);
+        let returnTuple;
+        return Proteus.session.Session.init_from_message(this.identity, this.pk_store, env)
+            .then((tuple) => {
+            let session = tuple[0];
+            let decrypted = tuple[1];
+            let cryptoBoxSession = new CryptoboxSession_1.CryptoboxSession(session_id, this.pk_store, session);
+            returnTuple = [cryptoBoxSession, decrypted];
+            return returnTuple;
+        });
+    }
+    session_load(session_id) {
+        
+        let cachedSession = this.load_session_from_cache(session_id);
+        if (cachedSession) {
+            return Promise.resolve(cachedSession);
+        }
+        return Promise.resolve()
+            .then(() => {
+            return this.store.read_session(this.identity, session_id);
+        })
+            .then((session) => {
+            return new CryptoboxSession_1.CryptoboxSession(session_id, this.pk_store, session);
+        })
+            .then((session) => {
+            return this.save_session_in_cache(session);
+        });
+    }
+    session_cleanup(session) {
+        let prekey_deletions = this.pk_store.prekeys.map((preKeyId) => {
+            return this.store.delete_prekey(preKeyId);
+        });
+        return Promise.all(prekey_deletions)
+            .then((deletedPreKeyIds) => {
+            deletedPreKeyIds.forEach((id) => {
+                this.cachedPreKeys = this.cachedPreKeys.filter((preKey) => preKey.key_id !== id);
+            });
+            this.pk_store.release_prekeys(deletedPreKeyIds);
+            return this.refill_prekeys();
+        })
+            .then((newPreKeys) => {
+            this.publish_prekeys(newPreKeys);
+            return this.save_session_in_cache(session);
+        })
+            .then(() => {
+            return session;
+        });
+    }
+    session_save(session) {
+        return this.store.create_session(session.id, session.session)
+            .then(() => {
+            return this.session_cleanup(session);
+        });
+    }
+    session_update(session) {
+        return this.store.update_session(session.id, session.session)
+            .then(() => {
+            return this.session_cleanup(session);
+        });
+    }
+    session_delete(session_id) {
+        this.remove_session_from_cache(session_id);
+        return this.store.delete_session(session_id);
+    }
+    new_last_resort_prekey() {
+        return Promise.resolve()
+            .then(() => {
+            this.lastResortPreKey = Proteus.keys.PreKey.last_resort();
+            return this.store.save_prekeys([this.lastResortPreKey]);
+        })
+            .then((preKeys) => {
+            return preKeys[0];
+        });
+    }
+    serialize_prekey(prekey) {
+        return Proteus.keys.PreKeyBundle.new(this.identity.public_key, prekey).serialised_json();
+    }
+    new_prekeys(start, size = 0) {
+        if (size === 0) {
+            return Promise.resolve([]);
+        }
+        return Promise.resolve()
+            .then(() => {
+            return Proteus.keys.PreKey.generate_prekeys(start, size);
+        })
+            .then((newPreKeys) => {
+            return this.store.save_prekeys(newPreKeys);
+        });
+    }
+    encrypt(session_id, payload, pre_key_bundle) {
+        let encryptedBuffer;
+        let loadedSession;
+        return Promise.resolve()
+            .then(() => {
+            if (pre_key_bundle) {
+                return this.session_from_prekey(session_id, pre_key_bundle);
+            }
+            else {
+                return this.session_load(session_id);
+            }
+        })
+            .then((session) => {
+            loadedSession = session;
+            return loadedSession.encrypt(payload);
+        })
+            .then((encrypted) => {
+            encryptedBuffer = encrypted;
+            return this.session_update(loadedSession);
+        })
+            .then(function () {
+            return encryptedBuffer;
+        });
+    }
+    decrypt(session_id, ciphertext) {
+        let is_new_session = false;
+        let message;
+        let session;
+        return this.session_load(session_id)
+            .catch(() => {
+            return this.session_from_message(session_id, ciphertext);
+        })
+            .then((value) => {
+            let decrypted_message;
+            if (value[0] !== undefined) {
+                [session, decrypted_message] = value;
+                this.publish_session_id(session);
+                is_new_session = true;
+                return decrypted_message;
+            }
+            else {
+                session = value;
+                return session.decrypt(ciphertext);
+            }
+        })
+            .then((decrypted_message) => {
+            message = decrypted_message;
+            if (is_new_session) {
+                return this.session_save(session);
+            }
+            else {
+                return this.session_update(session);
+            }
+        })
+            .then(() => {
+            return message;
+        });
+    }
+}
+Cryptobox.TOPIC = {
+    NEW_PREKEYS: "new-prekeys",
+    NEW_SESSION: "new-session"
+};
+exports.Cryptobox = Cryptobox;
+Cryptobox.prototype.VERSION = __webpack_require__(13).version;
 
 
 /***/ }),
@@ -533,31 +453,38 @@ exports.CryptoboxSession = CryptoboxSession;
 
 "use strict";
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-var InvalidPreKeyFormatError = (function (_super) {
-    __extends(InvalidPreKeyFormatError, _super);
-    function InvalidPreKeyFormatError(message) {
-        var _this = _super.call(this, message) || this;
-        _this.message = message;
-        Object.setPrototypeOf(_this, InvalidPreKeyFormatError.prototype);
-        _this.name = _this.constructor.name;
-        _this.message = message;
-        _this.stack = new Error().stack;
-        return _this;
+const Proteus = __webpack_require__(0);
+class CryptoboxSession {
+    constructor(id, pk_store, session) {
+        this.id = id;
+        this.pk_store = pk_store;
+        this.session = session;
+        Object.freeze(this);
     }
-    return InvalidPreKeyFormatError;
-}(Error));
-exports.InvalidPreKeyFormatError = InvalidPreKeyFormatError;
+    decrypt(ciphertext) {
+        return new Promise((resolve, reject) => {
+            let envelope = Proteus.message.Envelope.deserialise(ciphertext);
+            this.session.decrypt(this.pk_store, envelope).then(function (plaintext) {
+                resolve(plaintext);
+            }).catch(reject);
+        });
+    }
+    encrypt(plaintext) {
+        return new Promise((resolve) => {
+            this.session.encrypt(plaintext).then(function (ciphertext) {
+                resolve(ciphertext.serialise());
+            });
+        });
+    }
+    fingerprint_local() {
+        return this.session.local_identity.public_key.fingerprint();
+    }
+    fingerprint_remote() {
+        return this.session.remote_identity.fingerprint();
+    }
+}
+exports.CryptoboxSession = CryptoboxSession;
 
 
 /***/ }),
@@ -566,55 +493,18 @@ exports.InvalidPreKeyFormatError = InvalidPreKeyFormatError;
 
 "use strict";
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-var Proteus = __webpack_require__(0);
-var ReadOnlyStore = (function (_super) {
-    __extends(ReadOnlyStore, _super);
-    function ReadOnlyStore(store) {
-        var _this = _super.call(this) || this;
-        _this.store = store;
-        _this.prekeys = [];
-        return _this;
+class InvalidPreKeyFormatError extends Error {
+    constructor(message) {
+        super(message);
+        this.message = message;
+        Object.setPrototypeOf(this, InvalidPreKeyFormatError.prototype);
+        this.name = this.constructor.name;
+        this.message = message;
+        this.stack = new Error().stack;
     }
-    ReadOnlyStore.prototype.release_prekeys = function (deletedPreKeyIds) {
-        var _this = this;
-        deletedPreKeyIds.forEach(function (id) {
-            var index = _this.prekeys.indexOf(id);
-            if (index > -1) {
-                _this.prekeys.splice(index, 1);
-            }
-        });
-    };
-    ReadOnlyStore.prototype.get_prekey = function (prekey_id) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            if (_this.prekeys.indexOf(prekey_id) !== -1) {
-                reject(new Error("PreKey \"" + prekey_id + "\" not found."));
-            }
-            else {
-                _this.store.load_prekey(prekey_id).then(function (pk) {
-                    resolve(pk);
-                });
-            }
-        });
-    };
-    ReadOnlyStore.prototype.remove = function (prekey_id) {
-        this.prekeys.push(prekey_id);
-        return Promise.resolve(prekey_id);
-    };
-    return ReadOnlyStore;
-}(Proteus.session.PreKeyStore));
-exports.ReadOnlyStore = ReadOnlyStore;
+}
+exports.InvalidPreKeyFormatError = InvalidPreKeyFormatError;
 
 
 /***/ }),
@@ -623,31 +513,40 @@ exports.ReadOnlyStore = ReadOnlyStore;
 
 "use strict";
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-var RecordNotFoundError = (function (_super) {
-    __extends(RecordNotFoundError, _super);
-    function RecordNotFoundError(message) {
-        var _this = _super.call(this, message) || this;
-        _this.message = message;
-        Object.setPrototypeOf(_this, RecordNotFoundError.prototype);
-        _this.name = _this.constructor.name;
-        _this.message = message;
-        _this.stack = new Error().stack;
-        return _this;
+const Proteus = __webpack_require__(0);
+class ReadOnlyStore extends Proteus.session.PreKeyStore {
+    constructor(store) {
+        super();
+        this.store = store;
+        this.prekeys = [];
     }
-    return RecordNotFoundError;
-}(Error));
-exports.RecordNotFoundError = RecordNotFoundError;
+    release_prekeys(deletedPreKeyIds) {
+        deletedPreKeyIds.forEach((id) => {
+            let index = this.prekeys.indexOf(id);
+            if (index > -1) {
+                this.prekeys.splice(index, 1);
+            }
+        });
+    }
+    get_prekey(prekey_id) {
+        return new Promise((resolve, reject) => {
+            if (this.prekeys.indexOf(prekey_id) !== -1) {
+                reject(new Error(`PreKey "${prekey_id}" not found.`));
+            }
+            else {
+                this.store.load_prekey(prekey_id).then(function (pk) {
+                    resolve(pk);
+                });
+            }
+        });
+    }
+    remove(prekey_id) {
+        this.prekeys.push(prekey_id);
+        return Promise.resolve(prekey_id);
+    }
+}
+exports.ReadOnlyStore = ReadOnlyStore;
 
 
 /***/ }),
@@ -657,135 +556,17 @@ exports.RecordNotFoundError = RecordNotFoundError;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var Proteus = __webpack_require__(0);
-
-var Cache = (function () {
-    function Cache() {
-        this.prekeys = {};
-        this.sessions = {};
-        
+class RecordNotFoundError extends Error {
+    constructor(message) {
+        super(message);
+        this.message = message;
+        Object.setPrototypeOf(this, RecordNotFoundError.prototype);
+        this.name = this.constructor.name;
+        this.message = message;
+        this.stack = new Error().stack;
     }
-    Cache.prototype.delete_all = function () {
-        var _this = this;
-        return new Promise(function (resolve) {
-            _this.identity = undefined;
-            _this.prekeys = {};
-            _this.sessions = {};
-            resolve(true);
-        });
-    };
-    Cache.prototype.delete_prekey = function (prekey_id) {
-        var _this = this;
-        return new Promise(function (resolve) {
-            delete _this.prekeys[prekey_id];
-            
-            resolve(prekey_id);
-        });
-    };
-    Cache.prototype.delete_session = function (session_id) {
-        var _this = this;
-        return new Promise(function (resolve) {
-            delete _this.sessions[session_id];
-            resolve(session_id);
-        });
-    };
-    Cache.prototype.load_identity = function () {
-        var _this = this;
-        return new Promise(function (resolve) {
-            if (_this.identity) {
-                resolve(_this.identity);
-            }
-            else {
-                resolve(undefined);
-            }
-        });
-    };
-    Cache.prototype.load_prekey = function (prekey_id) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            var serialised = _this.prekeys[prekey_id];
-            if (serialised) {
-                resolve(Proteus.keys.PreKey.deserialise(serialised));
-            }
-            else {
-                resolve(undefined);
-            }
-        });
-    };
-    Cache.prototype.load_prekeys = function () {
-        var _this = this;
-        var prekey_promises = [];
-        Object.keys(this.prekeys).forEach(function (key) {
-            var prekey_id = parseInt(key, 10);
-            var promise = _this.load_prekey(prekey_id);
-            prekey_promises.push(promise);
-        });
-        return Promise.all(prekey_promises);
-    };
-    Cache.prototype.read_session = function (identity, session_id) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            var serialised = _this.sessions[session_id];
-            if (serialised) {
-                resolve(Proteus.session.Session.deserialise(identity, serialised));
-            }
-            else {
-                reject(new Error("Session with ID \"" + session_id + "\" not found."));
-            }
-        });
-    };
-    Cache.prototype.save_identity = function (identity) {
-        var _this = this;
-        return new Promise(function (resolve) {
-            _this.identity = identity;
-            resolve(_this.identity);
-        });
-    };
-    Cache.prototype.save_prekey = function (preKey) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            try {
-                _this.prekeys[preKey.key_id] = preKey.serialise();
-                
-            }
-            catch (error) {
-                return reject(new Error("PreKey (no. " + preKey.key_id + ") serialization problem \"" + error.message + "\" at \"" + error.stack + "\"."));
-            }
-            resolve(preKey);
-        });
-    };
-    Cache.prototype.save_prekeys = function (preKeys) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            var savePromises = [];
-            preKeys.forEach(function (preKey) {
-                savePromises.push(_this.save_prekey(preKey));
-            });
-            Promise.all(savePromises)
-                .then(function () {
-                resolve(preKeys);
-            })
-                .catch(reject);
-        });
-    };
-    Cache.prototype.create_session = function (session_id, session) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            try {
-                _this.sessions[session_id] = session.serialise();
-            }
-            catch (error) {
-                return reject(new Error("Session serialization problem: \"" + error.message + "\""));
-            }
-            resolve(session);
-        });
-    };
-    Cache.prototype.update_session = function (session_id, session) {
-        return this.create_session(session_id, session);
-    };
-    return Cache;
-}());
-exports.default = Cache;
+}
+exports.RecordNotFoundError = RecordNotFoundError;
 
 
 /***/ }),
@@ -795,15 +576,140 @@ exports.default = Cache;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var Proteus = __webpack_require__(0);
-var dexie_1 = __webpack_require__(12);
+const Proteus = __webpack_require__(0);
+const Logdown = __webpack_require__(2);
+class Cache {
+    constructor() {
+        this.prekeys = {};
+        this.sessions = {};
+        
+    }
+    delete_all() {
+        return new Promise((resolve) => {
+            this.identity = undefined;
+            this.prekeys = {};
+            this.sessions = {};
+            resolve(true);
+        });
+    }
+    delete_prekey(prekey_id) {
+        return new Promise((resolve) => {
+            delete this.prekeys[prekey_id];
+            
+            resolve(prekey_id);
+        });
+    }
+    delete_session(session_id) {
+        return new Promise((resolve) => {
+            delete this.sessions[session_id];
+            resolve(session_id);
+        });
+    }
+    load_identity() {
+        return new Promise((resolve) => {
+            if (this.identity) {
+                resolve(this.identity);
+            }
+            else {
+                resolve(undefined);
+            }
+        });
+    }
+    load_prekey(prekey_id) {
+        return new Promise((resolve, reject) => {
+            let serialised = this.prekeys[prekey_id];
+            if (serialised) {
+                resolve(Proteus.keys.PreKey.deserialise(serialised));
+            }
+            else {
+                resolve(undefined);
+            }
+        });
+    }
+    load_prekeys() {
+        let prekey_promises = [];
+        Object.keys(this.prekeys).forEach((key) => {
+            let prekey_id = parseInt(key, 10);
+            let promise = this.load_prekey(prekey_id);
+            prekey_promises.push(promise);
+        });
+        return Promise.all(prekey_promises);
+    }
+    read_session(identity, session_id) {
+        return new Promise((resolve, reject) => {
+            let serialised = this.sessions[session_id];
+            if (serialised) {
+                resolve(Proteus.session.Session.deserialise(identity, serialised));
+            }
+            else {
+                reject(new Error(`Session with ID "${session_id}" not found.`));
+            }
+        });
+    }
+    save_identity(identity) {
+        return new Promise((resolve) => {
+            this.identity = identity;
+            resolve(this.identity);
+        });
+    }
+    save_prekey(preKey) {
+        return new Promise((resolve, reject) => {
+            try {
+                this.prekeys[preKey.key_id] = preKey.serialise();
+                
+            }
+            catch (error) {
+                return reject(new Error(`PreKey (no. ${preKey.key_id}) serialization problem "${error.message}" at "${error.stack}".`));
+            }
+            resolve(preKey);
+        });
+    }
+    save_prekeys(preKeys) {
+        return new Promise((resolve, reject) => {
+            let savePromises = [];
+            preKeys.forEach((preKey) => {
+                savePromises.push(this.save_prekey(preKey));
+            });
+            Promise.all(savePromises)
+                .then(() => {
+                resolve(preKeys);
+            })
+                .catch(reject);
+        });
+    }
+    create_session(session_id, session) {
+        return new Promise((resolve, reject) => {
+            try {
+                this.sessions[session_id] = session.serialise();
+            }
+            catch (error) {
+                return reject(new Error(`Session serialization problem: "${error.message}"`));
+            }
+            resolve(session);
+        });
+    }
+    update_session(session_id, session) {
+        return this.create_session(session_id, session);
+    }
+}
+exports.default = Cache;
 
-var RecordAlreadyExistsError_1 = __webpack_require__(1);
-var RecordNotFoundError_1 = __webpack_require__(6);
-var SerialisedRecord_1 = __webpack_require__(9);
-var IndexedDB = (function () {
-    function IndexedDB(identifier) {
-        var _this = this;
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const Proteus = __webpack_require__(0);
+const dexie_1 = __webpack_require__(14);
+const Logdown = __webpack_require__(2);
+const RecordAlreadyExistsError_1 = __webpack_require__(1);
+const RecordNotFoundError_1 = __webpack_require__(7);
+const SerialisedRecord_1 = __webpack_require__(10);
+class IndexedDB {
+    constructor(identifier) {
         this.prekeys = {};
         this.TABLE = {
             LOCAL_IDENTITY: "keys",
@@ -813,107 +719,101 @@ var IndexedDB = (function () {
         this.localIdentityKey = 'local_identity';
         
         if (typeof indexedDB === "undefined") {
-            var warning = "IndexedDB isn't supported by your platform.";
+            let warning = `IndexedDB isn't supported by your platform.`;
             throw new Error(warning);
         }
         if (typeof identifier === 'string') {
-            var schema = {};
+            let schema = {};
             schema[this.TABLE.LOCAL_IDENTITY] = '';
             schema[this.TABLE.PRE_KEYS] = '';
             schema[this.TABLE.SESSIONS] = '';
-            this.db = new dexie_1.default("cryptobox@" + identifier);
+            this.db = new dexie_1.default(`cryptobox@${identifier}`);
             this.db.version(1).stores(schema);
         }
         else {
             this.db = identifier;
             
         }
-        this.db.on('blocked', function (event) {
+        this.db.on('blocked', (event) => {
             
-            _this.db.close();
+            this.db.close();
         });
     }
-    IndexedDB.prototype.create = function (store_name, primary_key, entity) {
+    create(store_name, primary_key, entity) {
         
         return this.db[store_name].add(entity, primary_key);
-    };
-    IndexedDB.prototype.read = function (store_name, primary_key) {
-        var _this = this;
+    }
+    read(store_name, primary_key) {
         return Promise.resolve()
-            .then(function () {
+            .then(() => {
             
-            return _this.db[store_name].get(primary_key);
+            return this.db[store_name].get(primary_key);
         })
-            .then(function (record) {
+            .then((record) => {
             if (record) {
                 
                 return record;
             }
             else {
-                var message = "Record \"" + primary_key + "\" from object store \"" + store_name + "\" could not be found.";
+                let message = `Record "${primary_key}" from object store "${store_name}" could not be found.`;
                 
                 throw new RecordNotFoundError_1.RecordNotFoundError(message);
             }
         });
-    };
-    IndexedDB.prototype.update = function (store_name, primary_key, changes) {
+    }
+    update(store_name, primary_key, changes) {
         
         return this.db[store_name].update(primary_key, changes);
-    };
-    IndexedDB.prototype.delete = function (store_name, primary_key) {
-        var _this = this;
+    }
+    delete(store_name, primary_key) {
         return Promise.resolve()
-            .then(function () {
-            return _this.db[store_name].delete(primary_key);
+            .then(() => {
+            return this.db[store_name].delete(primary_key);
         })
-            .then(function () {
+            .then(() => {
             
             return primary_key;
         });
-    };
-    IndexedDB.prototype.delete_all = function () {
-        var _this = this;
+    }
+    delete_all() {
         return Promise.resolve()
-            .then(function () {
-            return _this.db[_this.TABLE.LOCAL_IDENTITY].clear();
+            .then(() => {
+            return this.db[this.TABLE.LOCAL_IDENTITY].clear();
         })
-            .then(function () {
+            .then(() => {
             
-            return _this.db[_this.TABLE.PRE_KEYS].clear();
+            return this.db[this.TABLE.PRE_KEYS].clear();
         })
-            .then(function () {
+            .then(() => {
             
-            return _this.db[_this.TABLE.SESSIONS].clear();
+            return this.db[this.TABLE.SESSIONS].clear();
         })
-            .then(function () {
+            .then(() => {
             
             return true;
         });
-    };
-    IndexedDB.prototype.delete_prekey = function (prekey_id) {
-        var _this = this;
-        return new Promise(function (resolve) {
-            _this.delete(_this.TABLE.PRE_KEYS, prekey_id.toString())
+    }
+    delete_prekey(prekey_id) {
+        return new Promise((resolve) => {
+            this.delete(this.TABLE.PRE_KEYS, prekey_id.toString())
                 .then(function () {
                 resolve(prekey_id);
             });
         });
-    };
-    IndexedDB.prototype.delete_session = function (session_id) {
-        var _this = this;
-        return new Promise(function (resolve) {
-            _this.delete(_this.TABLE.SESSIONS, session_id)
-                .then(function (primary_key) {
+    }
+    delete_session(session_id) {
+        return new Promise((resolve) => {
+            this.delete(this.TABLE.SESSIONS, session_id)
+                .then((primary_key) => {
                 resolve(primary_key);
             });
         });
-    };
-    IndexedDB.prototype.load_identity = function () {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            _this.read(_this.TABLE.LOCAL_IDENTITY, _this.localIdentityKey)
-                .then(function (record) {
-                var identity = Proteus.keys.IdentityKeyPair.deserialise(record.serialised);
+    }
+    load_identity() {
+        return new Promise((resolve, reject) => {
+            this.read(this.TABLE.LOCAL_IDENTITY, this.localIdentityKey)
+                .then((record) => {
+                let identity = Proteus.keys.IdentityKeyPair.deserialise(record.serialised);
                 resolve(identity);
             })
                 .catch(function (error) {
@@ -925,12 +825,11 @@ var IndexedDB = (function () {
                 }
             });
         });
-    };
-    IndexedDB.prototype.load_prekey = function (prekey_id) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            _this.read(_this.TABLE.PRE_KEYS, prekey_id.toString())
-                .then(function (record) {
+    }
+    load_prekey(prekey_id) {
+        return new Promise((resolve, reject) => {
+            this.read(this.TABLE.PRE_KEYS, prekey_id.toString())
+                .then((record) => {
                 resolve(Proteus.keys.PreKey.deserialise(record.serialised));
             })
                 .catch(function (error) {
@@ -942,94 +841,89 @@ var IndexedDB = (function () {
                 }
             });
         });
-    };
-    IndexedDB.prototype.load_prekeys = function () {
-        var _this = this;
+    }
+    load_prekeys() {
         return Promise.resolve()
-            .then(function () {
-            return _this.db[_this.TABLE.PRE_KEYS].toArray();
+            .then(() => {
+            return this.db[this.TABLE.PRE_KEYS].toArray();
         })
-            .then(function (records) {
-            var preKeys = [];
-            records.forEach(function (record) {
-                var preKey = Proteus.keys.PreKey.deserialise(record.serialised);
+            .then((records) => {
+            let preKeys = [];
+            records.forEach((record) => {
+                let preKey = Proteus.keys.PreKey.deserialise(record.serialised);
                 preKeys.push(preKey);
             });
             return preKeys;
         });
-    };
-    IndexedDB.prototype.read_session = function (identity, session_id) {
+    }
+    read_session(identity, session_id) {
         return this.read(this.TABLE.SESSIONS, session_id)
-            .then(function (payload) {
+            .then((payload) => {
             return Proteus.session.Session.deserialise(identity, payload.serialised);
         });
-    };
-    IndexedDB.prototype.save_identity = function (identity) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            _this.identity = identity;
-            var payload = new SerialisedRecord_1.SerialisedRecord(identity.serialise(), _this.localIdentityKey);
-            _this.create(_this.TABLE.LOCAL_IDENTITY, payload.id, payload)
-                .then(function (primaryKey) {
-                var fingerprint = identity.public_key.fingerprint();
-                var message = "Saved local identity \"" + fingerprint + "\""
-                    + (" with key \"" + primaryKey + "\" in object store \"" + _this.TABLE.LOCAL_IDENTITY + "\".");
+    }
+    save_identity(identity) {
+        return new Promise((resolve, reject) => {
+            this.identity = identity;
+            let payload = new SerialisedRecord_1.SerialisedRecord(identity.serialise(), this.localIdentityKey);
+            this.create(this.TABLE.LOCAL_IDENTITY, payload.id, payload)
+                .then((primaryKey) => {
+                let fingerprint = identity.public_key.fingerprint();
+                let message = `Saved local identity "${fingerprint}"`
+                    + ` with key "${primaryKey}" in object store "${this.TABLE.LOCAL_IDENTITY}".`;
                 
                 resolve(identity);
             })
                 .catch(reject);
         });
-    };
-    IndexedDB.prototype.save_prekey = function (prekey) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            _this.prekeys[prekey.key_id] = prekey;
-            var payload = new SerialisedRecord_1.SerialisedRecord(prekey.serialise(), prekey.key_id.toString());
-            _this.create(_this.TABLE.PRE_KEYS, payload.id, payload)
-                .then(function (primaryKey) {
-                var message = "Saved PreKey (ID \"" + prekey.key_id + "\") with key \"" + primaryKey + "\" in object store \"" + _this.TABLE.PRE_KEYS + "\".";
+    }
+    save_prekey(prekey) {
+        return new Promise((resolve, reject) => {
+            this.prekeys[prekey.key_id] = prekey;
+            let payload = new SerialisedRecord_1.SerialisedRecord(prekey.serialise(), prekey.key_id.toString());
+            this.create(this.TABLE.PRE_KEYS, payload.id, payload)
+                .then((primaryKey) => {
+                let message = `Saved PreKey (ID "${prekey.key_id}") with key "${primaryKey}" in object store "${this.TABLE.PRE_KEYS}".`;
                 
                 resolve(prekey);
             })
                 .catch(reject);
         });
-    };
-    IndexedDB.prototype.save_prekeys = function (prekeys) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
+    }
+    save_prekeys(prekeys) {
+        return new Promise((resolve, reject) => {
             if (prekeys.length === 0) {
                 resolve(prekeys);
             }
-            var items = [];
-            var keys = [];
+            let items = [];
+            let keys = [];
             prekeys.forEach(function (preKey) {
-                var key = preKey.key_id.toString();
-                var payload = new SerialisedRecord_1.SerialisedRecord(preKey.serialise(), key);
+                let key = preKey.key_id.toString();
+                let payload = new SerialisedRecord_1.SerialisedRecord(preKey.serialise(), key);
                 items.push(payload);
                 keys.push(key);
             });
             
-            _this.db[_this.TABLE.PRE_KEYS].bulkPut(items, keys)
-                .then(function () {
+            this.db[this.TABLE.PRE_KEYS].bulkPut(items, keys)
+                .then(() => {
                 
                 resolve(prekeys);
             })
                 .catch(reject);
         });
-    };
-    IndexedDB.prototype.create_session = function (session_id, session) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            var payload = new SerialisedRecord_1.SerialisedRecord(session.serialise(), session_id);
-            _this.create(_this.TABLE.SESSIONS, payload.id, payload)
-                .then(function (primaryKey) {
-                var message = "Added session ID \"" + session_id + "\" in object store \"" + _this.TABLE.SESSIONS + "\" with key \"" + primaryKey + "\".";
+    }
+    create_session(session_id, session) {
+        return new Promise((resolve, reject) => {
+            let payload = new SerialisedRecord_1.SerialisedRecord(session.serialise(), session_id);
+            this.create(this.TABLE.SESSIONS, payload.id, payload)
+                .then((primaryKey) => {
+                let message = `Added session ID "${session_id}" in object store "${this.TABLE.SESSIONS}" with key "${primaryKey}".`;
                 
                 resolve(session);
             })
-                .catch(function (error) {
+                .catch((error) => {
                 if (error instanceof dexie_1.default.ConstraintError) {
-                    var message = "Session with ID '" + session_id + "' already exists and cannot get overwritten. You need to delete the session first if you want to do it.";
+                    let message = `Session with ID '${session_id}' already exists and cannot get overwritten. You need to delete the session first if you want to do it.`;
                     reject(new RecordAlreadyExistsError_1.RecordAlreadyExistsError(message));
                 }
                 else {
@@ -1037,47 +931,73 @@ var IndexedDB = (function () {
                 }
             });
         });
-    };
-    IndexedDB.prototype.update_session = function (session_id, session) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            var payload = new SerialisedRecord_1.SerialisedRecord(session.serialise(), session_id);
-            _this.update(_this.TABLE.SESSIONS, payload.id, { serialised: payload.serialised })
-                .then(function (primaryKey) {
-                var message = "Updated session ID \"" + session_id + "\" in object store \"" + _this.TABLE.SESSIONS + "\" with key \"" + primaryKey + "\".";
+    }
+    update_session(session_id, session) {
+        return new Promise((resolve, reject) => {
+            let payload = new SerialisedRecord_1.SerialisedRecord(session.serialise(), session_id);
+            this.update(this.TABLE.SESSIONS, payload.id, { serialised: payload.serialised })
+                .then((primaryKey) => {
+                let message = `Updated session ID "${session_id}" in object store "${this.TABLE.SESSIONS}" with key "${primaryKey}".`;
                 
                 resolve(session);
             })
                 .catch(reject);
         });
-    };
-    return IndexedDB;
-}());
+    }
+}
 exports.default = IndexedDB;
 
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var Cryptobox_1 = __webpack_require__(2);
-var SerialisedRecord = (function () {
-    function SerialisedRecord(serialised, id) {
+const Cryptobox_1 = __webpack_require__(3);
+class SerialisedRecord {
+    constructor(serialised, id) {
         this.created = Date.now();
         this.id = id;
         this.serialised = serialised;
         this.version = Cryptobox_1.Cryptobox.prototype.VERSION;
     }
-    return SerialisedRecord;
-}());
+}
 exports.SerialisedRecord = SerialisedRecord;
 
 
 /***/ }),
-/* 10 */
+/* 11 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const Cache_1 = __webpack_require__(8);
+const IndexedDB_1 = __webpack_require__(9);
+const CryptoboxSession_1 = __webpack_require__(4);
+const Cryptobox_1 = __webpack_require__(3);
+const InvalidPreKeyFormatError_1 = __webpack_require__(5);
+const ReadOnlyStore_1 = __webpack_require__(6);
+const RecordAlreadyExistsError_1 = __webpack_require__(1);
+const RecordNotFoundError_1 = __webpack_require__(7);
+module.exports = {
+    Cryptobox: Cryptobox_1.Cryptobox,
+    CryptoboxSession: CryptoboxSession_1.CryptoboxSession,
+    InvalidPreKeyFormatError: InvalidPreKeyFormatError_1.InvalidPreKeyFormatError,
+    store: {
+        Cache: Cache_1.default,
+        IndexedDB: IndexedDB_1.default,
+        ReadOnlyStore: ReadOnlyStore_1.ReadOnlyStore,
+        RecordAlreadyExistsError: RecordAlreadyExistsError_1.RecordAlreadyExistsError,
+        RecordNotFoundError: RecordNotFoundError_1.RecordNotFoundError
+    }
+};
+
+
+/***/ }),
+/* 12 */
 /***/ (function(module, exports) {
 
 // Copyright Joyent, Inc. and other Node contributors.
@@ -1385,14 +1305,14 @@ function isUndefined(arg) {
 
 
 /***/ }),
-/* 11 */
+/* 13 */
 /***/ (function(module, exports) {
 
 module.exports = {
 	"dependencies": {
-		"dexie": "~1.5.1",
-		"wire-webapp-lru-cache": "~2.0.0",
-		"wire-webapp-proteus": "~4.0.0"
+		"dexie": "1.5.1",
+		"wire-webapp-lru-cache": "2.0.0",
+		"wire-webapp-proteus": "5.0.1"
 	},
 	"description": "High-level API with persistent storage for Proteus.",
 	"devDependencies": {
@@ -1407,18 +1327,18 @@ module.exports = {
 		"gulp-if": "^2.0.2",
 		"gulp-jasmine": "^2.4.1",
 		"gulp-replace": "^0.5.4",
-		"gulp-typescript": "^3.0.1",
+		"gulp-typescript": "3.1.6",
 		"gulp-typings": "^2.0.4",
 		"gulp-util": "^3.0.7",
 		"gutil": "^1.6.4",
 		"karma": "~1.5.0",
 		"karma-chrome-launcher": "~2.0.0",
 		"karma-jasmine": "~1.1.0",
-		"logdown": "~2.0.3",
+		"logdown": "2.2.0",
 		"merge2": "^1.0.2",
 		"run-sequence": "^1.2.2",
 		"typescript": "^2.1.4",
-		"webpack": "^2.2.0",
+		"webpack": "2.3.0",
 		"yargs": "^6.6.0"
 	},
 	"license": "GPL-3.0",
@@ -1435,50 +1355,21 @@ module.exports = {
 		"start": "gulp",
 		"test": "npm run self_test_node && gulp test"
 	},
-	"typings": "dist/typings/wire-webapp-cryptobox.d.ts",
-	"version": "4.0.1"
+	"types": "dist/typings/wire-webapp-cryptobox.d.ts",
+	"version": "5.0.0"
 };
 
 /***/ }),
-/* 12 */
+/* 14 */
 /***/ (function(module, exports) {
 
 module.exports = Dexie;
 
 /***/ }),
-/* 13 */
+/* 15 */
 /***/ (function(module, exports) {
 
 module.exports = LRUCache;
-
-/***/ }),
-/* 14 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var Cache_1 = __webpack_require__(7);
-var IndexedDB_1 = __webpack_require__(8);
-var CryptoboxSession_1 = __webpack_require__(3);
-var Cryptobox_1 = __webpack_require__(2);
-var InvalidPreKeyFormatError_1 = __webpack_require__(4);
-var ReadOnlyStore_1 = __webpack_require__(5);
-var RecordAlreadyExistsError_1 = __webpack_require__(1);
-var RecordNotFoundError_1 = __webpack_require__(6);
-module.exports = {
-    Cryptobox: Cryptobox_1.Cryptobox,
-    CryptoboxSession: CryptoboxSession_1.CryptoboxSession,
-    InvalidPreKeyFormatError: InvalidPreKeyFormatError_1.InvalidPreKeyFormatError,
-    store: {
-        Cache: Cache_1.default,
-        IndexedDB: IndexedDB_1.default,
-        ReadOnlyStore: ReadOnlyStore_1.ReadOnlyStore,
-        RecordAlreadyExistsError: RecordAlreadyExistsError_1.RecordAlreadyExistsError,
-        RecordNotFoundError: RecordNotFoundError_1.RecordNotFoundError
-    }
-};
-
 
 /***/ })
 /******/ ]);
