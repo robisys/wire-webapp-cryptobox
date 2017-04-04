@@ -82,7 +82,7 @@ gulp.task('build_ts_node', () => {
       .pipe(gulp.dest('dist/typings')),
     tsResult.js
       .pipe(replace('exports.default = {', 'module.exports = {'))
-      .pipe(gulpif(disableLogging, replace(/const Logdown[^\n]*/ig, '')))
+      .pipe(gulpif(disableLogging, replace(/(const|var) Logdown[^\n]*/ig, '')))
       .pipe(gulpif(disableLogging, replace(/[_]?this.logger[^\n]*/igm, '')))
       .pipe(gulp.dest('dist/commonjs'))
   ]);
