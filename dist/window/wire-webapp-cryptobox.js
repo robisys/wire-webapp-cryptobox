@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v5.0.3 */
+/*! wire-webapp-cryptobox v5.0.4 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -1421,7 +1421,7 @@ module.exports = {
 	"dependencies": {
 		"dexie": "1.5.1",
 		"wire-webapp-lru-cache": "2.0.0",
-		"wire-webapp-proteus": "5.0.2"
+		"wire-webapp-proteus": "5.0.3"
 	},
 	"description": "High-level API with persistent storage for Proteus.",
 	"devDependencies": {
@@ -1465,7 +1465,7 @@ module.exports = {
 		"test": "npm run self_test_node && gulp test"
 	},
 	"types": "dist/typings/wire-webapp-cryptobox.d.ts",
-	"version": "5.0.3"
+	"version": "5.0.4"
 };
 
 /***/ }),
