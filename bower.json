@@ -3,7 +3,7 @@
     "dexie": "1.5.1",
     "libsodium.js": "0.5.1",
     "wire-webapp-lru-cache": "2.0.0",
-    "wire-webapp-proteus": "5.0.2"
+    "wire-webapp-proteus": "5.0.3"
   },
   "devDependencies": {
     "logdown": "2.2.0"
