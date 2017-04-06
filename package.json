@@ -39,11 +39,14 @@
     "url": "git://github.com/wireapp/wire-webapp-cryptobox.git"
   },
   "scripts": {
-    "build": "npm run prepublish",
-    "prepublish": "gulp dist --env production && npm test",
+    "dist": "gulp dist --env production",
+    "lint": "echo \"No linting specified\" && exit 0",
+    "preversion": "yarn lint && yarn dist && yarn test",
+    "version": "git add dist/**/*",
+    "postversion": "git push && git push --tags",
     "self_test_node": "node dist/index.js",
     "start": "gulp",
-    "test": "npm run self_test_node && gulp test"
+    "test": "yarn self_test_node && gulp test"
   },
   "types": "dist/typings/wire-webapp-cryptobox.d.ts",
   "version": "5.0.4"

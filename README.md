@@ -25,10 +25,10 @@ Cryptobox provides a high-level API with persistent storage for the [Proteus][2]
 bower install wire-webapp-cryptobox
 ```
 
-### npm
+### Yarn
 
 ```bash
-npm install wire-webapp-cryptobox
+yarn add wire-webapp-cryptobox
 ```
 
 ## Usage
@@ -54,12 +54,5 @@ gulp test_browser --file ...
 Run all tests (in Chrome & Node.js):
 
 ```bash
-npm test
+yarn test
 ```
-
-### Releasing
-
-1. Adjust `version` in `package.json`
-1. Run `npm publish`
-1. Run `git push`
-1. Create [GitHub Release](../../releases)
