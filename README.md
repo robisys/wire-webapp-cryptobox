@@ -19,13 +19,13 @@ Cryptobox provides a high-level API with persistent storage for the [Proteus][2]
 
 ## Installation
 
-### Bower
+### Browser
 
 ```bash
 bower install wire-webapp-cryptobox
 ```
 
-### Yarn
+### Node.js
 
 ```bash
 yarn add wire-webapp-cryptobox
