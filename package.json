@@ -2,7 +2,7 @@
   "dependencies": {
     "dexie": "1.5.1",
     "wire-webapp-lru-cache": "2.0.0",
-    "wire-webapp-proteus": "5.0.3"
+    "wire-webapp-proteus": "5.1.0"
   },
   "description": "High-level API with persistent storage for Proteus.",
   "devDependencies": {
@@ -28,7 +28,7 @@
     "merge2": "^1.0.2",
     "run-sequence": "^1.2.2",
     "typescript": "^2.1.4",
-    "webpack": "2.3.0",
+    "webpack": "2.3.3",
     "yargs": "^6.6.0"
   },
   "license": "GPL-3.0",
@@ -42,7 +42,7 @@
     "dist": "gulp dist --env production",
     "lint": "echo \"No linting specified\" && exit 0",
     "preversion": "yarn lint && yarn dist && yarn test",
-    "version": "git add dist/**/*",
+    "version": "yarn dist && git add dist/**/*",
     "postversion": "git push && git push --tags",
     "self_test_node": "node dist/index.js",
     "start": "gulp",
