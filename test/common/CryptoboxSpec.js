@@ -31,12 +31,26 @@ describe('cryptobox.Cryptobox', function() {
     } else {
       cryptobox = require('../../dist/commonjs/wire-webapp-cryptobox');
       Proteus = require('wire-webapp-proteus');
+      sodium = require('libsodium-wrappers-sumo');
       done();
     }
   });
 
   beforeEach(function() {
     store = new cryptobox.store.Cache();
+  });
+
+  describe('decrypt', () => {
+    it('doesn\'t decrypt empty ArrayBuffers', (done) => {
+      const box = new cryptobox.Cryptobox(store);
+      const sessionId = 'sessionWithBob';
+      box.decrypt(sessionId, new ArrayBuffer(0))
+        .then(done.fail)
+        .catch((error) => {
+          expect(error).toEqual(jasmine.any(cryptobox.DecryptionError));
+          done();
+        });
+    });
   });
 
   describe('init', function() {

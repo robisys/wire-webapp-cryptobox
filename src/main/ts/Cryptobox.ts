@@ -4,6 +4,7 @@ import Logdown = require("logdown");
 import LRUCache = require("wire-webapp-lru-cache");
 import {CryptoboxSession} from "./CryptoboxSession";
 import {CryptoboxStore} from "./store/CryptoboxStore";
+import {DecryptionError} from "./DecryptionError";
 import {InvalidPreKeyFormatError} from "./InvalidPreKeyFormatError";
 import {ReadOnlyStore} from "./store/ReadOnlyStore";
 import {RecordAlreadyExistsError} from "./store/RecordAlreadyExistsError";
@@ -376,6 +377,10 @@ export class Cryptobox extends EventEmitter {
     let is_new_session = false;
     let message: Uint8Array;
     let session: CryptoboxSession;
+
+    if (ciphertext.byteLength === 0) {
+      return Promise.reject(new DecryptionError('Cannot decrypt an empty ArrayBuffer.'));
+    }
 
     return this.session_load(session_id)
       .catch(() => {

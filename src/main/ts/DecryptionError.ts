@@ -1,7 +1,7 @@
-export class RecordAlreadyExistsError extends Error {
+export class DecryptionError extends Error {
   constructor(public message: string) {
     super(message);
-    Object.setPrototypeOf(this, RecordAlreadyExistsError.prototype);
+    Object.setPrototypeOf(this, DecryptionError.prototype);
 
     this.message = message;
     this.name = (<any>this).constructor.name;

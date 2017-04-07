@@ -1,4 +1,5 @@
 import * as Proteus from "wire-webapp-proteus";
+import {DecryptionError} from "./DecryptionError";
 import {ReadOnlyStore} from "./store/ReadOnlyStore";
 
 export class CryptoboxSession {
@@ -15,7 +16,11 @@ export class CryptoboxSession {
 
   public decrypt(ciphertext: ArrayBuffer): Promise<Uint8Array> {
     return new Promise((resolve, reject) => {
-      let envelope: Proteus.message.Envelope = Proteus.message.Envelope.deserialise(ciphertext);
+      if (ciphertext.byteLength === 0) {
+        reject(new DecryptionError('Cannot decrypt an empty ArrayBuffer.'));
+      }
+
+      const envelope: Proteus.message.Envelope = Proteus.message.Envelope.deserialise(ciphertext);
       this.session.decrypt(this.pk_store, envelope).then(function (plaintext: Uint8Array) {
         resolve(plaintext);
       }).catch(reject);
