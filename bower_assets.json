@@ -9,6 +9,9 @@
     "logdown@copy": [
       "logdown/dist/logdown.js"
     ],
+    "wire-webapp-cbor@copy": [
+      "wire-webapp-cbor/dist/window/wire-webapp-cbor.js"
+    ],
     "wire-webapp-lru-cache@copy": [
       "wire-webapp-lru-cache/dist/window/LRUCache.js"
     ],
