@@ -42,7 +42,7 @@
     "dist": "gulp dist --env production",
     "lint": "echo \"No linting specified\" && exit 0",
     "preversion": "yarn lint && yarn dist && yarn test",
-    "version": "yarn dist && git add dist/**/*",
+    "version": "gulp build_ts_browser && git add dist/**/*",
     "postversion": "git push && git push --tags",
     "self_test_node": "node dist/index.js",
     "start": "gulp",
