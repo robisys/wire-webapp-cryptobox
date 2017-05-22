@@ -161,7 +161,7 @@ export default class IndexedDB implements CryptoboxStore {
         return this.db[this.TABLE.PRE_KEYS].toArray();
       })
       .then((records: any) => {
-        let preKeys: any = [];
+        const preKeys: any = [];
 
         records.forEach((record: SerialisedRecord) => {
           let preKey: Proteus.keys.PreKey = Proteus.keys.PreKey.deserialise(record.serialised);

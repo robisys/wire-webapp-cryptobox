@@ -25,7 +25,6 @@ const browserSync = require('browser-sync').create();
 const clean = require('gulp-clean');
 const gulp = require('gulp');
 const gulpif = require('gulp-if');
-const gulpTypings = require('gulp-typings');
 const gutil = require('gulp-util');
 const jasmine = require('gulp-jasmine');
 const karma = require('karma');
@@ -103,7 +102,7 @@ gulp.task('dist', done => {
   runSequence('clean', 'install', 'build', done);
 });
 
-gulp.task('install', ['install_bower_assets', 'install_typings'], () => {
+gulp.task('install', ['install_bower_assets'], () => {
 });
 
 gulp.task('install_bower', () => bower({cmd: 'install'}));
@@ -115,9 +114,6 @@ gulp.task('install_bower_assets', ['install_bower'], () => gulp.src('bower_asset
     }
   }))
   .pipe(gulp.dest('dist/lib')));
-
-gulp.task('install_typings', () => gulp.src('./typings.json')
-  .pipe(gulpTypings()));
 
 gulp.task('test', done => {
   runSequence('test_node', 'test_browser', done);
@@ -156,7 +152,7 @@ gulp.task('test_node', () => {
   ];
 
   if (file) {
-    tests = [`test/js/specs/${file}`]
+    tests = [`test/${file}`]
   }
 
   return gulp.src(tests)

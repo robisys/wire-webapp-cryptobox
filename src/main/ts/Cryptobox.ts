@@ -47,7 +47,7 @@ export class Cryptobox extends EventEmitter {
     this.store = cryptoBoxStore;
     this.pk_store = new ReadOnlyStore(this.store);
 
-    let storageEngine: string = (<any>cryptoBoxStore).constructor.name;
+    const storageEngine: string = (<any>cryptoBoxStore).constructor.name;
     this.logger.log(`Constructed Cryptobox. Minimum amount of PreKeys is "${minimumAmountOfPreKeys}". Storage engine is "${storageEngine}".`);
   }
 
@@ -75,7 +75,7 @@ export class Cryptobox extends EventEmitter {
           this.logger.log(`Found existing local identity.`, identity);
           return identity;
         } else {
-          identity = Proteus.keys.IdentityKeyPair.new();
+          const identity: Proteus.keys.IdentityKeyPair = Proteus.keys.IdentityKeyPair.new();
           this.logger.warn(`No existing local identity found. Created new local identity.`, identity);
           return this.save_new_identity(identity);
         }

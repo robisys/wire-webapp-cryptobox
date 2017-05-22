@@ -1,11 +1,15 @@
 {
   "dependencies": {
     "dexie": "1.5.1",
+    "fs-extra": "3.0.1",
+    "rimraf": "2.6.1",
     "wire-webapp-lru-cache": "2.0.0",
     "wire-webapp-proteus": "5.1.0"
   },
   "description": "High-level API with persistent storage for Proteus.",
   "devDependencies": {
+    "@types/fs-extra": "3.0.1",
+    "@types/node": "7.0.21",
     "browser-sync": "^2.14.0",
     "gulp": "^3.9.1",
     "gulp-babel": "^6.1.2",
@@ -18,7 +22,6 @@
     "gulp-jasmine": "^2.4.1",
     "gulp-replace": "^0.5.4",
     "gulp-typescript": "3.1.6",
-    "gulp-typings": "^2.0.4",
     "gulp-util": "^3.0.7",
     "gutil": "^1.6.4",
     "karma": "~1.5.0",

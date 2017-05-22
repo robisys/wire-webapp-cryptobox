@@ -17,7 +17,6 @@
  *
  */
 
-// gulp test_browser --file "store/IndexedDBSpec.js"
 describe('cryptobox.store.IndexedDB', function() {
 
   var cryptobox = undefined;
