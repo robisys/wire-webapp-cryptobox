@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v5.1.0 */
+/*! wire-webapp-cryptobox v5.1.1 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -65,7 +65,7 @@ var cryptobox =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 11);
+/******/ 	return __webpack_require__(__webpack_require__.s = 12);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -158,9 +158,9 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var Proteus = __webpack_require__(0);
-var EventEmitter = __webpack_require__(12);
+var EventEmitter = __webpack_require__(13);
 
-var LRUCache = __webpack_require__(15);
+var LRUCache = __webpack_require__(16);
 var CryptoboxSession_1 = __webpack_require__(4);
 var DecryptionError_1 = __webpack_require__(1);
 var InvalidPreKeyFormatError_1 = __webpack_require__(5);
@@ -210,9 +210,9 @@ var Cryptobox = (function (_super) {
                 return identity;
             }
             else {
-                identity = Proteus.keys.IdentityKeyPair.new();
+                var identity_1 = Proteus.keys.IdentityKeyPair.new();
                 
-                return _this.save_new_identity(identity);
+                return _this.save_new_identity(identity_1);
             }
         })
             .then(function (identity) {
@@ -518,7 +518,7 @@ Cryptobox.TOPIC = {
     NEW_SESSION: "new-session"
 };
 exports.Cryptobox = Cryptobox;
-Cryptobox.prototype.VERSION = __webpack_require__(13).version;
+Cryptobox.prototype.VERSION = __webpack_require__(14).version;
 
 
 /***/ }),
@@ -837,11 +837,11 @@ exports.default = Cache;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var Proteus = __webpack_require__(0);
-var dexie_1 = __webpack_require__(14);
+var dexie_1 = __webpack_require__(15);
 
 var RecordAlreadyExistsError_1 = __webpack_require__(2);
 var RecordNotFoundError_1 = __webpack_require__(7);
-var SerialisedRecord_1 = __webpack_require__(10);
+var SerialisedRecord_1 = __webpack_require__(11);
 var IndexedDB = (function () {
     function IndexedDB(identifier) {
         var _this = this;
@@ -1099,6 +1099,12 @@ exports.default = IndexedDB;
 
 /***/ }),
 /* 10 */
+/***/ (function(module, exports) {
+
+module.exports = {};
+
+/***/ }),
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1118,13 +1124,14 @@ exports.SerialisedRecord = SerialisedRecord;
 
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var Cache_1 = __webpack_require__(8);
+var FileStore_1 = __webpack_require__(10);
 var IndexedDB_1 = __webpack_require__(9);
 var CryptoboxSession_1 = __webpack_require__(4);
 var Cryptobox_1 = __webpack_require__(3);
@@ -1140,6 +1147,7 @@ module.exports = {
     InvalidPreKeyFormatError: InvalidPreKeyFormatError_1.InvalidPreKeyFormatError,
     store: {
         Cache: Cache_1.default,
+        FileStore: FileStore_1.default,
         IndexedDB: IndexedDB_1.default,
         ReadOnlyStore: ReadOnlyStore_1.ReadOnlyStore,
         RecordAlreadyExistsError: RecordAlreadyExistsError_1.RecordAlreadyExistsError,
@@ -1149,7 +1157,7 @@ module.exports = {
 
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports) {
 
 // Copyright Joyent, Inc. and other Node contributors.
@@ -1457,17 +1465,21 @@ function isUndefined(arg) {
 
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, exports) {
 
 module.exports = {
 	"dependencies": {
 		"dexie": "1.5.1",
+		"fs-extra": "3.0.1",
+		"rimraf": "2.6.1",
 		"wire-webapp-lru-cache": "2.0.0",
 		"wire-webapp-proteus": "5.1.0"
 	},
 	"description": "High-level API with persistent storage for Proteus.",
 	"devDependencies": {
+		"@types/fs-extra": "3.0.1",
+		"@types/node": "7.0.21",
 		"browser-sync": "^2.14.0",
 		"gulp": "^3.9.1",
 		"gulp-babel": "^6.1.2",
@@ -1480,18 +1492,17 @@ module.exports = {
 		"gulp-jasmine": "^2.4.1",
 		"gulp-replace": "^0.5.4",
 		"gulp-typescript": "3.1.6",
-		"gulp-typings": "^2.0.4",
 		"gulp-util": "^3.0.7",
 		"gutil": "^1.6.4",
-		"karma": "~1.5.0",
-		"karma-chrome-launcher": "~2.0.0",
-		"karma-jasmine": "~1.1.0",
+		"karma": "1.7.0",
+		"karma-chrome-launcher": "2.1.1",
+		"karma-jasmine": "1.1.0",
 		"logdown": "2.2.0",
 		"merge2": "^1.0.2",
 		"run-sequence": "^1.2.2",
 		"typescript": "^2.1.4",
 		"webpack": "2.3.3",
-		"yargs": "^6.6.0"
+		"yargs": "7.0.2"
 	},
 	"license": "GPL-3.0",
 	"main": "dist/commonjs/wire-webapp-cryptobox.js",
@@ -1504,24 +1515,24 @@ module.exports = {
 		"dist": "gulp dist --env production",
 		"lint": "echo \"No linting specified\" && exit 0",
 		"preversion": "yarn lint && yarn dist && yarn test",
-		"version": "yarn dist && git add dist/**/*",
+		"version": "gulp build_ts_browser && git add dist/**/*",
 		"postversion": "git push && git push --tags",
 		"self_test_node": "node dist/index.js",
 		"start": "gulp",
 		"test": "yarn self_test_node && gulp test"
 	},
 	"types": "dist/typings/wire-webapp-cryptobox.d.ts",
-	"version": "5.1.0"
+	"version": "5.1.1"
 };
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports) {
 
 module.exports = Dexie;
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports) {
 
 module.exports = LRUCache;
