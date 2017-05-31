@@ -119,7 +119,6 @@ gulp.task('test', done => {
   runSequence('test_node', 'test_browser', done);
 });
 
-// gulp test_browser -file "yourspec"
 gulp.task('test_browser', done => {
   gutil.log(gutil.colors.yellow('Running tests in Google Chrome:'));
   const file = process.argv[4];
@@ -132,8 +131,7 @@ gulp.task('test_browser', done => {
       // Application
       'dist/window/**/*.js',
       // Tests
-      (file) ? `test/${file}` : 'test/browser/**/*Spec.js',
-      (file) ? undefined : 'test/common/**/*Spec.js'
+      (file) ? `test/${file}` : 'test/{browser,common}/**/*Spec.js'
     ],
     logLevel: (file) ? 'debug' : 'info'
   }, done);

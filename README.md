@@ -48,7 +48,8 @@ yarn add wire-webapp-cryptobox
 Run individual test:
 
 ```bash
-gulp test_browser --file ...
+# Example
+gulp test_browser --file "common/CacheSpec.js"
 ```
 
 Run all tests (in Chrome & Node.js):
