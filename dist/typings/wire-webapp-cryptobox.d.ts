@@ -50,7 +50,6 @@ export declare module store {
     abstract create(store_name: string, primary_key: string, entity: SerialisedRecord): Promise<string>;
     abstract delete(store_name: string, primary_key: string): Promise<string>;
     abstract delete_all(): Promise<boolean>;
-    abstract init(identifier: string): Promise<CryptoboxCRUDStore>;
     abstract read(store_name: string, primary_key: string): Promise<SerialisedRecord>;
     abstract read_all(store_name: string): Promise<SerialisedRecord[]>;
     abstract update(store_name: string, primary_key: string, changes: SerialisedUpdate): Promise<string>;
@@ -86,7 +85,6 @@ export declare module store {
     constructor();
     create(storeName: string, primaryKey: string, record: SerialisedRecord): Promise<string>;
     update(store_name: string, primary_key: string, changes: SerialisedUpdate): Promise<string>;
-    init(storagePath: string): Promise<CryptoboxCRUDStore>;
     read(store_name: string, primary_key: string): Promise<SerialisedRecord>;
     read_all(store_name: string): Promise<SerialisedRecord[]>;
     delete(store_name: string, primary_key: string): Promise<string>;

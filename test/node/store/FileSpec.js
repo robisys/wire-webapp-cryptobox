@@ -19,17 +19,16 @@
 
 const cryptobox = require('../../../dist/commonjs/wire-webapp-cryptobox');
 const fs = require('fs');
+const path = require('path');
 const Proteus = require('wire-webapp-proteus');
 
 // gulp test_node --file "node/store/FileSpec.js"
 describe('cryptobox.store.FileStore', () => {
-  // TODO: Use "fs.mkdtemp"
-  const storagePath = `${__dirname}/test`;
+  const storagePath = path.normalize(`${__dirname}/test`);
   let fileStore = undefined;
 
-  beforeEach((done) => {
-    fileStore = new cryptobox.store.FileStore();
-    fileStore.init(storagePath).then(done).catch(done.fail);
+  beforeEach(() => {
+    fileStore = new cryptobox.store.FileStore(storagePath);
   });
 
   afterEach((done) => {
@@ -39,6 +38,30 @@ describe('cryptobox.store.FileStore', () => {
   describe('constructor', () => {
     it('constructs a file storage with a given storage path', () => {
       expect(fileStore.storagePath).toBeDefined();
+    });
+
+    it('can reload an identity when supplying the same storage path on a new storage instance', (done) => {
+      const storagePath = fs.mkdtempSync(path.normalize(`${__dirname}/test`));
+      let box = new cryptobox.Cryptobox(new cryptobox.store.FileStore(storagePath), 1);
+
+      let firstFingerprint = undefined;
+      let secondFingerprint = undefined;
+
+      box.init()
+        .then(() => {
+          firstFingerprint = box.identity.public_key.fingerprint();
+          box = new cryptobox.Cryptobox(new cryptobox.store.FileStore(storagePath), 1);
+          return box.init();
+        })
+        .then(() => {
+          secondFingerprint = box.identity.public_key.fingerprint();
+          return box.store.delete_all();
+        })
+        .then(() => {
+          expect(firstFingerprint).toBe(secondFingerprint);
+          done();
+        })
+        .catch(done.fail);
     });
   });
 

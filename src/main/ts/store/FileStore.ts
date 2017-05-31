@@ -10,9 +10,11 @@ export default class FileStore extends CryptoboxCRUDStore {
   private logger: Logdown;
   private storagePath: string;
 
-  constructor() {
+  constructor(storagePath: string) {
     super();
+    this.storagePath = path.normalize(storagePath);
     this.logger = new Logdown({alignOutput: true, markdown: false, prefix: "cryptobox.store.FileStore"});
+    this.logger.log(`Initialized Cryptobox storage in directory "${this.storagePath}"...`);
   }
 
   /**
@@ -36,15 +38,6 @@ export default class FileStore extends CryptoboxCRUDStore {
   update(store_name: string, primary_key: string, changes: SerialisedUpdate): Promise<string> {
     const updatedRecord = new SerialisedRecord(changes.serialised, primary_key);
     return this.create(store_name, primary_key, updatedRecord);
-  }
-
-  /**
-   * @override
-   */
-  init(storagePath: string): Promise<CryptoboxCRUDStore> {
-    this.storagePath = path.normalize(storagePath);
-    this.logger.log(`Initializing Cryptobox storage in directory "${this.storagePath}"...`);
-    return Promise.resolve(this);
   }
 
   /**

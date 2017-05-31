@@ -25,7 +25,7 @@ describe('cryptobox.store.Cache', () => {
       expect(store).toBeDefined();
     });
 
-    it('causes new identities on a Cryptobox initialization (because a Cache is temporary)', (done) => {
+    it('causes new identities on a Cryptobox initialization with a new storage instance (because a cache is temporary)', (done) => {
       let box = new cryptobox.Cryptobox(new cryptobox.store.Cache(), 1);
 
       let firstFingerprint = undefined;
@@ -41,7 +41,8 @@ describe('cryptobox.store.Cache', () => {
           secondFingerprint = box.identity.public_key.fingerprint();
           expect(firstFingerprint).not.toBe(secondFingerprint);
           done();
-        });
+        })
+        .catch(done.fail);
     });
   });
 
