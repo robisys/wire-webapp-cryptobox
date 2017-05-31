@@ -24,6 +24,25 @@ describe('cryptobox.store.Cache', () => {
       const store = new cryptobox.store.Cache();
       expect(store).toBeDefined();
     });
+
+    it('causes new identities on a Cryptobox initialization (because a Cache is temporary)', (done) => {
+      let box = new cryptobox.Cryptobox(new cryptobox.store.Cache(), 1);
+
+      let firstFingerprint = undefined;
+      let secondFingerprint = undefined;
+
+      box.init()
+        .then(() => {
+          firstFingerprint = box.identity.public_key.fingerprint();
+          box = new cryptobox.Cryptobox(new cryptobox.store.Cache(), 1);
+          return box.init();
+        })
+        .then(() => {
+          secondFingerprint = box.identity.public_key.fingerprint();
+          expect(firstFingerprint).not.toBe(secondFingerprint);
+          done();
+        });
+    });
   });
 
   describe('save_identity', () => {
