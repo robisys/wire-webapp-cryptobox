@@ -13,7 +13,7 @@ box.init()
     console.log(`Public Fingerprint: ${fingerprint}`);
     process.exit(0);
   })
-  .catch(error => {
+  .catch((error) => {
     console.log(`Self test broken: ${error.message} (${error.stack})`);
     process.exit(1);
   });
