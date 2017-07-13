@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v5.1.1 */
+/*! wire-webapp-cryptobox v5.1.3 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -65,7 +65,7 @@ var cryptobox =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 12);
+/******/ 	return __webpack_require__(__webpack_require__.s = 14);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -113,31 +113,13 @@ exports.DecryptionError = DecryptionError;
 
 "use strict";
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-var RecordAlreadyExistsError = (function (_super) {
-    __extends(RecordAlreadyExistsError, _super);
-    function RecordAlreadyExistsError(message) {
-        var _this = _super.call(this, message) || this;
-        _this.message = message;
-        Object.setPrototypeOf(_this, RecordAlreadyExistsError.prototype);
-        _this.message = message;
-        _this.name = _this.constructor.name;
-        _this.stack = new Error().stack;
-        return _this;
-    }
-    return RecordAlreadyExistsError;
-}(Error));
-exports.RecordAlreadyExistsError = RecordAlreadyExistsError;
+var RecordAlreadyExistsError_1 = __webpack_require__(11);
+exports.RecordAlreadyExistsError = RecordAlreadyExistsError_1.default;
+var RecordNotFoundError_1 = __webpack_require__(12);
+exports.RecordNotFoundError = RecordNotFoundError_1.default;
+var RecordTypeError_1 = __webpack_require__(13);
+exports.RecordTypeError = RecordTypeError_1.default;
 
 
 /***/ }),
@@ -158,14 +140,14 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var Proteus = __webpack_require__(0);
-var EventEmitter = __webpack_require__(13);
+var EventEmitter = __webpack_require__(15);
 
-var LRUCache = __webpack_require__(16);
+var LRUCache = __webpack_require__(18);
 var CryptoboxSession_1 = __webpack_require__(4);
 var DecryptionError_1 = __webpack_require__(1);
 var InvalidPreKeyFormatError_1 = __webpack_require__(5);
 var ReadOnlyStore_1 = __webpack_require__(6);
-var RecordAlreadyExistsError_1 = __webpack_require__(2);
+var error_1 = __webpack_require__(2);
 var Cryptobox = (function (_super) {
     __extends(Cryptobox, _super);
     function Cryptobox(cryptoBoxStore, minimumAmountOfPreKeys) {
@@ -340,7 +322,7 @@ var Cryptobox = (function (_super) {
                 return _this.session_save(cryptobox_session);
             })
                 .catch(function (error) {
-                if (error instanceof RecordAlreadyExistsError_1.RecordAlreadyExistsError) {
+                if (error instanceof error_1.RecordAlreadyExistsError) {
                     
                     return _this.session_load(session_id);
                 }
@@ -511,14 +493,14 @@ var Cryptobox = (function (_super) {
             return message;
         });
     };
+    Cryptobox.TOPIC = {
+        NEW_PREKEYS: "new-prekeys",
+        NEW_SESSION: "new-session"
+    };
     return Cryptobox;
 }(EventEmitter));
-Cryptobox.TOPIC = {
-    NEW_PREKEYS: "new-prekeys",
-    NEW_SESSION: "new-session"
-};
 exports.Cryptobox = Cryptobox;
-Cryptobox.prototype.VERSION = __webpack_require__(14).version;
+Cryptobox.prototype.VERSION = __webpack_require__(16).version;
 
 
 /***/ }),
@@ -664,39 +646,6 @@ exports.ReadOnlyStore = ReadOnlyStore;
 
 "use strict";
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-var RecordNotFoundError = (function (_super) {
-    __extends(RecordNotFoundError, _super);
-    function RecordNotFoundError(message) {
-        var _this = _super.call(this, message) || this;
-        _this.message = message;
-        Object.setPrototypeOf(_this, RecordNotFoundError.prototype);
-        _this.message = message;
-        _this.name = _this.constructor.name;
-        _this.stack = new Error().stack;
-        return _this;
-    }
-    return RecordNotFoundError;
-}(Error));
-exports.RecordNotFoundError = RecordNotFoundError;
-
-
-/***/ }),
-/* 8 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
 Object.defineProperty(exports, "__esModule", { value: true });
 var Proteus = __webpack_require__(0);
 
@@ -830,18 +779,17 @@ exports.default = Cache;
 
 
 /***/ }),
-/* 9 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var Proteus = __webpack_require__(0);
-var dexie_1 = __webpack_require__(15);
+var dexie_1 = __webpack_require__(17);
 
-var RecordAlreadyExistsError_1 = __webpack_require__(2);
-var RecordNotFoundError_1 = __webpack_require__(7);
-var SerialisedRecord_1 = __webpack_require__(11);
+var error_1 = __webpack_require__(2);
+var SerialisedRecord_1 = __webpack_require__(10);
 var IndexedDB = (function () {
     function IndexedDB(identifier) {
         var _this = this;
@@ -875,8 +823,11 @@ var IndexedDB = (function () {
         });
     }
     IndexedDB.prototype.create = function (store_name, primary_key, entity) {
-        
-        return this.db[store_name].add(entity, primary_key);
+        if (entity) {
+            
+            return this.db[store_name].add(entity, primary_key);
+        }
+        return Promise.reject(new error_1.RecordTypeError("Entity is \"undefined\" or \"null\". Store name \"" + store_name + "\", Primary Key \"" + primary_key + "\"."));
     };
     IndexedDB.prototype.read = function (store_name, primary_key) {
         var _this = this;
@@ -893,7 +844,7 @@ var IndexedDB = (function () {
             else {
                 var message = "Record \"" + primary_key + "\" from object store \"" + store_name + "\" could not be found.";
                 
-                throw new RecordNotFoundError_1.RecordNotFoundError(message);
+                throw new error_1.RecordNotFoundError(message);
             }
         });
     };
@@ -958,7 +909,7 @@ var IndexedDB = (function () {
                 resolve(identity);
             })
                 .catch(function (error) {
-                if (error instanceof RecordNotFoundError_1.RecordNotFoundError) {
+                if (error instanceof error_1.RecordNotFoundError) {
                     resolve(undefined);
                 }
                 else {
@@ -975,7 +926,7 @@ var IndexedDB = (function () {
                 resolve(Proteus.keys.PreKey.deserialise(record.serialised));
             })
                 .catch(function (error) {
-                if (error instanceof RecordNotFoundError_1.RecordNotFoundError) {
+                if (error instanceof error_1.RecordNotFoundError) {
                     resolve(undefined);
                 }
                 else {
@@ -1071,7 +1022,7 @@ var IndexedDB = (function () {
                 .catch(function (error) {
                 if (error instanceof dexie_1.default.ConstraintError) {
                     var message = "Session with ID '" + session_id + "' already exists and cannot get overwritten. You need to delete the session first if you want to do it.";
-                    reject(new RecordAlreadyExistsError_1.RecordAlreadyExistsError(message));
+                    reject(new error_1.RecordAlreadyExistsError(message));
                 }
                 else {
                     reject(error);
@@ -1098,13 +1049,13 @@ exports.default = IndexedDB;
 
 
 /***/ }),
-/* 10 */
+/* 9 */
 /***/ (function(module, exports) {
 
 module.exports = {};
 
 /***/ }),
-/* 11 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1124,22 +1075,120 @@ exports.SerialisedRecord = SerialisedRecord;
 
 
 /***/ }),
+/* 11 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+var RecordAlreadyExistsError = (function (_super) {
+    __extends(RecordAlreadyExistsError, _super);
+    function RecordAlreadyExistsError(message) {
+        var _this = _super.call(this, message) || this;
+        _this.message = message;
+        Object.setPrototypeOf(_this, RecordAlreadyExistsError.prototype);
+        _this.message = message;
+        _this.name = _this.constructor.name;
+        _this.stack = new Error().stack;
+        return _this;
+    }
+    return RecordAlreadyExistsError;
+}(Error));
+exports.default = RecordAlreadyExistsError;
+
+
+/***/ }),
 /* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
-var Cache_1 = __webpack_require__(8);
-var FileStore_1 = __webpack_require__(10);
-var IndexedDB_1 = __webpack_require__(9);
+var RecordNotFoundError = (function (_super) {
+    __extends(RecordNotFoundError, _super);
+    function RecordNotFoundError(message) {
+        var _this = _super.call(this, message) || this;
+        _this.message = message;
+        Object.setPrototypeOf(_this, RecordNotFoundError.prototype);
+        _this.message = message;
+        _this.name = _this.constructor.name;
+        _this.stack = new Error().stack;
+        return _this;
+    }
+    return RecordNotFoundError;
+}(Error));
+exports.default = RecordNotFoundError;
+
+
+/***/ }),
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+var RecordTypeError = (function (_super) {
+    __extends(RecordTypeError, _super);
+    function RecordTypeError(message) {
+        var _this = _super.call(this, message) || this;
+        _this.message = message;
+        Object.setPrototypeOf(_this, RecordTypeError.prototype);
+        _this.message = message;
+        _this.name = _this.constructor.name;
+        _this.stack = new Error().stack;
+        return _this;
+    }
+    return RecordTypeError;
+}(Error));
+exports.default = RecordTypeError;
+
+
+/***/ }),
+/* 14 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var Cache_1 = __webpack_require__(7);
+var FileStore_1 = __webpack_require__(9);
+var IndexedDB_1 = __webpack_require__(8);
 var CryptoboxSession_1 = __webpack_require__(4);
 var Cryptobox_1 = __webpack_require__(3);
 var DecryptionError_1 = __webpack_require__(1);
 var InvalidPreKeyFormatError_1 = __webpack_require__(5);
 var ReadOnlyStore_1 = __webpack_require__(6);
-var RecordAlreadyExistsError_1 = __webpack_require__(2);
-var RecordNotFoundError_1 = __webpack_require__(7);
+var error_1 = __webpack_require__(2);
 module.exports = {
     Cryptobox: Cryptobox_1.Cryptobox,
     CryptoboxSession: CryptoboxSession_1.CryptoboxSession,
@@ -1150,14 +1199,14 @@ module.exports = {
         FileStore: FileStore_1.default,
         IndexedDB: IndexedDB_1.default,
         ReadOnlyStore: ReadOnlyStore_1.ReadOnlyStore,
-        RecordAlreadyExistsError: RecordAlreadyExistsError_1.RecordAlreadyExistsError,
-        RecordNotFoundError: RecordNotFoundError_1.RecordNotFoundError
+        RecordAlreadyExistsError: error_1.RecordAlreadyExistsError,
+        RecordNotFoundError: error_1.RecordNotFoundError
     }
 };
 
 
 /***/ }),
-/* 13 */
+/* 15 */
 /***/ (function(module, exports) {
 
 // Copyright Joyent, Inc. and other Node contributors.
@@ -1465,7 +1514,7 @@ function isUndefined(arg) {
 
 
 /***/ }),
-/* 14 */
+/* 16 */
 /***/ (function(module, exports) {
 
 module.exports = {
@@ -1478,29 +1527,29 @@ module.exports = {
 	},
 	"description": "High-level API with persistent storage for Proteus.",
 	"devDependencies": {
-		"@types/fs-extra": "3.0.1",
+		"@types/fs-extra": "3.0.3",
 		"@types/node": "7.0.21",
-		"browser-sync": "^2.14.0",
-		"gulp": "^3.9.1",
-		"gulp-babel": "^6.1.2",
+		"browser-sync": "2.14.0",
+		"gulp": "3.9.1",
+		"gulp-babel": "6.1.2",
 		"gulp-bower": "0.0.13",
 		"gulp-bower-assets": "0.0.3",
-		"gulp-clean": "^0.3.2",
-		"gulp-concat": "^2.6.0",
-		"gulp-eslint": "^3.0.1",
-		"gulp-if": "^2.0.2",
-		"gulp-jasmine": "^2.4.1",
-		"gulp-replace": "^0.5.4",
+		"gulp-clean": "0.3.2",
+		"gulp-concat": "2.6.0",
+		"gulp-eslint": "3.0.1",
+		"gulp-if": "2.0.2",
+		"gulp-jasmine": "2.4.1",
+		"gulp-replace": "0.5.4",
 		"gulp-typescript": "3.1.6",
-		"gulp-util": "^3.0.7",
-		"gutil": "^1.6.4",
+		"gulp-util": "3.0.7",
+		"gutil": "1.6.4",
 		"karma": "1.7.0",
 		"karma-chrome-launcher": "2.1.1",
 		"karma-jasmine": "1.1.0",
 		"logdown": "2.2.0",
-		"merge2": "^1.0.2",
-		"run-sequence": "^1.2.2",
-		"typescript": "^2.1.4",
+		"merge2": "1.0.2",
+		"run-sequence": "1.2.2",
+		"typescript": "2.4.1",
 		"webpack": "2.3.3",
 		"yargs": "7.0.2"
 	},
@@ -1522,17 +1571,17 @@ module.exports = {
 		"test": "yarn self_test_node && gulp test"
 	},
 	"types": "dist/typings/wire-webapp-cryptobox.d.ts",
-	"version": "5.1.1"
+	"version": "5.1.3"
 };
 
 /***/ }),
-/* 15 */
+/* 17 */
 /***/ (function(module, exports) {
 
 module.exports = Dexie;
 
 /***/ }),
-/* 16 */
+/* 18 */
 /***/ (function(module, exports) {
 
 module.exports = LRUCache;
