@@ -1,10 +1,9 @@
-import * as Proteus from "wire-webapp-proteus";
-import Dexie from "dexie";
+import * as Proteus from 'wire-webapp-proteus';
+import Dexie from 'dexie';
 import Logdown = require('logdown');
-import {CryptoboxStore} from "./CryptoboxStore";
-import {RecordAlreadyExistsError} from "./RecordAlreadyExistsError";
-import {RecordNotFoundError} from "./RecordNotFoundError";
-import {SerialisedRecord} from "./SerialisedRecord";
+import {CryptoboxStore} from './CryptoboxStore';
+import {RecordAlreadyExistsError, RecordNotFoundError, RecordTypeError} from './error';
+import {SerialisedRecord} from './SerialisedRecord';
 
 export default class IndexedDB implements CryptoboxStore {
   public identity: Proteus.keys.IdentityKeyPair;
@@ -46,9 +45,14 @@ export default class IndexedDB implements CryptoboxStore {
     });
   }
 
-  private create(store_name: string, primary_key: string, entity: SerialisedRecord): Dexie.Promise<string> {
-    this.logger.log(`Add record "${primary_key}" in object store "${store_name}"...`, entity);
-    return this.db[store_name].add(entity, primary_key);
+  private create(store_name: string, primary_key: string, entity: SerialisedRecord): Promise<string> {
+    // Note: Saving of null values need to be prevented: https://github.com/dfahlander/Dexie.js/issues/541
+    if (entity) {
+      this.logger.log(`Add record "${primary_key}" in object store "${store_name}"...`, entity);
+      return this.db[store_name].add(entity, primary_key);
+    }
+
+    return Promise.reject(new RecordTypeError(`Entity is "undefined" or "null". Store name "${store_name}", Primary Key "${primary_key}".`));
   }
 
   private read(store_name: string, primary_key: string): Promise<Object> {
@@ -69,7 +73,7 @@ export default class IndexedDB implements CryptoboxStore {
       });
   }
 
-  private update(store_name: string, primary_key: string, changes: Object): Dexie.Promise<string> {
+  private update(store_name: string, primary_key: string, changes: Object): Promise<string> {
     this.logger.log(`Changing record "${primary_key}" in object store "${store_name}"...`, changes);
     return this.db[store_name].update(primary_key, changes);
   }

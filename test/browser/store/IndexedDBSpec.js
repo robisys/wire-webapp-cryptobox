@@ -134,6 +134,39 @@ describe('cryptobox.store.IndexedDB', function() {
     });
   });
 
+  describe('create', () => {
+    let store = undefined;
+
+    afterEach((done) => {
+      if (store) {
+        store.delete_all().then(done).catch(done.fail);
+      }
+    });
+
+    it('doesn\'t save null values', (done) => {
+      const schema = {
+        amplify: '',
+        clients: ', meta.primary_key',
+        conversation_events: ', conversation, time, type',
+        conversations: ', id, last_event_timestamp',
+        keys: '',
+        prekeys: '',
+        sessions: ''
+      };
+
+      const name = 'wire@production@532af01e-1e24-4366-aacf-33b67d4ee377@temporary';
+      const db = new Dexie(name);
+      db.version(1).stores(schema);
+
+      store = new cryptobox.store.IndexedDB(db);
+      store.create(name, 'sessions', null)
+        .catch((error) => {
+          expect(error.name).toBe('RecordTypeError');
+          done();
+        });
+    });
+  });
+
   describe('create_session', function() {
 
     var store = undefined;

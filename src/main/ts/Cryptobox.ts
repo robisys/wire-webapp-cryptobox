@@ -1,13 +1,13 @@
-import * as Proteus from "wire-webapp-proteus";
-import EventEmitter = require("events");
-import Logdown = require("logdown");
-import LRUCache = require("wire-webapp-lru-cache");
-import {CryptoboxSession} from "./CryptoboxSession";
-import {CryptoboxStore} from "./store/CryptoboxStore";
-import {DecryptionError} from "./DecryptionError";
-import {InvalidPreKeyFormatError} from "./InvalidPreKeyFormatError";
-import {ReadOnlyStore} from "./store/ReadOnlyStore";
-import {RecordAlreadyExistsError} from "./store/RecordAlreadyExistsError";
+import * as Proteus from 'wire-webapp-proteus';
+import EventEmitter = require('events');
+import Logdown = require('logdown');
+import LRUCache = require('wire-webapp-lru-cache');
+import {CryptoboxSession} from './CryptoboxSession';
+import {CryptoboxStore} from './store/CryptoboxStore';
+import {DecryptionError} from './DecryptionError';
+import {InvalidPreKeyFormatError} from './InvalidPreKeyFormatError';
+import {ReadOnlyStore} from './store/ReadOnlyStore';
+import {RecordAlreadyExistsError} from './store/error';
 
 export class Cryptobox extends EventEmitter {
   public static TOPIC = {

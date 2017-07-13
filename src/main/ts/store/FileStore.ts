@@ -2,7 +2,7 @@ import * as fs from 'fs-extra';
 import Logdown = require('logdown');
 import path = require('path');
 import {CryptoboxCRUDStore} from './CryptoboxCRUDStore';
-import {RecordNotFoundError} from './RecordNotFoundError';
+import {RecordNotFoundError} from './error';
 import {SerialisedRecord} from './SerialisedRecord';
 import {SerialisedUpdate} from './SerialisedUpdate';
 

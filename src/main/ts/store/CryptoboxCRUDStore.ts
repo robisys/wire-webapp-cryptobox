@@ -1,6 +1,6 @@
 import * as Proteus from 'wire-webapp-proteus';
 import {CryptoboxStore} from './CryptoboxStore';
-import {RecordNotFoundError} from './RecordNotFoundError';
+import {RecordNotFoundError} from './error';
 import {SerialisedRecord} from './SerialisedRecord';
 import {SerialisedUpdate} from './SerialisedUpdate';
 
