@@ -35,7 +35,7 @@ export abstract class CryptoboxCRUDStore implements CryptoboxStore {
       });
   }
 
-  load_identity(): Promise<Proteus.keys.IdentityKeyPair> {
+  load_identity(): Promise<Error | Proteus.keys.IdentityKeyPair> {
     return this.read(CryptoboxCRUDStore.STORES.LOCAL_IDENTITY, CryptoboxCRUDStore.KEYS.LOCAL_IDENTITY)
       .then((record: SerialisedRecord) => {
         const identity: Proteus.keys.IdentityKeyPair = Proteus.keys.IdentityKeyPair.deserialise(record.serialised);
@@ -50,7 +50,7 @@ export abstract class CryptoboxCRUDStore implements CryptoboxStore {
       });
   }
 
-  load_prekey(prekey_id: number): Promise<Proteus.keys.PreKey> {
+  load_prekey(prekey_id: number): Promise<Error | Proteus.keys.PreKey> {
     return this.read(CryptoboxCRUDStore.STORES.PRE_KEYS, prekey_id.toString())
       .then((record: SerialisedRecord) => {
         return Proteus.keys.PreKey.deserialise(record.serialised);

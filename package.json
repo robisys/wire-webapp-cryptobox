@@ -8,7 +8,7 @@
   },
   "description": "High-level API with persistent storage for Proteus.",
   "devDependencies": {
-    "@types/fs-extra": "3.0.1",
+    "@types/fs-extra": "3.0.3",
     "@types/node": "7.0.21",
     "browser-sync": "2.14.0",
     "gulp": "3.9.1",
@@ -30,7 +30,7 @@
     "logdown": "2.2.0",
     "merge2": "1.0.2",
     "run-sequence": "1.2.2",
-    "typescript": "2.1.4",
+    "typescript": "2.4.1",
     "webpack": "2.3.3",
     "yargs": "7.0.2"
   },
@@ -52,5 +52,5 @@
     "test": "yarn self_test_node && gulp test"
   },
   "types": "dist/typings/wire-webapp-cryptobox.d.ts",
-  "version": "5.1.1"
+  "version": "5.1.2"
 }
