@@ -1,9 +1,8 @@
 import * as Proteus from 'wire-webapp-proteus';
+import {CRUDEngine} from '@wireapp/store-engine/dist/commonjs/engine';
 import {CryptoboxStore} from './CryptoboxStore';
 import {RecordNotFoundError} from './error';
 import {SerialisedRecord} from './SerialisedRecord';
-import {SerialisedUpdate} from './SerialisedUpdate';
-import {CRUDEngine} from '@wireapp/store-engine/dist/commonjs/engine';
 
 export abstract class CryptoboxCRUDStore implements CryptoboxStore {
   private engine: CRUDEngine;
@@ -22,24 +21,22 @@ export abstract class CryptoboxCRUDStore implements CryptoboxStore {
     };
   }
 
-  // @formatter:off
-  // abstract create(store_name: string, primary_key: string, entity: SerialisedRecord): Promise<string>;
-  abstract delete(store_name: string, primary_key: string): Promise<string>;
-  abstract delete_all(): Promise<boolean>;
-  abstract read(store_name: string, primary_key: string): Promise<SerialisedRecord>;
-  abstract read_all(store_name: string): Promise<SerialisedRecord[]>;
-  abstract update(store_name: string, primary_key: string, changes: SerialisedUpdate): Promise<string>;
-  // @formatter:on
+  delete_all(): Promise<boolean> {
+    return Promise.resolve()
+      .then(() => this.engine.deleteAll(CryptoboxCRUDStore.STORES.LOCAL_IDENTITY))
+      .then(() => this.engine.deleteAll(CryptoboxCRUDStore.STORES.PRE_KEYS))
+      .then(() => this.engine.deleteAll(CryptoboxCRUDStore.STORES.SESSIONS));
+  }
 
   delete_prekey(prekey_id: number): Promise<number> {
-    return this.delete(CryptoboxCRUDStore.STORES.PRE_KEYS, prekey_id.toString())
+    return this.engine.delete(CryptoboxCRUDStore.STORES.PRE_KEYS, prekey_id.toString())
       .then(() => {
         return prekey_id;
       });
   }
 
   load_identity(): Promise<Error | Proteus.keys.IdentityKeyPair> {
-    return this.read(CryptoboxCRUDStore.STORES.LOCAL_IDENTITY, CryptoboxCRUDStore.KEYS.LOCAL_IDENTITY)
+    return this.engine.read(CryptoboxCRUDStore.STORES.LOCAL_IDENTITY, CryptoboxCRUDStore.KEYS.LOCAL_IDENTITY)
       .then((record: SerialisedRecord) => {
         const identity: Proteus.keys.IdentityKeyPair = Proteus.keys.IdentityKeyPair.deserialise(record.serialised);
         return identity;
@@ -54,7 +51,7 @@ export abstract class CryptoboxCRUDStore implements CryptoboxStore {
   }
 
   load_prekey(prekey_id: number): Promise<Error | Proteus.keys.PreKey> {
-    return this.read(CryptoboxCRUDStore.STORES.PRE_KEYS, prekey_id.toString())
+    return this.engine.read(CryptoboxCRUDStore.STORES.PRE_KEYS, prekey_id.toString())
       .then((record: SerialisedRecord) => {
         return Proteus.keys.PreKey.deserialise(record.serialised);
       })
@@ -68,7 +65,7 @@ export abstract class CryptoboxCRUDStore implements CryptoboxStore {
   }
 
   load_prekeys(): Promise<Proteus.keys.PreKey[]> {
-    return this.read_all(CryptoboxCRUDStore.STORES.PRE_KEYS)
+    return this.engine.readAll(CryptoboxCRUDStore.STORES.PRE_KEYS)
       .then((records: SerialisedRecord[]) => {
         const preKeys: Proteus.keys.PreKey[] = [];
 
@@ -120,7 +117,7 @@ export abstract class CryptoboxCRUDStore implements CryptoboxStore {
   }
 
   read_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session> {
-    return this.read(CryptoboxCRUDStore.STORES.SESSIONS, session_id)
+    return this.engine.read(CryptoboxCRUDStore.STORES.SESSIONS, session_id)
       .then((payload: SerialisedRecord) => {
         return Proteus.session.Session.deserialise(identity, payload.serialised);
       });
@@ -129,14 +126,14 @@ export abstract class CryptoboxCRUDStore implements CryptoboxStore {
   update_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
     const payload: SerialisedRecord = new SerialisedRecord(session.serialise(), session_id);
 
-    return this.update(CryptoboxCRUDStore.STORES.SESSIONS, payload.id, {serialised: payload.serialised})
+    return this.engine.update(CryptoboxCRUDStore.STORES.SESSIONS, payload.id, {serialised: payload.serialised})
       .then(() => {
         return session;
       });
   }
 
   delete_session(session_id: string): Promise<string> {
-    return this.delete(CryptoboxCRUDStore.STORES.SESSIONS, session_id)
+    return this.engine.delete(CryptoboxCRUDStore.STORES.SESSIONS, session_id)
       .then((primary_key: string) => {
         return primary_key;
       });
