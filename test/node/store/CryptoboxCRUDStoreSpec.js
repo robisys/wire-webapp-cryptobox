@@ -64,6 +64,20 @@ describe('cryptobox.store.CryptoboxCRUDStore', () => {
     });
   });
 
+  describe('"delete_prekey"', () => {
+    it('deletes a PreKey', (done) => {
+      const preKeyId = 0;
+      const preKey = Proteus.keys.PreKey.new(preKeyId);
+      fileStore.save_prekey(preKey)
+        .then((savedPreKey) => {
+          expect(savedPreKey.key_id).toBe(preKeyId);
+          return fileStore.delete_prekey(preKeyId);
+        })
+        .then(done)
+        .catch(done.fail);
+    });
+  });
+
   describe('"load_prekey"', () => {
     it('saves and loads a single PreKey', (done) => {
       const preKeyId = 0;
