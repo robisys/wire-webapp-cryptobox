@@ -105,7 +105,7 @@ describe('cryptobox.store.IndexedDB', function() {
 
   });
 
-  describe('constructor', function() {
+  describe('"constructor"', function() {
     var store = undefined;
 
     afterEach(function(done) {
@@ -127,7 +127,7 @@ describe('cryptobox.store.IndexedDB', function() {
 
       var name = 'wire@production@532af01e-1e24-4366-aacf-33b67d4ee376@temporary';
       var db = new Dexie(name);
-      db.version(7).stores(schema);
+      db.version(1).stores(schema);
 
       store = new cryptobox.store.IndexedDB(db);
       expect(store.db.name).toBe(name);
