@@ -3,8 +3,11 @@ import {CryptoboxStore} from './CryptoboxStore';
 import {RecordNotFoundError} from './error';
 import {SerialisedRecord} from './SerialisedRecord';
 import {SerialisedUpdate} from './SerialisedUpdate';
+import {CRUDEngine} from '@wireapp/store-engine/dist/commonjs/engine';
 
 export abstract class CryptoboxCRUDStore implements CryptoboxStore {
+  private engine: CRUDEngine;
+
   static get KEYS() {
     return {
       LOCAL_IDENTITY: 'local_identity'
@@ -20,7 +23,7 @@ export abstract class CryptoboxCRUDStore implements CryptoboxStore {
   }
 
   // @formatter:off
-  abstract create(store_name: string, primary_key: string, entity: SerialisedRecord): Promise<string>;
+  // abstract create(store_name: string, primary_key: string, entity: SerialisedRecord): Promise<string>;
   abstract delete(store_name: string, primary_key: string): Promise<string>;
   abstract delete_all(): Promise<boolean>;
   abstract read(store_name: string, primary_key: string): Promise<SerialisedRecord>;
@@ -81,7 +84,7 @@ export abstract class CryptoboxCRUDStore implements CryptoboxStore {
   save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<Proteus.keys.IdentityKeyPair> {
     const payload: SerialisedRecord = new SerialisedRecord(identity.serialise(), CryptoboxCRUDStore.KEYS.LOCAL_IDENTITY);
 
-    return this.create(CryptoboxCRUDStore.STORES.LOCAL_IDENTITY, payload.id, payload)
+    return this.engine.create(CryptoboxCRUDStore.STORES.LOCAL_IDENTITY, payload.id, payload)
       .then(() => {
         return identity;
       });
@@ -90,7 +93,7 @@ export abstract class CryptoboxCRUDStore implements CryptoboxStore {
   save_prekey(pre_key: Proteus.keys.PreKey): Promise<Proteus.keys.PreKey> {
     const payload: SerialisedRecord = new SerialisedRecord(pre_key.serialise(), pre_key.key_id.toString());
 
-    return this.create(CryptoboxCRUDStore.STORES.PRE_KEYS, payload.id, payload)
+    return this.engine.create(CryptoboxCRUDStore.STORES.PRE_KEYS, payload.id, payload)
       .then(() => {
         return pre_key;
       });
@@ -110,7 +113,7 @@ export abstract class CryptoboxCRUDStore implements CryptoboxStore {
   create_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
     const payload: SerialisedRecord = new SerialisedRecord(session.serialise(), session_id);
 
-    return this.create(CryptoboxCRUDStore.STORES.SESSIONS, payload.id, payload)
+    return this.engine.create(CryptoboxCRUDStore.STORES.SESSIONS, payload.id, payload)
       .then(() => {
         return session;
       });
