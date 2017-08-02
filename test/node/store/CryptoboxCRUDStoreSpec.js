@@ -36,6 +36,34 @@ describe('cryptobox.store.CryptoboxCRUDStore', () => {
 
   afterEach((done) => fs.remove(storagePath).then(done).catch(done.fail));
 
+  describe('"delete_all"', () => {
+    it('deletes everything from the storage', (done) => {
+      let sessionWithBob;
+      const alicePreKeys = Proteus.keys.PreKey.generate_prekeys(0, 10);
+
+      const aliceIdentity = Proteus.keys.IdentityKeyPair.new();
+      const bobIdentity = Proteus.keys.IdentityKeyPair.new();
+      const bobLastResortPreKey = Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID);
+      const bobPreKeyBundle = Proteus.keys.PreKeyBundle.new(bobIdentity.public_key, bobLastResortPreKey);
+      const sessionId = 'my_session_with_bob';
+
+      Proteus.session.Session.init_from_prekey(aliceIdentity, bobPreKeyBundle)
+        .then((session) => {
+          sessionWithBob = session;
+          return Promise.all([
+            fileStore.save_identity(aliceIdentity),
+            fileStore.save_prekeys(alicePreKeys),
+            fileStore.create_session(sessionId, sessionWithBob)
+          ])
+        })
+        .then(() => fileStore.delete_all())
+        .then((hasBeenDeleted) => {
+          expect(hasBeenDeleted).toBe(true);
+          done();
+        });
+    });
+  });
+
   describe('"load_prekey"', () => {
     it('saves and loads a single PreKey', (done) => {
       const preKeyId = 0;
