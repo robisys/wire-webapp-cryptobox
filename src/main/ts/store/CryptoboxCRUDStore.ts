@@ -53,7 +53,10 @@ export default class CryptoboxCRUDStore implements CryptoboxStore {
 
   load_prekey(prekey_id: number): Promise<Error | Proteus.keys.PreKey> {
     return this.engine.read(CryptoboxCRUDStore.STORES.PRE_KEYS, prekey_id.toString())
-      .then((record: SerialisedRecord) => {
+      .then((data: string) => {
+        const decodedData: Buffer = Buffer.from(data, 'base64');
+        const serialised: ArrayBuffer = new Uint8Array(decodedData).buffer;
+        const record: SerialisedRecord = new SerialisedRecord(serialised, CryptoboxCRUDStore.KEYS.LOCAL_IDENTITY);
         return Proteus.keys.PreKey.deserialise(record.serialised);
       })
       .catch(function (error: Error) {
@@ -87,9 +90,11 @@ export default class CryptoboxCRUDStore implements CryptoboxStore {
   }
 
   save_prekey(pre_key: Proteus.keys.PreKey): Promise<Proteus.keys.PreKey> {
-    const payload: SerialisedRecord = new SerialisedRecord(pre_key.serialise(), pre_key.key_id.toString());
+    const record: SerialisedRecord = new SerialisedRecord(pre_key.serialise(), pre_key.key_id.toString());
 
-    return this.engine.create(CryptoboxCRUDStore.STORES.PRE_KEYS, payload.id, payload)
+    const payload: string = new Buffer(record.serialised).toString('base64');
+
+    return this.engine.create(CryptoboxCRUDStore.STORES.PRE_KEYS, record.id, payload)
       .then(() => pre_key);
   }
 

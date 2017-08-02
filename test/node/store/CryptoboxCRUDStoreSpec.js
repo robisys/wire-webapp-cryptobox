@@ -30,15 +30,13 @@ describe('cryptobox.store.CryptoboxCRUDStore', () => {
 
   beforeEach(() => {
     storagePath = fs.mkdtempSync(path.normalize(`${__dirname}/test`));
-    const engine = new FileEngine(storagePath, {
-      fileExtension: '.json'
-    });
+    const engine = new FileEngine(storagePath);
     fileStore = new cryptobox.store.CryptoboxCRUDStore(engine);
   });
 
-  afterEach((done) => fs.remove(storagePath).then(done).catch(done.fail));
+  // afterEach((done) => fs.remove(storagePath).then(done).catch(done.fail));
 
-  describe('PreKey', () => {
+  describe('"load_prekey"', () => {
     it('saves and loads a single PreKey', (done) => {
       const preKeyId = 0;
       const preKey = Proteus.keys.PreKey.new(preKeyId);
@@ -48,7 +46,6 @@ describe('cryptobox.store.CryptoboxCRUDStore', () => {
           return fileStore.load_prekey(preKeyId)
         })
         .then((loadedPreKey) => {
-          console.log('TADA', loadedPreKey);
           expect(loadedPreKey.key_id).toBe(preKeyId);
           done();
         })
