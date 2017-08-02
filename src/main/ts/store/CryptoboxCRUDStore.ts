@@ -4,8 +4,10 @@ import {CryptoboxStore} from './CryptoboxStore';
 import {RecordNotFoundError} from './error';
 import {SerialisedRecord} from './SerialisedRecord';
 
-export abstract class CryptoboxCRUDStore implements CryptoboxStore {
-  protected engine: CRUDEngine;
+export default class CryptoboxCRUDStore implements CryptoboxStore {
+
+  constructor(private engine: CRUDEngine) {
+  }
 
   static get KEYS() {
     return {

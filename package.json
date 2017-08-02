@@ -50,7 +50,8 @@
     "postversion": "git push && git push --tags",
     "self_test_node": "node dist/index.js",
     "start": "gulp",
-    "test": "yarn self_test_node && gulp test"
+    "test": "yarn self_test_node && gulp test",
+    "test:browser": "gulp build && gulp test_browser"
   },
   "types": "dist/typings/wire-webapp-cryptobox.d.ts",
   "version": "5.1.4"

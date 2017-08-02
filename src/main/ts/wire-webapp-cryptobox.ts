@@ -1,6 +1,6 @@
 import Cache from './store/Cache';
-import FileStore from './store/FileStore';
 import IndexedDB from './store/IndexedDB';
+import CryptoboxCRUDStore from './store/CryptoboxCRUDStore';
 import {CryptoboxSession} from './CryptoboxSession';
 import {Cryptobox} from './Cryptobox';
 import {DecryptionError} from './DecryptionError';
@@ -15,7 +15,7 @@ export default {
   InvalidPreKeyFormatError: InvalidPreKeyFormatError,
   store: {
     Cache,
-    FileStore,
+    CryptoboxCRUDStore,
     IndexedDB,
     ReadOnlyStore,
     RecordAlreadyExistsError,
