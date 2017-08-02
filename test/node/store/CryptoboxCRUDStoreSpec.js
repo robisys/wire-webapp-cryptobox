@@ -34,7 +34,7 @@ describe('cryptobox.store.CryptoboxCRUDStore', () => {
     fileStore = new cryptobox.store.CryptoboxCRUDStore(engine);
   });
 
-  // afterEach((done) => fs.remove(storagePath).then(done).catch(done.fail));
+  afterEach((done) => fs.remove(storagePath).then(done).catch(done.fail));
 
   describe('"load_prekey"', () => {
     it('saves and loads a single PreKey', (done) => {
@@ -47,6 +47,36 @@ describe('cryptobox.store.CryptoboxCRUDStore', () => {
         })
         .then((loadedPreKey) => {
           expect(loadedPreKey.key_id).toBe(preKeyId);
+          done();
+        })
+        .catch(done.fail);
+    });
+  });
+
+  describe('"load_prekeys"', () => {
+    it('loads multiple PreKeys', (done) => {
+      Promise.all([
+        fileStore.save_prekey(Proteus.keys.PreKey.new(1)),
+        fileStore.save_prekey(Proteus.keys.PreKey.new(2)),
+        fileStore.save_prekey(Proteus.keys.PreKey.new(3)),
+      ]).then(() => fileStore.load_prekeys())
+        .then((preKeys) => {
+          expect(preKeys.length).toBe(3);
+          done();
+        });
+    });
+  });
+
+  describe('"save_prekeys"', () => {
+    it('saves multiple PreKeys', (done) => {
+      const preKeys = [
+        Proteus.keys.PreKey.new(0),
+        Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID)
+      ];
+
+      fileStore.save_prekeys(preKeys)
+        .then((savedPreKeys) => {
+          expect(savedPreKeys.length).toBe(preKeys.length);
           done();
         })
         .catch(done.fail);

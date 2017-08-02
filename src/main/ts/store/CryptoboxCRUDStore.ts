@@ -23,7 +23,13 @@ export default class CryptoboxCRUDStore implements CryptoboxStore {
     };
   }
 
-  delete_all(): Promise<boolean> {
+  private base64_to_record(data: string): SerialisedRecord {
+    const decodedData: Buffer = Buffer.from(data, 'base64');
+    const serialised: ArrayBuffer = new Uint8Array(decodedData).buffer;
+    return new SerialisedRecord(serialised, CryptoboxCRUDStore.KEYS.LOCAL_IDENTITY);
+  }
+
+  public delete_all(): Promise<boolean> {
     return Promise.resolve()
       .then(() => this.engine.deleteAll(CryptoboxCRUDStore.STORES.LOCAL_IDENTITY))
       .then(() => this.engine.deleteAll(CryptoboxCRUDStore.STORES.PRE_KEYS))
@@ -31,12 +37,12 @@ export default class CryptoboxCRUDStore implements CryptoboxStore {
       .then(() => true);
   }
 
-  delete_prekey(prekey_id: number): Promise<number> {
+  public delete_prekey(prekey_id: number): Promise<number> {
     return this.engine.delete(CryptoboxCRUDStore.STORES.PRE_KEYS, prekey_id.toString())
       .then(() => prekey_id);
   }
 
-  load_identity(): Promise<Error | Proteus.keys.IdentityKeyPair> {
+  public load_identity(): Promise<Error | Proteus.keys.IdentityKeyPair> {
     return this.engine.read(CryptoboxCRUDStore.STORES.LOCAL_IDENTITY, CryptoboxCRUDStore.KEYS.LOCAL_IDENTITY)
       .then((record: SerialisedRecord) => {
         const identity: Proteus.keys.IdentityKeyPair = Proteus.keys.IdentityKeyPair.deserialise(record.serialised);
@@ -51,12 +57,10 @@ export default class CryptoboxCRUDStore implements CryptoboxStore {
       });
   }
 
-  load_prekey(prekey_id: number): Promise<Error | Proteus.keys.PreKey> {
+  public load_prekey(prekey_id: number): Promise<Error | Proteus.keys.PreKey> {
     return this.engine.read(CryptoboxCRUDStore.STORES.PRE_KEYS, prekey_id.toString())
       .then((data: string) => {
-        const decodedData: Buffer = Buffer.from(data, 'base64');
-        const serialised: ArrayBuffer = new Uint8Array(decodedData).buffer;
-        const record: SerialisedRecord = new SerialisedRecord(serialised, CryptoboxCRUDStore.KEYS.LOCAL_IDENTITY);
+        const record: SerialisedRecord = this.base64_to_record(data);
         return Proteus.keys.PreKey.deserialise(record.serialised);
       })
       .catch(function (error: Error) {
@@ -68,12 +72,13 @@ export default class CryptoboxCRUDStore implements CryptoboxStore {
       });
   }
 
-  load_prekeys(): Promise<Proteus.keys.PreKey[]> {
+  public load_prekeys(): Promise<Proteus.keys.PreKey[]> {
     return this.engine.readAll(CryptoboxCRUDStore.STORES.PRE_KEYS)
-      .then((records: SerialisedRecord[]) => {
+      .then((records: any[]) => {
         const preKeys: Proteus.keys.PreKey[] = [];
 
-        records.forEach((record: SerialisedRecord) => {
+        records.forEach((data: string) => {
+          const record: SerialisedRecord = this.base64_to_record(data);
           let preKey: Proteus.keys.PreKey = Proteus.keys.PreKey.deserialise(record.serialised);
           preKeys.push(preKey);
         });
@@ -82,14 +87,14 @@ export default class CryptoboxCRUDStore implements CryptoboxStore {
       });
   }
 
-  save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<Proteus.keys.IdentityKeyPair> {
+  public save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<Proteus.keys.IdentityKeyPair> {
     const payload: SerialisedRecord = new SerialisedRecord(identity.serialise(), CryptoboxCRUDStore.KEYS.LOCAL_IDENTITY);
 
     return this.engine.create(CryptoboxCRUDStore.STORES.LOCAL_IDENTITY, payload.id, payload)
       .then(() => identity);
   }
 
-  save_prekey(pre_key: Proteus.keys.PreKey): Promise<Proteus.keys.PreKey> {
+  public save_prekey(pre_key: Proteus.keys.PreKey): Promise<Proteus.keys.PreKey> {
     const record: SerialisedRecord = new SerialisedRecord(pre_key.serialise(), pre_key.key_id.toString());
 
     const payload: string = new Buffer(record.serialised).toString('base64');
@@ -98,7 +103,7 @@ export default class CryptoboxCRUDStore implements CryptoboxStore {
       .then(() => pre_key);
   }
 
-  save_prekeys(pre_keys: Proteus.keys.PreKey[]): Promise<Proteus.keys.PreKey[]> {
+  public save_prekeys(pre_keys: Proteus.keys.PreKey[]): Promise<Proteus.keys.PreKey[]> {
     const promises = pre_keys.map((pre_key) => {
       return this.save_prekey(pre_key);
     });
@@ -107,28 +112,28 @@ export default class CryptoboxCRUDStore implements CryptoboxStore {
       .then(() => pre_keys);
   }
 
-  create_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
+  public create_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
     const payload: SerialisedRecord = new SerialisedRecord(session.serialise(), session_id);
 
     return this.engine.create(CryptoboxCRUDStore.STORES.SESSIONS, payload.id, payload)
       .then(() => session);
   }
 
-  read_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session> {
+  public read_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session> {
     return this.engine.read(CryptoboxCRUDStore.STORES.SESSIONS, session_id)
       .then((payload: SerialisedRecord) => {
         return Proteus.session.Session.deserialise(identity, payload.serialised);
       });
   }
 
-  update_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
+  public update_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
     const payload: SerialisedRecord = new SerialisedRecord(session.serialise(), session_id);
 
     return this.engine.update(CryptoboxCRUDStore.STORES.SESSIONS, payload.id, {serialised: payload.serialised})
       .then(() => session);
   }
 
-  delete_session(session_id: string): Promise<string> {
+  public delete_session(session_id: string): Promise<string> {
     return this.engine.delete(CryptoboxCRUDStore.STORES.SESSIONS, session_id)
       .then((primary_key: string) => primary_key);
   }
