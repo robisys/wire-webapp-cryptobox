@@ -6,7 +6,7 @@ import {Cryptobox} from './Cryptobox';
 import {DecryptionError} from './DecryptionError';
 import {InvalidPreKeyFormatError} from './InvalidPreKeyFormatError';
 import {ReadOnlyStore} from './store/ReadOnlyStore';
-import {RecordAlreadyExistsError, RecordNotFoundError} from './store/error';
+import {RecordAlreadyExistsError, RecordNotFoundError, RecordTypeError} from './store/error';
 
 export default {
   Cryptobox: Cryptobox,
@@ -14,6 +14,11 @@ export default {
   DecryptionError: DecryptionError,
   InvalidPreKeyFormatError: InvalidPreKeyFormatError,
   store: {
+    error: {
+      RecordAlreadyExistsError,
+      RecordNotFoundError,
+      RecordTypeError,
+    },
     Cache,
     CryptoboxCRUDStore,
     IndexedDB,
