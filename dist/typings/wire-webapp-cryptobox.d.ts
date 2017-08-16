@@ -154,8 +154,9 @@ export declare class Cryptobox {
   private store;
   identity: Proteus.keys.IdentityKeyPair;
   constructor(cryptoBoxStore: store.CryptoboxStore, minimumAmountOfPreKeys?: number);
-  init(): Promise<Cryptobox>;
-  private generate_required_prekeys();
+  create(): Promise<Array<Proteus.keys.PreKey>>;
+  load(): Promise<Array<Proteus.keys.PreKey>>;
+  private init: Promise<Array<Proteus.keys.PreKey>>;
   session_from_prekey(client_id: string, pre_key_bundle: ArrayBuffer): Promise<CryptoboxSession>;
   session_from_message(session_id: string, envelope: ArrayBuffer): Promise<Proteus.session.SessionFromMessageTuple>;
   session_load(session_id: string): Promise<CryptoboxSession>;

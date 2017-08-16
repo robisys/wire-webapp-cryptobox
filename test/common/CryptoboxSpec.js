@@ -19,9 +19,9 @@
 
 describe('cryptobox.Cryptobox', function() {
 
-  var cryptobox = undefined;
-  var Proteus = undefined;
-  var store = undefined;
+  let cryptobox = undefined;
+  let Proteus = undefined;
+  let store = undefined;
 
   beforeAll(function(done) {
     if (typeof window === 'object') {
@@ -53,34 +53,17 @@ describe('cryptobox.Cryptobox', function() {
     });
   });
 
-  describe('init', function() {
-    it('initializes a Cryptobox with a given identity', function(done) {
-      var initialIdentity = Proteus.keys.IdentityKeyPair.new();
-      var initialFingerPrint = initialIdentity.public_key.fingerprint();
+  describe('create', function() {
+    it('initializes a Cryptobox with a new identity and the last resort PreKey and saves these', function(done) {
+      let box = new cryptobox.Cryptobox(store);
 
-      store.save_identity(initialIdentity)
-        .then(function() {
-          var box = new cryptobox.Cryptobox(store);
-          expect(box.identity).not.toBeDefined();
-          box.init()
-            .then(function() {
-              expect(box.identity.public_key.fingerprint()).toBe(initialFingerPrint);
-              done();
-            })
-            .catch(done.fail);
-        })
-        .catch(done.fail);
-    });
-
-    it('creates a new identity (if none is given) plus the last resort PreKey and saves these', function(done) {
-      var box = new cryptobox.Cryptobox(store);
-      expect(box.identity).not.toBeDefined();
-      box.init()
+      box.create()
         .then(function() {
           expect(box.identity).toBeDefined();
           return store.load_identity();
         })
         .then(function(identity) {
+          expect(identity).toBeDefined();
           expect(identity.public_key.fingerprint()).toBeDefined();
           return store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
         })
@@ -96,16 +79,91 @@ describe('cryptobox.Cryptobox', function() {
     });
   });
 
+  describe('load', function() {
+    it('initializes a Cryptobox with an existing identity and the last resort PreKey', function(done) {
+      let initialFingerPrint = undefined;
+      let box = new cryptobox.Cryptobox(store);
+
+      box.create()
+        .then(function() {
+          const identity = box.identity;
+          expect(identity).toBeDefined();
+          expect(identity.public_key.fingerprint()).toBeDefined();
+
+          initialFingerPrint = identity.public_key.fingerprint();
+
+          box = new cryptobox.Cryptobox(store);
+          expect(box.identity).not.toBeDefined();
+          return box.load();
+        })
+        .then(function() {
+          expect(box.identity.public_key.fingerprint()).toBe(initialFingerPrint);
+          done();
+        })
+        .catch(done.fail);
+    });
+
+    it('fails to initialize a Cryptobox of which the identity is missing', function(done) {
+      let box = new cryptobox.Cryptobox(store);
+
+      box.create()
+        .then(function() {
+          expect(box.identity).toBeDefined();
+          return store.delete_all();
+        })
+        .then(function() {
+          return store.load_identity();
+        })
+        .then(function(identity) {
+          expect(identity).not.toBeDefined();
+
+          box = new cryptobox.Cryptobox(store);
+          expect(box.identity).not.toBeDefined();
+          return box.load();
+        })
+        .then(done.fail)
+        .catch(function(error) {
+          expect(error).toEqual(jasmine.any(cryptobox.error.CryptoboxError));
+          done();
+        });
+    });
+
+    it('fails to initialize a Cryptobox of which the last resort PreKey is missing', function(done) {
+      let box = new cryptobox.Cryptobox(store);
+
+      box.create()
+        .then(function() {
+          expect(box.identity).toBeDefined();
+          return store.delete_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
+        })
+        .then(function() {
+          return store.load_prekey(Proteus.keys.PreKey.MAX_PREKEY_ID);
+        })
+        .then(function(prekey) {
+          expect(prekey).not.toBeDefined();
+
+          box = new cryptobox.Cryptobox(store);
+          expect(box.identity).not.toBeDefined();
+          return box.load();
+        })
+        .then(done.fail)
+        .catch(function(error) {
+          expect(error).toEqual(jasmine.any(cryptobox.error.CryptoboxError));
+          done();
+        });
+    });
+  });
+
   describe('Sessions', function() {
 
-    var box = undefined;
-    var sessionId = 'unique_identifier';
+    let box = undefined;
+    const sessionId = 'unique_identifier';
 
     beforeEach(function(done) {
       box = new cryptobox.Cryptobox(store);
-      box.init()
+      box.create()
         .then(function() {
-          var bob = {
+          const bob = {
             identity: Proteus.keys.IdentityKeyPair.new(),
             prekey: Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID)
           };
@@ -114,7 +172,7 @@ describe('cryptobox.Cryptobox', function() {
           return Proteus.session.Session.init_from_prekey(box.identity, bob.bundle);
         })
         .then(function(session) {
-          var cryptoBoxSession = new cryptobox.CryptoboxSession(sessionId, box.pk_store, session);
+          const cryptoBoxSession = new cryptobox.CryptoboxSession(sessionId, box.pk_store, session);
           return box.session_save(cryptoBoxSession);
         })
         .then(function() {
@@ -125,12 +183,12 @@ describe('cryptobox.Cryptobox', function() {
 
     describe('session_from_prekey', function() {
       it('creates a session from a valid PreKey format', function(done) {
-        var remotePreKey = {
+        const remotePreKey = {
           id: 65535,
           key: "pQABARn//wKhAFggY/Yre8URI2xF93otjO7pUJ3ZjP4aM+sNJb6pL6J+iYgDoQChAFggZ049puHgS2zw8wjJorpl+EG9/op9qEOANG7ecEU2hfwE9g=="
         };
-        var sessionId = 'session_id';
-        var decodedPreKeyBundleBuffer = sodium.from_base64(remotePreKey.key).buffer;
+        const sessionId = 'session_id';
+        const decodedPreKeyBundleBuffer = sodium.from_base64(remotePreKey.key).buffer;
 
         box.session_from_prekey(sessionId, decodedPreKeyBundleBuffer)
           .then(function(session) {
@@ -141,12 +199,12 @@ describe('cryptobox.Cryptobox', function() {
       });
 
       it('fails for outdated PreKey formats', function(done) {
-        var remotePreKey = {
+        const remotePreKey = {
           id: 65535,
           key: "hAEZ//9YIOxZw78oQCH6xKyAI7WqagtbvRZ/LaujG+T790hOTbf7WCDqAE5Dc75VfmYji6wEz976hJ2hYuODYE6pA59DNFn/KQ=="
         };
-        var sessionId = 'session_id';
-        var decodedPreKeyBundleBuffer = sodium.from_base64(remotePreKey.key).buffer;
+        const sessionId = 'session_id';
+        const decodedPreKeyBundleBuffer = sodium.from_base64(remotePreKey.key).buffer;
 
         box.session_from_prekey(sessionId, decodedPreKeyBundleBuffer)
           .then(done.fail)

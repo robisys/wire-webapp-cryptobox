@@ -52,16 +52,15 @@ export default class FileStore extends CryptoboxCRUDStore {
         if (error) {
           if (error.code === 'ENOENT') {
             const message: string = `Record "${primary_key}" from file "${file}" could not be found.`;
-            reject(new RecordNotFoundError(message));
-          } else {
-            reject(error);
+            return reject(new RecordNotFoundError(message));
           }
-        } else {
-          const decodedData: Buffer = Buffer.from(data, "base64");
-          const serialised: ArrayBuffer = new Uint8Array(decodedData).buffer;
-          const record: SerialisedRecord = new SerialisedRecord(serialised, CryptoboxCRUDStore.KEYS.LOCAL_IDENTITY);
-          resolve(record);
+          return reject(error);
         }
+
+        const decodedData: Buffer = Buffer.from(data, "base64");
+        const serialised: ArrayBuffer = new Uint8Array(decodedData).buffer;
+        const record: SerialisedRecord = new SerialisedRecord(serialised, CryptoboxCRUDStore.KEYS.LOCAL_IDENTITY);
+        resolve(record);
       });
     });
   }

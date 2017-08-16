@@ -7,7 +7,7 @@ logger.log(`Testing Cryptobox v${cryptobox.Cryptobox.prototype.VERSION}`);
 const store = new cryptobox.store.Cache();
 const box = new cryptobox.Cryptobox(store, 5);
 
-box.init()
+box.create()
   .then(() => {
     const fingerprint = box.identity.public_key.fingerprint();
     console.log(`Public Fingerprint: ${fingerprint}`);

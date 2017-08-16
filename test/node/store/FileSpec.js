@@ -47,11 +47,11 @@ describe('cryptobox.store.FileStore', () => {
       let firstFingerprint = undefined;
       let secondFingerprint = undefined;
 
-      box.init()
+      box.create()
         .then(() => {
           firstFingerprint = box.identity.public_key.fingerprint();
           box = new cryptobox.Cryptobox(new cryptobox.store.FileStore(storagePath), 1);
-          return box.init();
+          return box.load();
         })
         .then(() => {
           secondFingerprint = box.identity.public_key.fingerprint();
@@ -128,7 +128,7 @@ describe('cryptobox.store.FileStore', () => {
         const preKey = Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID);
         const bobPreKeyBundle = Proteus.keys.PreKeyBundle.new(bob.public_key, preKey);
 
-        alice.init()
+        alice.create()
           .then(function(allPreKeys) {
             expect(allPreKeys.length).toBe(1);
             done();

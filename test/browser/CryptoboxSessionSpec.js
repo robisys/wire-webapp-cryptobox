@@ -19,9 +19,9 @@
 
 describe('cryptobox.CryptoboxSession', function() {
 
-  var cryptobox = undefined;
-  var Proteus = undefined;
-  var sodium = undefined;
+  let cryptobox = undefined;
+  let Proteus = undefined;
+  let sodium = undefined;
 
   beforeAll(function(done) {
     if (typeof window === 'object') {
@@ -39,52 +39,45 @@ describe('cryptobox.CryptoboxSession', function() {
 
   describe('PreKey messages', function() {
 
-    var alice = undefined;
-    var bob = undefined;
+    let alice = undefined;
+    let bob = undefined;
 
     function generatePreKeys(cryptobox_store) {
-      return new Promise(function(resolve, reject) {
-        var promises = [];
+      // Generate one PreKey and the Last Resort PreKey
+      const pre_keys = Proteus.keys.PreKey.generate_prekeys(0, 1);
+      pre_keys.push(Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID));
 
-        // Generate one PreKey
-        var pre_keys = Proteus.keys.PreKey.generate_prekeys(0, 1);
-        pre_keys.forEach(function(pre_key) {
-          promises.push(cryptobox_store.save_prekey(pre_key));
+      const promises = pre_keys.map((pre_key) => cryptobox_store.save_prekey(pre_key));
+
+      return Promise.all(promises)
+        .then(function() {
+          return pre_keys;
+        })
+        .catch(function(error) {
+          console.log('Error in Test PreKey generation.');
+          throw error;
         });
-
-        // Generate Last Resort PreKey
-        var lastResortKey = Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID);
-        promises.push(cryptobox_store.save_prekey(lastResortKey));
-
-        Promise.all(promises)
-          .then(function() {
-            resolve(pre_keys);
-          })
-          .catch(function(error) {
-            console.log('Error in Test PreKey generation.');
-            reject(error);
-          });
-      });
     }
 
     function setupAliceToBob(preKeyId) {
-      return new Promise(function(resolve, reject) {
-        // 1. Bob creates and "uploads" a PreKey, which can be "consumed" by Alice
-        generatePreKeys(bob.cryptobox_store).then(function() {
+      // 1. Bob creates and "uploads" a PreKey, which can be "consumed" by Alice
+      return generatePreKeys(bob.cryptobox_store)
+        .then(function() {
           return bob.cryptobox_store.load_prekey(preKeyId);
-        }).then(function(prekey) {
+        })
+        .then(function(prekey) {
           // 2. Alice takes Bob's PreKey bundle to initiate a session
           bob.bundle = Proteus.keys.PreKeyBundle.new(bob.identity.public_key, prekey);
           return Proteus.session.Session.init_from_prekey(alice.identity, bob.bundle);
-        }).then(function(session) {
+        })
+        .then(function(session) {
           // 3. Alice upgrades the basic Proteus session into a high-level Cryptobox session
-          var sessionWithBob = new cryptobox.CryptoboxSession('bobs_client_id', alice.pre_key_store, session);
-          resolve(sessionWithBob);
-        }).catch(function(error) {
+          return new cryptobox.CryptoboxSession('bobs_client_id', alice.pre_key_store, session);
+        })
+        .catch(function(error) {
           console.log('Error in Test Alice setup!');
           reject(error);
         });
-      });
     }
 
     beforeEach(function() {
@@ -114,7 +107,7 @@ describe('cryptobox.CryptoboxSession', function() {
     });
 
     describe('encryption & decryption', function() {
-      var plaintext = 'Hello Bob, I am Alice.';
+      const plaintext = 'Hello Bob, I am Alice.';
 
       it('encrypts a message from Alice which can be decrypted by Bob', function(done) {
         Promise.resolve().then(function() {
@@ -122,14 +115,14 @@ describe('cryptobox.CryptoboxSession', function() {
         }).then(function(sessionWithBob) {
           return sessionWithBob.encrypt(plaintext);
         }).then(function(serialisedCipherText) {
-          var envelope = Proteus.message.Envelope.deserialise(serialisedCipherText);
+          const envelope = Proteus.message.Envelope.deserialise(serialisedCipherText);
           expect(bob.pre_key_store.prekeys.length).toBe(0);
           return Proteus.session.Session.init_from_message(bob.identity, bob.pre_key_store, envelope);
         }).then(function(proteusSession) {
           // When Bob decrypts a PreKey message, he knows that one of his PreKeys has been "consumed"
           expect(bob.pre_key_store.prekeys.length).toBe(1);
-          var decryptedBuffer = proteusSession[1];
-          var decrypted = sodium.to_string(decryptedBuffer);
+          const decryptedBuffer = proteusSession[1];
+          const decrypted = sodium.to_string(decryptedBuffer);
           expect(decrypted).toBe(plaintext);
           done();
         }).catch(done.fail);
@@ -141,13 +134,13 @@ describe('cryptobox.CryptoboxSession', function() {
         }).then(function(sessionWithBob) {
           return sessionWithBob.encrypt(plaintext);
         }).then(function(serialisedCipherText) {
-          var envelope = Proteus.message.Envelope.deserialise(serialisedCipherText);
+          const envelope = Proteus.message.Envelope.deserialise(serialisedCipherText);
           expect(bob.pre_key_store.prekeys.length).toBe(0);
           return Proteus.session.Session.init_from_message(bob.identity, bob.pre_key_store, envelope);
         }).then(function(proteusSession) {
           expect(bob.pre_key_store.prekeys.length).toBe(0);
-          var decryptedBuffer = proteusSession[1];
-          var decrypted = sodium.to_string(decryptedBuffer);
+          const decryptedBuffer = proteusSession[1];
+          const decrypted = sodium.to_string(decryptedBuffer);
           expect(decrypted).toBe(plaintext);
           done();
         }).catch(done.fail);

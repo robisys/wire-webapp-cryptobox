@@ -44,9 +44,9 @@ export abstract class CryptoboxCRUDStore implements CryptoboxStore {
       .catch(function (error: Error) {
         if (error instanceof RecordNotFoundError) {
           return undefined;
-        } else {
-          return error;
         }
+
+        throw error;
       });
   }
 
@@ -58,23 +58,18 @@ export abstract class CryptoboxCRUDStore implements CryptoboxStore {
       .catch(function (error: Error) {
         if (error instanceof RecordNotFoundError) {
           return undefined;
-        } else {
-          return error;
         }
+
+        throw error;
       });
   }
 
   load_prekeys(): Promise<Proteus.keys.PreKey[]> {
     return this.read_all(CryptoboxCRUDStore.STORES.PRE_KEYS)
       .then((records: SerialisedRecord[]) => {
-        const preKeys: Proteus.keys.PreKey[] = [];
-
-        records.forEach((record: SerialisedRecord) => {
-          let preKey: Proteus.keys.PreKey = Proteus.keys.PreKey.deserialise(record.serialised);
-          preKeys.push(preKey);
+        return records.map((record: SerialisedRecord) => {
+          return Proteus.keys.PreKey.deserialise(record.serialised);
         });
-
-        return preKeys;
       });
   }
 

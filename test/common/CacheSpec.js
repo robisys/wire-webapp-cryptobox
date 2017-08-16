@@ -31,11 +31,11 @@ describe('cryptobox.store.Cache', () => {
       let firstFingerprint = undefined;
       let secondFingerprint = undefined;
 
-      box.init()
+      box.create()
         .then(() => {
           firstFingerprint = box.identity.public_key.fingerprint();
           box = new cryptobox.Cryptobox(new cryptobox.store.Cache(), 1);
-          return box.init();
+          return box.create();
         })
         .then(() => {
           secondFingerprint = box.identity.public_key.fingerprint();

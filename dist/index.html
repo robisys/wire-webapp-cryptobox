@@ -48,9 +48,9 @@
           bob.mobile.store.delete_all()
         ])
         .then(() => Promise.all([
-          alice.desktop.init(),
-          bob.desktop.init(),
-          bob.mobile.init()
+          alice.desktop.create(),
+          bob.desktop.create(),
+          bob.mobile.create()
         ]))
         .then(() => alice.desktop.store.load_prekey(0))
         .then(prekey => {

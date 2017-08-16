@@ -19,8 +19,8 @@
 
 describe('Store Compatibility', function() {
 
-  var cryptobox = undefined;
-  var Proteus = undefined;
+  let cryptobox = undefined;
+  let Proteus = undefined;
 
   beforeAll(function(done) {
     if (typeof window === 'object') {
@@ -36,15 +36,15 @@ describe('Store Compatibility', function() {
 
   describe('local identity', function() {
     it('saves the same identity', function(done) {
-      var identity = Proteus.keys.IdentityKeyPair.new();
-      var fingerprint = identity.public_key.fingerprint();
+      const identity = Proteus.keys.IdentityKeyPair.new();
+      const fingerprint = identity.public_key.fingerprint();
 
-      var identifier = 'compatibility-test';
-      var storeCache = new cryptobox.store.Cache();
-      var storeIndexedDB = new cryptobox.store.IndexedDB(identifier);
+      const identifier = 'compatibility-test';
+      const storeCache = new cryptobox.store.Cache();
+      const storeIndexedDB = new cryptobox.store.IndexedDB(identifier);
 
-      var identityFromCache = undefined;
-      var identityFromIndexedDB = undefined;
+      let identityFromCache = undefined;
+      let identityFromIndexedDB = undefined;
 
       storeCache.save_identity(identity)
         .then(function() {
