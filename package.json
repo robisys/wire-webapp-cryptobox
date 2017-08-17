@@ -52,5 +52,5 @@
     "test": "yarn self_test_node && gulp test"
   },
   "types": "dist/typings/wire-webapp-cryptobox.d.ts",
-  "version": "6.0.0"
+  "version": "6.0.1"
 }
