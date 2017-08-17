@@ -2826,15 +2826,15 @@ levn@^0.3.0, levn@~0.3.0:
     prelude-ls "~1.1.2"
     type-check "~0.3.2"
 
-libsodium-sumo@0.5.1:
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/libsodium-sumo/-/libsodium-sumo-0.5.1.tgz#d867cdeb4d865e45c7eec4e2d8e992ce50415585"
+libsodium-sumo@0.5.2:
+  version "0.5.2"
+  resolved "https://registry.yarnpkg.com/libsodium-sumo/-/libsodium-sumo-0.5.2.tgz#0772cec6445c655de46f5001d33ed09951d82868"
 
-libsodium-wrappers-sumo@0.5.1:
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/libsodium-wrappers-sumo/-/libsodium-wrappers-sumo-0.5.1.tgz#88ade99aa81d7d9736d965d7cfc8190846c56554"
+libsodium-wrappers-sumo@0.5.2:
+  version "0.5.2"
+  resolved "https://registry.yarnpkg.com/libsodium-wrappers-sumo/-/libsodium-wrappers-sumo-0.5.2.tgz#84645d9073e5d92e9df615497e10a26907115ade"
   dependencies:
-    libsodium-sumo "0.5.1"
+    libsodium-sumo "0.5.2"
 
 liftoff@^2.1.0:
   version "2.3.0"
@@ -5039,12 +5039,12 @@ wire-webapp-lru-cache@2.0.0:
   dependencies:
     webpack "^2.2.0-rc.0"
 
-wire-webapp-proteus@5.1.0:
-  version "5.1.0"
-  resolved "https://registry.yarnpkg.com/wire-webapp-proteus/-/wire-webapp-proteus-5.1.0.tgz#2101e09c8f8fcbf6225d03d95a933bc08f03c98d"
+wire-webapp-proteus@5.1.1:
+  version "5.1.1"
+  resolved "https://registry.yarnpkg.com/wire-webapp-proteus/-/wire-webapp-proteus-5.1.1.tgz#f0b88bc89c08d84e9b74ab170647d29144b8a292"
   dependencies:
     ed2curve "0.2.1"
-    libsodium-wrappers-sumo "0.5.1"
+    libsodium-wrappers-sumo "0.5.2"
     wire-webapp-cbor "2.1.2"
 
 wordwrap@0.0.2, wordwrap@~0.0.2:
