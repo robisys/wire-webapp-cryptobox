@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v6.1.1 */
+/*! wire-webapp-cryptobox v6.1.2 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -3675,7 +3675,7 @@ module.exports = {
 		"test:rerun": "gulp test"
 	},
 	"types": "dist/typings/wire-webapp-cryptobox.d.ts",
-	"version": "6.1.1"
+	"version": "6.1.2"
 };
 
 /***/ }),
