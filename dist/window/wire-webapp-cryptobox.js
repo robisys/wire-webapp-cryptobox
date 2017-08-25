@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v6.1.0 */
+/*! wire-webapp-cryptobox v6.1.1 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -776,9 +776,7 @@ var CryptoboxCRUDStore = (function () {
             if (error instanceof error_1.RecordNotFoundError) {
                 return undefined;
             }
-            else {
-                return error;
-            }
+            throw error;
         });
     };
     CryptoboxCRUDStore.prototype.load_prekey = function (prekey_id) {
@@ -792,9 +790,7 @@ var CryptoboxCRUDStore = (function () {
             if (error instanceof error_1.RecordNotFoundError) {
                 return undefined;
             }
-            else {
-                return error;
-            }
+            throw error;
         });
     };
     CryptoboxCRUDStore.prototype.load_prekeys = function () {
@@ -3679,7 +3675,7 @@ module.exports = {
 		"test:rerun": "gulp test"
 	},
 	"types": "dist/typings/wire-webapp-cryptobox.d.ts",
-	"version": "6.1.0"
+	"version": "6.1.1"
 };
 
 /***/ }),
