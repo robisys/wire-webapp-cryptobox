@@ -1,6 +1,6 @@
 import Cache from './store/Cache';
-import FileStore from './store/FileStore';
 import IndexedDB from './store/IndexedDB';
+import CryptoboxCRUDStore from './store/CryptoboxCRUDStore';
 import {Cryptobox} from './Cryptobox';
 import {CryptoboxError} from './error';
 import {CryptoboxSession} from './CryptoboxSession';
@@ -24,7 +24,7 @@ export default {
       RecordNotFoundError,
       RecordTypeError,
     },
-    FileStore,
+    CryptoboxCRUDStore,
     IndexedDB,
     ReadOnlyStore,
   }

@@ -18,6 +18,8 @@
 
 import Dexie from "dexie";
 import * as Proteus from "wire-webapp-proteus";
+import {CRUDEngine} from "@wireapp/store-engine/dist/commonjs/engine";
+
 export declare module store {
   class Cache implements CryptoboxStore {
     private identity;
@@ -38,7 +40,7 @@ export declare module store {
     create_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session>;
     update_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session>;
   }
-  abstract class CryptoboxCRUDStore implements CryptoboxStore {
+  class CryptoboxCRUDStore implements CryptoboxStore {
     static readonly KEYS: {
       LOCAL_IDENTITY: string;
     };
@@ -47,12 +49,9 @@ export declare module store {
       PRE_KEYS: string;
       SESSIONS: string;
     };
-    abstract create(store_name: string, primary_key: string, entity: SerialisedRecord): Promise<string>;
-    abstract delete(store_name: string, primary_key: string): Promise<string>;
-    abstract delete_all(): Promise<boolean>;
-    abstract read(store_name: string, primary_key: string): Promise<SerialisedRecord>;
-    abstract read_all(store_name: string): Promise<SerialisedRecord[]>;
-    abstract update(store_name: string, primary_key: string, changes: SerialisedUpdate): Promise<string>;
+    private engine;
+    constructor(engine: CRUDEngine);
+    delete_all(): Promise<boolean>;
     delete_prekey(prekey_id: number): Promise<number>;
     load_identity(): Promise<Proteus.keys.IdentityKeyPair>;
     load_prekey(prekey_id: number): Promise<Proteus.keys.PreKey>;
@@ -153,7 +152,7 @@ export declare class Cryptobox {
   private pk_store;
   private store;
   identity: Proteus.keys.IdentityKeyPair;
-  constructor(cryptoBoxStore: store.CryptoboxStore, minimumAmountOfPreKeys?: number);
+  constructor(cryptoBoxStore: store.CryptoboxCRUDStore, minimumAmountOfPreKeys?: number);
   create(): Promise<Array<Proteus.keys.PreKey>>;
   load(): Promise<Array<Proteus.keys.PreKey>>;
   private init: Promise<Array<Proteus.keys.PreKey>>;

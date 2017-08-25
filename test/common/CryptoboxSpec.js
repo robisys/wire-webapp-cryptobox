@@ -55,7 +55,7 @@ describe('cryptobox.Cryptobox', function() {
 
   describe('create', function() {
     it('initializes a Cryptobox with a new identity and the last resort PreKey and saves these', function(done) {
-      let box = new cryptobox.Cryptobox(store);
+      const box = new cryptobox.Cryptobox(store);
 
       box.create()
         .then(function() {
@@ -72,6 +72,19 @@ describe('cryptobox.Cryptobox', function() {
           done();
         })
         .catch(done.fail);
+    });
+
+    it('initializes a Cryptobox with a defined amount of PreKeys (including the last resort PreKey)', (done) => {
+      const box = new cryptobox.Cryptobox(store, 10);
+      box.create()
+        .then(() => {
+          const preKeys = box.cachedPreKeys;
+          const lastResortPreKey = preKeys.filter((preKey) => preKey.key_id === Proteus.keys.PreKey.MAX_PREKEY_ID);
+          expect(preKeys.length).toBe(10);
+          expect(box.lastResortPreKey).toBeDefined();
+          expect(box.lastResortPreKey).toBe(lastResortPreKey[0]);
+          done();
+        });
     });
 
     it('returns the current version', function() {

@@ -1,10 +1,10 @@
 import * as Proteus from 'wire-webapp-proteus';
+import CryptoboxCRUDStore from './store/CryptoboxCRUDStore';
 import EventEmitter = require('events');
 import Logdown = require('logdown');
 import LRUCache = require('wire-webapp-lru-cache');
 import {CryptoboxError} from './error';
 import {CryptoboxSession} from './CryptoboxSession';
-import {CryptoboxStore} from './store/CryptoboxStore';
 import {DecryptionError} from './DecryptionError';
 import {InvalidPreKeyFormatError} from './InvalidPreKeyFormatError';
 import {ReadOnlyStore} from './store/ReadOnlyStore';
@@ -24,11 +24,16 @@ export class Cryptobox extends EventEmitter {
   private logger: Logdown;
   private minimumAmountOfPreKeys: number;
   private pk_store: ReadOnlyStore;
-  private store: CryptoboxStore;
+  private store: CryptoboxCRUDStore;
 
   public identity: Proteus.keys.IdentityKeyPair;
 
-  constructor(cryptoBoxStore: CryptoboxStore, minimumAmountOfPreKeys: number = 1) {
+  /**
+   * Constructs a Cryptobox.
+   * @param {CryptoboxCRUDStore} cryptoBoxStore
+   * @param {number} minimumAmountOfPreKeys - Minimum amount of PreKeys (including the last resort PreKey)
+   */
+  constructor(cryptoBoxStore: CryptoboxCRUDStore, minimumAmountOfPreKeys: number = 1) {
     super();
 
     if (!cryptoBoxStore) {
@@ -48,7 +53,7 @@ export class Cryptobox extends EventEmitter {
     this.store = cryptoBoxStore;
     this.pk_store = new ReadOnlyStore(this.store);
 
-    const storageEngine: string = (<any>cryptoBoxStore).constructor.name;
+    const storageEngine: string = cryptoBoxStore.constructor.name;
     this.logger.log(`Constructed Cryptobox. Minimum amount of PreKeys is "${minimumAmountOfPreKeys}". Storage engine is "${storageEngine}".`);
   }
 
