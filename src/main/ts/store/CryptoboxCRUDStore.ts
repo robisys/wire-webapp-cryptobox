@@ -55,9 +55,8 @@ export default class CryptoboxCRUDStore implements CryptoboxStore {
       .catch(function (error: Error) {
         if (error instanceof RecordNotFoundError) {
           return undefined;
-        } else {
-          return error;
         }
+        throw error;
       });
   }
 
@@ -70,9 +69,8 @@ export default class CryptoboxCRUDStore implements CryptoboxStore {
       .catch(function (error: Error) {
         if (error instanceof RecordNotFoundError) {
           return undefined;
-        } else {
-          return error;
         }
+        throw error;
       });
   }
 
