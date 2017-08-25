@@ -15,10 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
+/// <reference types="node" />
 
 import Dexie from "dexie";
 import * as Proteus from "wire-webapp-proteus";
 import {CRUDEngine} from "@wireapp/store-engine/dist/commonjs/engine";
+import EventEmitter = require('events');
 
 export declare module store {
   class Cache implements CryptoboxStore {
@@ -141,30 +143,35 @@ export declare module store {
     serialised: ArrayBuffer;
   }
 }
-export declare class Cryptobox {
-  EVENT: {
+export declare class Cryptobox extends EventEmitter {
+  public identity: Proteus.keys.IdentityKeyPair;
+  public static TOPIC: {
     NEW_PREKEYS: string;
+    NEW_SESSION: string;
   };
+  public VERSION: string;
   private cachedSessions;
   private channel;
   private logger;
   private minimumAmountOfPreKeys;
   private pk_store;
   private store;
-  identity: Proteus.keys.IdentityKeyPair;
   constructor(cryptoBoxStore: store.CryptoboxCRUDStore, minimumAmountOfPreKeys?: number);
-  create(): Promise<Array<Proteus.keys.PreKey>>;
-  load(): Promise<Array<Proteus.keys.PreKey>>;
   private init: Promise<Array<Proteus.keys.PreKey>>;
-  session_from_prekey(client_id: string, pre_key_bundle: ArrayBuffer): Promise<CryptoboxSession>;
-  session_from_message(session_id: string, envelope: ArrayBuffer): Promise<Proteus.session.SessionFromMessageTuple>;
-  session_load(session_id: string): Promise<CryptoboxSession>;
-  session_save(session: CryptoboxSession): Promise<String>;
-  session_delete(session_id: string): Promise<string>;
+  create(): Promise<Array<Proteus.keys.PreKey>>;
+  decrypt(session_id: string, ciphertext: ArrayBuffer): Promise<Uint8Array>;
+  encrypt(session: CryptoboxSession | string, payload: string | Uint8Array): Promise<ArrayBuffer>;
+  get_serialized_last_resort_prekey(): Promise<Object>;
+  get_serialized_standard_prekeys(): Promise<Array<Object>>;
+  load(): Promise<Array<Proteus.keys.PreKey>>;
   new_prekey(prekey_id: number): Promise<ArrayBuffer>;
   new_prekeys(start: number, size?: number): Promise<Array<Proteus.keys.PreKey>>;
-  encrypt(session: CryptoboxSession | string, payload: string | Uint8Array): Promise<ArrayBuffer>;
-  decrypt(session_id: string, ciphertext: ArrayBuffer): Promise<Uint8Array>;
+  serialize_prekey(prekey: Proteus.keys.PreKey): Object;
+  session_delete(session_id: string): Promise<string>;
+  session_from_message(session_id: string, envelope: ArrayBuffer): Promise<Proteus.session.SessionFromMessageTuple>;
+  session_from_prekey(client_id: string, pre_key_bundle: ArrayBuffer): Promise<CryptoboxSession>;
+  session_load(session_id: string): Promise<CryptoboxSession>;
+  session_save(session: CryptoboxSession): Promise<String>;
 }
 export declare class CryptoboxSession {
   id: string;
