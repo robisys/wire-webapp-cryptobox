@@ -149,6 +149,7 @@ export declare class Cryptobox extends EventEmitter {
     NEW_PREKEYS: string;
     NEW_SESSION: string;
   };
+  public lastResortPreKey: Proteus.keys.PreKey;
   public VERSION: string;
   private cachedSessions;
   private channel;

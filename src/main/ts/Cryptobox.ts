@@ -19,7 +19,7 @@ export class Cryptobox extends EventEmitter {
 
   private cachedPreKeys: Array<Proteus.keys.PreKey>;
   private cachedSessions: LRUCache;
-  private lastResortPreKey: Proteus.keys.PreKey;
+  public lastResortPreKey: Proteus.keys.PreKey;
 
   private logger: Logdown;
   private minimumAmountOfPreKeys: number;
