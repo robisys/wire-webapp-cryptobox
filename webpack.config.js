@@ -12,7 +12,6 @@ module.exports = {
     path: `${__dirname}/dist/window`
   },
   externals: {
-    './store/FileStore': '{}',
     'bazinga64': true,
     'dexie': 'Dexie',
     'logdown': 'Logdown',
