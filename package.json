@@ -55,5 +55,5 @@
     "test:rerun": "gulp test"
   },
   "types": "dist/typings/wire-webapp-cryptobox.d.ts",
-  "version": "6.1.2"
+  "version": "6.1.3"
 }

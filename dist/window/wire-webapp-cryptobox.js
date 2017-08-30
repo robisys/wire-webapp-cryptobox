@@ -1,4 +1,4 @@
-/*! wire-webapp-cryptobox v6.1.2 */
+/*! wire-webapp-cryptobox v6.1.3 */
 var cryptobox =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -140,7 +140,7 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var Proteus = __webpack_require__(0);
-var EventEmitter = __webpack_require__(20);
+var EventEmitter = __webpack_require__(19);
 
 var LRUCache = __webpack_require__(25);
 var error_1 = __webpack_require__(6);
@@ -229,7 +229,7 @@ var Cryptobox = (function (_super) {
             .then(function () {
             var ids = _this.cachedPreKeys.map(function (preKey) { return preKey.key_id.toString(); });
             
-            return _this.cachedPreKeys;
+            return _this.cachedPreKeys.sort(function (a, b) { return a.key_id - b.key_id; });
         });
     };
     Cryptobox.prototype.get_serialized_last_resort_prekey = function () {
@@ -746,13 +746,22 @@ var CryptoboxCRUDStore = (function () {
         enumerable: true,
         configurable: true
     });
-    CryptoboxCRUDStore.prototype.base64_to_record = function (source) {
-        var decodedData = Buffer.from(source, 'base64');
-        var serialised = new Uint8Array(decodedData).buffer;
-        return new SerialisedRecord_1.SerialisedRecord(serialised, CryptoboxCRUDStore.KEYS.LOCAL_IDENTITY);
+    CryptoboxCRUDStore.prototype.from_store = function (record) {
+        var decodedData = Buffer.from(record.serialised, 'base64');
+        return {
+            created: record.created,
+            id: record.id,
+            serialised: new Uint8Array(decodedData).buffer,
+            version: record.version,
+        };
     };
-    CryptoboxCRUDStore.prototype.record_to_base64 = function (record) {
-        return new Buffer(record.serialised).toString('base64');
+    CryptoboxCRUDStore.prototype.to_store = function (record) {
+        return {
+            created: record.created,
+            id: record.id,
+            serialised: new Buffer(record.serialised).toString('base64'),
+            version: record.version,
+        };
     };
     CryptoboxCRUDStore.prototype.delete_all = function () {
         var _this = this;
@@ -767,8 +776,10 @@ var CryptoboxCRUDStore = (function () {
             .then(function () { return prekey_id; });
     };
     CryptoboxCRUDStore.prototype.load_identity = function () {
+        var _this = this;
         return this.engine.read(CryptoboxCRUDStore.STORES.LOCAL_IDENTITY, CryptoboxCRUDStore.KEYS.LOCAL_IDENTITY)
-            .then(function (record) {
+            .then(function (payload) {
+            var record = _this.from_store(payload);
             var identity = Proteus.keys.IdentityKeyPair.deserialise(record.serialised);
             return identity;
         })
@@ -782,8 +793,8 @@ var CryptoboxCRUDStore = (function () {
     CryptoboxCRUDStore.prototype.load_prekey = function (prekey_id) {
         var _this = this;
         return this.engine.read(CryptoboxCRUDStore.STORES.PRE_KEYS, prekey_id.toString())
-            .then(function (data) {
-            var record = _this.base64_to_record(data);
+            .then(function (payload) {
+            var record = _this.from_store(payload);
             return Proteus.keys.PreKey.deserialise(record.serialised);
         })
             .catch(function (error) {
@@ -798,8 +809,8 @@ var CryptoboxCRUDStore = (function () {
         return this.engine.readAll(CryptoboxCRUDStore.STORES.PRE_KEYS)
             .then(function (records) {
             var preKeys = [];
-            records.forEach(function (data) {
-                var record = _this.base64_to_record(data);
+            records.forEach(function (payload) {
+                var record = _this.from_store(payload);
                 var preKey = Proteus.keys.PreKey.deserialise(record.serialised);
                 preKeys.push(preKey);
             });
@@ -808,37 +819,38 @@ var CryptoboxCRUDStore = (function () {
     };
     CryptoboxCRUDStore.prototype.save_identity = function (identity) {
         var record = new SerialisedRecord_1.SerialisedRecord(identity.serialise(), CryptoboxCRUDStore.KEYS.LOCAL_IDENTITY);
-        var payload = this.record_to_base64(record);
+        var payload = this.to_store(record);
         return this.engine.create(CryptoboxCRUDStore.STORES.LOCAL_IDENTITY, record.id, payload)
             .then(function () { return identity; });
     };
     CryptoboxCRUDStore.prototype.save_prekey = function (pre_key) {
         var record = new SerialisedRecord_1.SerialisedRecord(pre_key.serialise(), pre_key.key_id.toString());
-        var payload = this.record_to_base64(record);
+        var payload = this.to_store(record);
         return this.engine.create(CryptoboxCRUDStore.STORES.PRE_KEYS, record.id, payload)
             .then(function () { return pre_key; });
     };
     CryptoboxCRUDStore.prototype.save_prekeys = function (pre_keys) {
         var _this = this;
         var promises = pre_keys.map(function (pre_key) { return _this.save_prekey(pre_key); });
-        return Promise.all(promises)
-            .then(function () { return pre_keys; });
+        return Promise.all(promises).then(function () { return pre_keys; });
     };
     CryptoboxCRUDStore.prototype.create_session = function (session_id, session) {
         var record = new SerialisedRecord_1.SerialisedRecord(session.serialise(), session_id);
-        var payload = this.record_to_base64(record);
+        var payload = this.to_store(record);
         return this.engine.create(CryptoboxCRUDStore.STORES.SESSIONS, record.id, payload)
             .then(function () { return session; });
     };
     CryptoboxCRUDStore.prototype.read_session = function (identity, session_id) {
+        var _this = this;
         return this.engine.read(CryptoboxCRUDStore.STORES.SESSIONS, session_id)
             .then(function (payload) {
-            return Proteus.session.Session.deserialise(identity, payload.serialised);
+            var record = _this.from_store(payload);
+            return Proteus.session.Session.deserialise(identity, record.serialised);
         });
     };
     CryptoboxCRUDStore.prototype.update_session = function (session_id, session) {
-        var payload = new SerialisedRecord_1.SerialisedRecord(session.serialise(), session_id);
-        return this.engine.update(CryptoboxCRUDStore.STORES.SESSIONS, payload.id, { serialised: payload.serialised })
+        var record = new SerialisedRecord_1.SerialisedRecord(session.serialise(), session_id);
+        return this.engine.update(CryptoboxCRUDStore.STORES.SESSIONS, record.id, { serialised: record.serialised })
             .then(function () { return session; });
     };
     CryptoboxCRUDStore.prototype.delete_session = function (session_id) {
@@ -1300,22 +1312,22 @@ function placeHoldersCount (b64) {
 
 function byteLength (b64) {
   // base64 is 4/3 + up to two characters of the original data
-  return b64.length * 3 / 4 - placeHoldersCount(b64)
+  return (b64.length * 3 / 4) - placeHoldersCount(b64)
 }
 
 function toByteArray (b64) {
-  var i, j, l, tmp, placeHolders, arr
+  var i, l, tmp, placeHolders, arr
   var len = b64.length
   placeHolders = placeHoldersCount(b64)
 
-  arr = new Arr(len * 3 / 4 - placeHolders)
+  arr = new Arr((len * 3 / 4) - placeHolders)
 
   // if there are placeholders, only get up to the last complete 4 chars
   l = placeHolders > 0 ? len - 4 : len
 
   var L = 0
 
-  for (i = 0, j = 0; i < l; i += 4, j += 3) {
+  for (i = 0; i < l; i += 4) {
     tmp = (revLookup[b64.charCodeAt(i)] << 18) | (revLookup[b64.charCodeAt(i + 1)] << 12) | (revLookup[b64.charCodeAt(i + 2)] << 6) | revLookup[b64.charCodeAt(i + 3)]
     arr[L++] = (tmp >> 16) & 0xFF
     arr[L++] = (tmp >> 8) & 0xFF
@@ -1397,8 +1409,8 @@ function fromByteArray (uint8) {
 
 
 var base64 = __webpack_require__(17)
-var ieee754 = __webpack_require__(21)
-var isArray = __webpack_require__(19)
+var ieee754 = __webpack_require__(20)
+var isArray = __webpack_require__(21)
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -3182,17 +3194,6 @@ function isnan (val) {
 /* 19 */
 /***/ (function(module, exports) {
 
-var toString = {}.toString;
-
-module.exports = Array.isArray || function (arr) {
-  return toString.call(arr) == '[object Array]';
-};
-
-
-/***/ }),
-/* 20 */
-/***/ (function(module, exports) {
-
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -3498,7 +3499,7 @@ function isUndefined(arg) {
 
 
 /***/ }),
-/* 21 */
+/* 20 */
 /***/ (function(module, exports) {
 
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
@@ -3588,6 +3589,17 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
 
 /***/ }),
+/* 21 */
+/***/ (function(module, exports) {
+
+var toString = {}.toString;
+
+module.exports = Array.isArray || function (arr) {
+  return toString.call(arr) == '[object Array]';
+};
+
+
+/***/ }),
 /* 22 */
 /***/ (function(module, exports) {
 
@@ -3618,65 +3630,7 @@ module.exports = g;
 /* 23 */
 /***/ (function(module, exports) {
 
-module.exports = {
-	"dependencies": {
-		"@wireapp/store-engine": "0.1.0",
-		"dexie": "1.5.1",
-		"fs-extra": "3.0.1",
-		"rimraf": "2.6.1",
-		"wire-webapp-lru-cache": "2.0.0",
-		"wire-webapp-proteus": "5.1.1"
-	},
-	"description": "High-level API with persistent storage for Proteus.",
-	"devDependencies": {
-		"@types/fs-extra": "3.0.3",
-		"@types/node": "7.0.21",
-		"browser-sync": "2.14.0",
-		"gulp": "3.9.1",
-		"gulp-babel": "6.1.2",
-		"gulp-bower": "0.0.13",
-		"gulp-bower-assets": "0.0.3",
-		"gulp-clean": "0.3.2",
-		"gulp-concat": "2.6.0",
-		"gulp-eslint": "3.0.1",
-		"gulp-if": "2.0.2",
-		"gulp-jasmine": "2.4.1",
-		"gulp-replace": "0.5.4",
-		"gulp-typescript": "3.1.6",
-		"gulp-util": "3.0.7",
-		"gutil": "1.6.4",
-		"karma": "1.7.0",
-		"karma-chrome-launcher": "2.1.1",
-		"karma-jasmine": "1.1.0",
-		"logdown": "2.2.0",
-		"merge2": "1.0.2",
-		"run-sequence": "1.2.2",
-		"typescript": "2.4.1",
-		"webpack": "2.3.3",
-		"yargs": "7.0.2"
-	},
-	"license": "GPL-3.0",
-	"main": "dist/commonjs/wire-webapp-cryptobox.js",
-	"name": "wire-webapp-cryptobox",
-	"repository": {
-		"type": "git",
-		"url": "git://github.com/wireapp/wire-webapp-cryptobox.git"
-	},
-	"scripts": {
-		"dist": "gulp dist --env production",
-		"lint": "echo \"No linting specified\" && exit 0",
-		"preversion": "yarn lint && yarn dist && yarn test",
-		"version": "gulp build_ts_browser && git add dist/**/*",
-		"postversion": "git push && git push --tags",
-		"start": "gulp",
-		"test": "gulp test",
-		"test:browser": "gulp build && gulp test_browser",
-		"test:node": "gulp dist && node dist/index.js && gulp test_node",
-		"test:rerun": "gulp test"
-	},
-	"types": "dist/typings/wire-webapp-cryptobox.d.ts",
-	"version": "6.1.2"
-};
+module.exports = {"dependencies":{"@wireapp/store-engine":"0.1.0","dexie":"1.5.1","fs-extra":"3.0.1","rimraf":"2.6.1","wire-webapp-lru-cache":"2.0.0","wire-webapp-proteus":"5.1.2"},"description":"High-level API with persistent storage for Proteus.","devDependencies":{"@types/fs-extra":"3.0.3","@types/node":"7.0.21","browser-sync":"2.14.0","gulp":"3.9.1","gulp-babel":"6.1.2","gulp-bower":"0.0.13","gulp-bower-assets":"0.0.3","gulp-clean":"0.3.2","gulp-concat":"2.6.0","gulp-eslint":"3.0.1","gulp-if":"2.0.2","gulp-jasmine":"2.4.1","gulp-replace":"0.5.4","gulp-typescript":"3.1.6","gulp-util":"3.0.7","gutil":"1.6.4","karma":"1.7.0","karma-chrome-launcher":"2.1.1","karma-jasmine":"1.1.0","logdown":"2.2.0","merge2":"1.0.2","run-sequence":"1.2.2","typescript":"2.4.1","webpack":"2.3.3","yargs":"7.0.2"},"license":"GPL-3.0","main":"dist/commonjs/wire-webapp-cryptobox.js","name":"wire-webapp-cryptobox","repository":{"type":"git","url":"git://github.com/wireapp/wire-webapp-cryptobox.git"},"scripts":{"dist":"gulp dist --env production","lint":"echo \"No linting specified\" && exit 0","preversion":"yarn lint && yarn dist && yarn test","version":"gulp build_ts_browser && git add dist/**/*","postversion":"git push && git push --tags","start":"gulp","test":"gulp test","test:browser":"gulp build && gulp test_browser","test:node":"gulp dist && node dist/index.js && gulp test_node","test:rerun":"gulp test"},"types":"dist/typings/wire-webapp-cryptobox.d.ts","version":"6.1.3"}
 
 /***/ }),
 /* 24 */
