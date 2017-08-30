@@ -162,12 +162,12 @@ export declare class Cryptobox extends EventEmitter {
   create(): Promise<Array<Proteus.keys.PreKey>>;
   decrypt(session_id: string, ciphertext: ArrayBuffer): Promise<Uint8Array>;
   encrypt(session: CryptoboxSession | string, payload: string | Uint8Array): Promise<ArrayBuffer>;
-  get_serialized_last_resort_prekey(): Promise<Object>;
-  get_serialized_standard_prekeys(): Promise<Array<Object>>;
+  get_serialized_last_resort_prekey(): Promise<{id: number, key: string}>;
+  get_serialized_standard_prekeys(): Promise<Array<{id: number, key: string}>>;
   load(): Promise<Array<Proteus.keys.PreKey>>;
   new_prekey(prekey_id: number): Promise<ArrayBuffer>;
   new_prekeys(start: number, size?: number): Promise<Array<Proteus.keys.PreKey>>;
-  serialize_prekey(prekey: Proteus.keys.PreKey): Object;
+  serialize_prekey(prekey: Proteus.keys.PreKey): {id: number, key: string};
   session_delete(session_id: string): Promise<string>;
   session_from_message(session_id: string, envelope: ArrayBuffer): Promise<Proteus.session.SessionFromMessageTuple>;
   session_from_prekey(client_id: string, pre_key_bundle: ArrayBuffer): Promise<CryptoboxSession>;

@@ -5059,9 +5059,9 @@ wire-webapp-lru-cache@2.0.0:
   dependencies:
     webpack "^2.2.0-rc.0"
 
-wire-webapp-proteus@5.1.1:
-  version "5.1.1"
-  resolved "https://registry.yarnpkg.com/wire-webapp-proteus/-/wire-webapp-proteus-5.1.1.tgz#f0b88bc89c08d84e9b74ab170647d29144b8a292"
+wire-webapp-proteus@5.1.2:
+  version "5.1.2"
+  resolved "https://registry.yarnpkg.com/wire-webapp-proteus/-/wire-webapp-proteus-5.1.2.tgz#5daa4c7cf745edaa4e871ac0dbbe91f20250f826"
   dependencies:
     ed2curve "0.2.1"
     libsodium-wrappers-sumo "0.5.2"

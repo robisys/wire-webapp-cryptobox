@@ -94,11 +94,14 @@ describe('cryptobox.Cryptobox', function() {
 
   describe('load', function() {
     it('initializes a Cryptobox with an existing identity and the last resort PreKey', function(done) {
+      let box = new cryptobox.Cryptobox(store, 4);
       let initialFingerPrint = undefined;
-      let box = new cryptobox.Cryptobox(store);
 
       box.create()
-        .then(function() {
+        .then(function(initialPreKeys) {
+          const lastResortPreKey = initialPreKeys[initialPreKeys.length - 1];
+          expect(lastResortPreKey.key_id).toBe(Proteus.keys.PreKey.MAX_PREKEY_ID);
+
           const identity = box.identity;
           expect(identity).toBeDefined();
           expect(identity.public_key.fingerprint()).toBeDefined();

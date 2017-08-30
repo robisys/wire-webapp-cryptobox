@@ -122,16 +122,16 @@ export class Cryptobox extends EventEmitter {
       .then(() => {
         const ids: Array<string> = this.cachedPreKeys.map(preKey => preKey.key_id.toString());
         this.logger.log(`Initialized Cryptobox with a total amount of "${this.cachedPreKeys.length}" PreKeys (${ids.join(', ')}).`, this.cachedPreKeys);
-        return this.cachedPreKeys;
+        return this.cachedPreKeys.sort((a, b) => a.key_id - b.key_id);
       });
   }
 
-  public get_serialized_last_resort_prekey(): Promise<Object> {
+  public get_serialized_last_resort_prekey(): Promise<{id: number, key: string}> {
     return Promise.resolve(this.serialize_prekey(this.lastResortPreKey));
   }
 
-  public get_serialized_standard_prekeys(): Promise<Array<Object>> {
-    const standardPreKeys: Array<Object> = this.cachedPreKeys
+  public get_serialized_standard_prekeys(): Promise<Array<{id: number, key: string}>> {
+    const standardPreKeys: Array<{id: number, key: string}> = this.cachedPreKeys
       .map((preKey: Proteus.keys.PreKey) => {
         const isLastResortPreKey = preKey.key_id === Proteus.keys.PreKey.MAX_PREKEY_ID;
         return isLastResortPreKey ? undefined : this.serialize_prekey(preKey);
@@ -308,7 +308,7 @@ export class Cryptobox extends EventEmitter {
       .then((preKeys: Array<Proteus.keys.PreKey>) => preKeys[0]);
   }
 
-  public serialize_prekey(prekey: Proteus.keys.PreKey): Object {
+  public serialize_prekey(prekey: Proteus.keys.PreKey): {id: number, key: string} {
     return Proteus.keys.PreKeyBundle.new(this.identity.public_key, prekey).serialised_json();
   }
 
