@@ -850,7 +850,8 @@ var CryptoboxCRUDStore = (function () {
     };
     CryptoboxCRUDStore.prototype.update_session = function (session_id, session) {
         var record = new SerialisedRecord_1.SerialisedRecord(session.serialise(), session_id);
-        return this.engine.update(CryptoboxCRUDStore.STORES.SESSIONS, record.id, { serialised: record.serialised })
+        var payload = this.to_store(record);
+        return this.engine.update(CryptoboxCRUDStore.STORES.SESSIONS, record.id, { serialised: payload.serialised })
             .then(function () { return session; });
     };
     CryptoboxCRUDStore.prototype.delete_session = function (session_id) {
