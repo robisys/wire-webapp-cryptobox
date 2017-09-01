@@ -46,7 +46,7 @@ export interface CryptoboxStore {
 
   /**
    * Saves a specified session.
-   * @return Promise<string> Resolves with the "ID" from the saved session record.
+   * @return Promise<Proteus.session.Session> Resolves with the saved session.
    */
   create_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session>;
 

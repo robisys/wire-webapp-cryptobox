@@ -137,8 +137,8 @@ export default class CryptoboxCRUDStore implements CryptoboxStore {
 
   public update_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
     const record: SerialisedRecord = new SerialisedRecord(session.serialise(), session_id);
-
-    return this.engine.update(CryptoboxCRUDStore.STORES.SESSIONS, record.id, {serialised: record.serialised})
+    const payload: PersistedRecord = this.to_store(record);
+    return this.engine.update(CryptoboxCRUDStore.STORES.SESSIONS, record.id, {serialised: payload.serialised})
       .then(() => session);
   }
 

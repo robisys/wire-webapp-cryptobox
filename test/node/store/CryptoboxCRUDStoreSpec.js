@@ -124,4 +124,32 @@ describe('cryptobox.store.CryptoboxCRUDStore', () => {
         .catch(done.fail);
     });
   });
+
+  describe('"update_session"', () => {
+    it('updates an already persisted session', (done) => {
+      const aliceIdentity = Proteus.keys.IdentityKeyPair.new();
+      const bobIdentity = Proteus.keys.IdentityKeyPair.new();
+      const bobLastResortPreKey = Proteus.keys.PreKey.new(Proteus.keys.PreKey.MAX_PREKEY_ID);
+      const bobPreKeyBundle = Proteus.keys.PreKeyBundle.new(bobIdentity.public_key, bobLastResortPreKey);
+      const sessionId = 'my_session_with_bob';
+
+      Proteus.session.Session.init_from_prekey(aliceIdentity, bobPreKeyBundle)
+        .then((proteusSession) => fileStore.create_session(sessionId, proteusSession))
+        .then((proteusSession) => {
+          expect(proteusSession.local_identity.public_key.fingerprint()).toBe(aliceIdentity.public_key.fingerprint());
+          expect(proteusSession.remote_identity.public_key.fingerprint()).toBe(bobIdentity.public_key.fingerprint());
+          expect(proteusSession.version).toBe(1);
+          proteusSession.version = 2;
+          return fileStore.update_session(sessionId, proteusSession);
+        })
+        .then((proteusSession) => fileStore.read_session(aliceIdentity, sessionId))
+        .then((proteusSession) => {
+          expect(proteusSession.local_identity.public_key.fingerprint()).toBe(aliceIdentity.public_key.fingerprint());
+          expect(proteusSession.remote_identity.public_key.fingerprint()).toBe(bobIdentity.public_key.fingerprint());
+          expect(proteusSession.version).toBe(2);
+          done();
+        })
+        .catch((error) => done.fail(error));
+    });
+  });
 });
