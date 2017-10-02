@@ -3,6 +3,7 @@
     "@wireapp/store-engine": "0.1.0",
     "dexie": "1.5.1",
     "fs-extra": "3.0.1",
+    "logdown": "2.2.0",
     "rimraf": "2.6.1",
     "wire-webapp-lru-cache": "2.0.0",
     "wire-webapp-proteus": "wireapp/proteus.js#neon"
@@ -28,7 +29,6 @@
     "karma": "1.7.0",
     "karma-chrome-launcher": "2.1.1",
     "karma-jasmine": "1.1.0",
-    "logdown": "2.2.0",
     "merge2": "1.0.2",
     "run-sequence": "1.2.2",
     "typescript": "2.4.1",

@@ -2,11 +2,9 @@
   "dependencies": {
     "dexie": "1.5.1",
     "libsodium.js": "0.5.4",
+    "logdown": "2.2.0",
     "wire-webapp-lru-cache": "2.0.0",
     "wire-webapp-proteus": "wireapp/proteus.js#neon"
-  },
-  "devDependencies": {
-    "logdown": "2.2.0"
   },
   "ignore": [
     "*.*",
