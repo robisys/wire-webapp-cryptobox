@@ -1,23 +1,24 @@
 {
   "dependencies": {
-    "dexie": "~1.5.1",
-    "libsodium.js": "~0.4.9",
-    "wire-webapp-lru-cache": "~2.0.0",
-    "wire-webapp-proteus": "wireapp/proteus.js#libsodium-neon"
+    "dexie": "1.5.1",
+    "libsodium.js": "0.5.4",
+    "wire-webapp-lru-cache": "2.0.0",
+    "wire-webapp-proteus": "wireapp/proteus.js#neon"
   },
   "devDependencies": {
-    "logdown": "~2.0.3"
+    "logdown": "2.2.0"
   },
   "ignore": [
+    "*.*",
     "**/.*",
     "bower_components",
-    "dist/commonjs",
-    "dist/index.html",
-    "dist/index.js",
-    "dist/typings",
+    "dist/**/*",
+    "!dist/window/**/*",
     "node_modules",
+    "spec",
     "src",
-    "test"
+    "test",
+    "typings"
   ],
   "license": "GPL-3.0",
   "main": [

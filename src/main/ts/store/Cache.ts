@@ -13,122 +13,93 @@ export default class Cache implements CryptoboxStore {
   }
 
   public delete_all(): Promise<boolean> {
-    return new Promise((resolve) => {
-      this.identity = undefined;
-      this.prekeys = {};
-      this.sessions = {};
-      resolve(true);
-    });
+    this.identity = undefined;
+    this.prekeys = {};
+    this.sessions = {};
+    return Promise.resolve(true);
   }
 
   public delete_prekey(prekey_id: number): Promise<number> {
-    return new Promise((resolve) => {
-      delete this.prekeys[prekey_id];
-      this.logger.log(`Deleted PreKey ID "${prekey_id}".`);
-      resolve(prekey_id);
-    });
+    delete this.prekeys[prekey_id];
+    this.logger.log(`Deleted PreKey ID "${prekey_id}".`);
+    return Promise.resolve(prekey_id);
   }
 
   public delete_session(session_id: string): Promise<string> {
-    return new Promise((resolve) => {
-      delete this.sessions[session_id];
-      resolve(session_id);
-    });
+    delete this.sessions[session_id];
+    return Promise.resolve(session_id);
   }
 
   public load_identity(): Promise<Proteus.keys.IdentityKeyPair> {
-    return new Promise((resolve) => {
-      if (this.identity) {
-        resolve(this.identity);
-      } else {
-        resolve(undefined);
-      }
-    });
+    return Promise.resolve(this.identity);
   }
 
   public load_prekey(prekey_id: number): Promise<Proteus.keys.PreKey> {
-    return new Promise((resolve, reject) => {
-      let serialised: ArrayBuffer = this.prekeys[prekey_id];
-      if (serialised) {
-        resolve(Proteus.keys.PreKey.deserialise(serialised));
-      } else {
-        resolve(undefined);
-      }
-    });
+    const serialised: ArrayBuffer = this.prekeys[prekey_id];
+    if (serialised) {
+      return Promise.resolve(Proteus.keys.PreKey.deserialise(serialised));
+    }
+
+    return Promise.resolve(undefined);
   }
 
   public load_prekeys(): Promise<Array<Proteus.keys.PreKey>> {
-    let prekey_promises: Array<Promise<Proteus.keys.PreKey>> = [];
-
-    Object.keys(this.prekeys).forEach((key: string) => {
-      let prekey_id = parseInt(key, 10);
-      let promise: Promise<Proteus.keys.PreKey> = this.load_prekey(prekey_id);
-      prekey_promises.push(promise);
+    const prekey_promises: Array<Promise<Proteus.keys.PreKey>> = Object
+      .keys(this.prekeys)
+      .map((key: string) => {
+        const prekey_id = parseInt(key, 10);
+        return this.load_prekey(prekey_id);
     });
 
     return Promise.all(prekey_promises);
   }
 
   public read_session(identity: Proteus.keys.IdentityKeyPair, session_id: string): Promise<Proteus.session.Session> {
-    return new Promise((resolve, reject) => {
-      let serialised: ArrayBuffer = this.sessions[session_id];
-      if (serialised) {
-        resolve(Proteus.session.Session.deserialise(identity, serialised));
-      } else {
-        reject(new Error(`Session with ID "${session_id}" not found.`));
-      }
-    });
+    const serialised: ArrayBuffer = this.sessions[session_id];
+    if (serialised) {
+      return Promise.resolve(Proteus.session.Session.deserialise(identity, serialised));
+    }
+
+    return Promise.reject(new Error(`Session with ID "${session_id}" not found.`));
   }
 
   public save_identity(identity: Proteus.keys.IdentityKeyPair): Promise<Proteus.keys.IdentityKeyPair> {
-    return new Promise((resolve) => {
-      this.identity = identity;
-      resolve(this.identity);
-    });
+    this.identity = identity;
+    return Promise.resolve(this.identity);
   }
 
   public save_prekey(preKey: Proteus.keys.PreKey): Promise<Proteus.keys.PreKey> {
-    return new Promise((resolve, reject) => {
+    try {
+      this.prekeys[preKey.key_id] = preKey.serialise();
+      this.logger.log(`Saved PreKey ID "${preKey.key_id}".`);
+    } catch (error) {
+      // TODO: Keep (and log) error stack trace
+      return Promise.reject(new Error(`PreKey (no. ${preKey.key_id}) serialization problem "${error.message}" at "${error.stack}".`));
+    }
 
-      try {
-        this.prekeys[preKey.key_id] = preKey.serialise();
-        this.logger.log(`Saved PreKey ID "${preKey.key_id}".`);
-      } catch (error) {
-        // TODO: Keep (and log) error stack trace
-        return reject(new Error(`PreKey (no. ${preKey.key_id}) serialization problem "${error.message}" at "${error.stack}".`));
-      }
-
-      resolve(preKey);
-    });
+    return Promise.resolve(preKey);
   }
 
   save_prekeys(preKeys: Array<Proteus.keys.PreKey>): Promise<Array<Proteus.keys.PreKey>> {
-    return new Promise((resolve, reject) => {
-      let savePromises: Array<Promise<Proteus.keys.PreKey>> = [];
-
-      preKeys.forEach((preKey: Proteus.keys.PreKey) => {
-        savePromises.push(this.save_prekey(preKey));
+    const savePromises: Array<Promise<Proteus.keys.PreKey>> = preKeys
+      .map((preKey: Proteus.keys.PreKey) => {
+        return this.save_prekey(preKey);
       });
 
-      Promise.all(savePromises)
-        .then(() => {
-          resolve(preKeys);
-        })
-        .catch(reject);
-    });
+    return Promise.all(savePromises)
+      .then(() => {
+        return preKeys;
+      });
   }
 
   public create_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {
-    return new Promise((resolve, reject) => {
+    try {
+      this.sessions[session_id] = session.serialise();
+    } catch (error) {
+      return Promise.reject(new Error(`Session serialization problem: "${error.message}"`));
+    }
 
-      try {
-        this.sessions[session_id] = session.serialise();
-      } catch (error) {
-        return reject(new Error(`Session serialization problem: "${error.message}"`));
-      }
-
-      resolve(session);
-    });
+    return Promise.resolve(session);
   }
 
   public update_session(session_id: string, session: Proteus.session.Session): Promise<Proteus.session.Session> {

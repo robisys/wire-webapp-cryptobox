@@ -16,7 +16,7 @@ export class ReadOnlyStore extends Proteus.session.PreKeyStore {
    */
   public release_prekeys(deletedPreKeyIds: Array<number>): void {
     deletedPreKeyIds.forEach((id: number) => {
-      let index: number = this.prekeys.indexOf(id);
+      const index: number = this.prekeys.indexOf(id);
       if (index > -1) {
         this.prekeys.splice(index, 1);
       }
@@ -28,15 +28,13 @@ export class ReadOnlyStore extends Proteus.session.PreKeyStore {
    * @override
    */
   get_prekey(prekey_id: number): Promise<Proteus.keys.PreKey> {
-    return new Promise((resolve, reject) => {
-      if (this.prekeys.indexOf(prekey_id) !== -1) {
-        reject(new Error(`PreKey "${prekey_id}" not found.`));
-      } else {
-        this.store.load_prekey(prekey_id).then(function (pk: Proteus.keys.PreKey) {
-          resolve(pk);
-        });
-      }
-    });
+    if (this.prekeys.indexOf(prekey_id) !== -1) {
+      return Promise.reject(new Error(`PreKey "${prekey_id}" not found.`));
+    }
+    return this.store.load_prekey(prekey_id)
+      .then(function (prekey: Proteus.keys.PreKey) {
+        return prekey;
+      });
   }
 
   /**

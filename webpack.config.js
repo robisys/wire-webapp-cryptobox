@@ -1,5 +1,5 @@
-var pkg = require('./package.json');
-var webpack = require('webpack');
+const pkg = require('./package.json');
+const webpack = require('webpack');
 
 module.exports = {
   devtool: 'source-map',
@@ -15,8 +15,13 @@ module.exports = {
     'bazinga64': true,
     'dexie': 'Dexie',
     'logdown': 'Logdown',
+    'fs-extra': false,
     'wire-webapp-lru-cache': 'LRUCache',
     'wire-webapp-proteus': 'Proteus'
+  },
+  node: {
+    fs: 'empty',
+    path: 'empty'
   },
   plugins: [
     new webpack.BannerPlugin(`${pkg.name} v${pkg.version}`)
@@ -25,5 +30,6 @@ module.exports = {
     maxAssetSize: 100,
     maxEntrypointSize: 300,
     hints: 'warning'
-  }
+  },
+  target: 'web'
 };
