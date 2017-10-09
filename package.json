@@ -6,7 +6,7 @@
     "logdown": "2.2.0",
     "rimraf": "2.6.1",
     "wire-webapp-lru-cache": "2.0.0",
-    "wire-webapp-proteus": "wireapp/proteus.js#neon"
+    "wire-webapp-proteus": "5.2.1-neon"
   },
   "description": "High-level API with persistent storage for Proteus.",
   "devDependencies": {

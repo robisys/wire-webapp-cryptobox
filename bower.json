@@ -4,7 +4,7 @@
     "libsodium.js": "0.5.4",
     "logdown": "2.2.0",
     "wire-webapp-lru-cache": "2.0.0",
-    "wire-webapp-proteus": "wireapp/proteus.js#neon"
+    "wire-webapp-proteus": "wireapp/proteus.js#235b5a153f3f031f52cc85ea1b84ebc951b3a3c0"
   },
   "ignore": [
     "*.*",
