@@ -17,6 +17,8 @@ Cryptobox provides a high-level API with persistent storage for the [Proteus][2]
 
 [![Build Status](https://travis-ci.org/wireapp/wire-webapp-cryptobox.svg?branch=master)](https://travis-ci.org/wireapp/wire-webapp-cryptobox)
 
+[![Build Status](https://travis-ci.org/robisys/wire-webapp-cryptobox.svg?branch=master)](https://travis-ci.org/robisys/wire-webapp-cryptobox)
+
 ## Installation
 
 ### Browser
